@@ -1,0 +1,8 @@
+package iotaTime-test
+
+depends = iotaTime
+
+sourcedir = "."
+
+main = Main
+executable = iotaTime-test

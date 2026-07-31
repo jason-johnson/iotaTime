@@ -2,6 +2,23 @@
 
 An Idris 2 time library based on Erik Naggum's "Long painful history of time".
 
+## Design goal: make invalid time values unrepresentable
+
+iotaTime is a port of HodaTime to Idris 2, but reproducing the Haskell API is only an intermediate step. The project exists to use dependent types to move calendar and time invariants out of runtime validation and into the type system.
+
+The final public API should follow these principles:
+
+- Domain values carry the proofs needed to establish their validity. A `CalendarDate Gregorian` must always be a valid Gregorian date; there must be no second, possibly-invalid form of the same public type.
+- Invalid statically known expressions must fail to compile. For example, `calendarDate 29 February 2020` should type-check while `calendarDate 29 February 2021` should not.
+- Calendar-specific structure belongs in types. In calendars such as Hebrew, a month that exists only in leap years should be impossible to select for a non-leap year.
+- Once a value has crossed a trust boundary, ordinary library operations should preserve its invariants and should not return `Maybe` merely to report states that the types already exclude.
+- Raw representations and unchecked constructors are implementation details. Any public escape hatch needed for interoperability must be clearly distinguished from the proof-carrying domain API.
+- External data remains genuinely fallible. A parser for a file, network response, database value, or user input must either produce a proven-valid value or return a descriptive error. Failure should be confined to that untrusted boundary, preferably as `Either Error ValidValue`, rather than propagated through normal calendar operations.
+- Runtime refinement should use decidable propositions and erased proofs internally. The project must not establish invariants with exceptions, unchecked casts, `believe_me`, or equivalent assertions.
+- Compile-time-known embedded data should be checked during compilation whenever practical, eliminating runtime failure for that data entirely.
+
+The target is therefore not literally the absence of every failure type. It is the absence of invalid domain values and unnecessary partiality: compile-time rejection when inputs are statically known, explicit errors where information first enters the program, and total proof-preserving functions everywhere after that boundary.
+
 ## Development container / Codespaces
 
 This repository is configured for GitHub Codespaces and VS Code Dev Containers via `.devcontainer/`.
@@ -36,6 +53,8 @@ idris2 --build test/iotaTime-test.ipkg
 ```
 
 ## Gregorian calendar API
+
+> **Transitional API:** The current Gregorian surface preserves HodaTime behavior while the interface is being ported and tested. Its `Maybe` constructors, raw public `CalendarDate`, and parallel `ValidatedDate` wrapper do not yet satisfy the project-wide design goal above. They are scaffolding for the next redesign, in which `CalendarDate` itself will be proof-carrying and invalid literal dates will fail to compile.
 
 Import `IotaTime` to use the calendar-polymorphic API and its Gregorian implementation. `CalendarDate Gregorian` is the Gregorian date type; `Month` and `DayOfWeek` provide the named Gregorian components.
 

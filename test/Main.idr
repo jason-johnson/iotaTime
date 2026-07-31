@@ -1,9 +1,25 @@
 module Main
 
-import IotaTime
+import Test.Proof
+import Test.Runtime
+import Test.Regression
+import Test.Support
 
-zeroEpoch : epoch = MkInstant 0
-zeroEpoch = Refl
+proofsChecked : ()
+proofsChecked =
+  let _ = zeroTickRoundTrip in
+  let _ = negativeTickRoundTrip in
+  let _ = largeTickRoundTrip in
+  let _ = roundTripConstructor in
+  ()
 
 main : IO ()
-main = putStrLn "iotaTime tests passed"
+main = do
+  let _ = proofsChecked
+  runtimePassed <- Test.Runtime.run
+  regressionPassed <- Test.Regression.run
+  finalizeResults
+    [ ("proof tests (compile-time)", True)
+    , ("runtime behavior tests", runtimePassed)
+    , ("regression tests", regressionPassed)
+    ]

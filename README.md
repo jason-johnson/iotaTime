@@ -35,6 +35,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 
 - `iotaTime.ipkg` — Idris 2 library package definition
 - `src/IotaTime.idr` — library entry module
+- `src/IotaTime/Calendar/Component.idr` — opaque and refined calendar component types
 - `test/iotaTime-test.ipkg` — test package
 - `test/Main.idr` — test orchestrator
 - `test/Test/Proof.idr` — compile-time proof tests
@@ -50,6 +51,7 @@ idris2 --build iotaTime.ipkg
 idris2 --install iotaTime.ipkg
 idris2 --build test/iotaTime-test.ipkg
 ./test/build/exec/iotaTime-test
+sh test/run-compile-fail-tests.sh
 ```
 
 ## Gregorian calendar API
@@ -63,6 +65,17 @@ date = calendarDate 29 February 2000
 components : (Year, Month, DayOfMonth)
 components = yearMonthDay {calendar = Gregorian} date
 ```
+
+### Date components
+
+`Year`, `DayOfMonth`, and `WeekNumber` are opaque domain types rather than aliases for `Integer`:
+
+- `DayOfMonth` accepts integer literals from 1 through 31. Literals such as `0` and `32` fail to compile. `refineDayOfMonth` validates an integer learned at runtime and returns `Either DayOfMonthError DayOfMonth`.
+- `Year` is an opaque semantic integer. It is intentionally not restricted to positive values because calendars and intermediate arithmetic may use earlier astronomical years.
+- `WeekNumber` is also an opaque semantic integer. Gregorian week-date arithmetic intentionally supports zero and negative week numbers for HodaTime compatibility.
+- `yearValue`, `dayOfMonthValue`, and `weekNumberValue` explicitly expose integer representations when arithmetic is required. Component constructors remain hidden.
+
+The current operational `day` lens still focuses on `Integer` so overflow updates such as setting day 40 continue to normalize into the following month. Replacing that raw setter with a proof-preserving optic is the next design step; it is deliberately separate from the civil `DayOfMonth` type.
 
 `calendarDate` requires an erased proof of `So (isValidGregorianDate day month year)`. Idris finds that proof automatically for valid literals. Invalid literals fail to compile:
 
@@ -84,6 +97,6 @@ The public Gregorian operations are:
 
 Lens updates normalize overflowing components and clamp results at October 15, 1582. These operational lenses intentionally do not satisfy every traditional lens law: for example, setting day 40 on March 1, 2000 produces April 9, 2000.
 
-The negative compiler fixtures under `test/compile-fail/` verify that invalid leap days, pre-changeover dates, absent fifth weekdays, and pre-changeover flat days remain compile errors.
+The negative compiler fixtures under `test/compile-fail/` verify that invalid component literals, forged component/date representations, invalid leap days, pre-changeover dates, absent fifth weekdays, and pre-changeover flat days remain compile errors.
 
 The optics in `IotaTime.Optics` use the dependency-free van Laarhoven representation. They can be consumed directly by code using the same rank-2 lens type.

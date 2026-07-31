@@ -1,19 +1,7 @@
 module IotaTime.Calendar
 
 import public IotaTime.Optics
-import public Data.So
-
-public export
-Year : Type
-Year = Integer
-
-public export
-DayOfMonth : Type
-DayOfMonth = Integer
-
-public export
-WeekNumber : Type
-WeekNumber = Integer
+import public IotaTime.Calendar.Component
 
 public export
 data DayNth = First | Second | Third | Fourth | Fifth | Last
@@ -30,7 +18,7 @@ interface Calendar calendar where
   toYmd : DateRep -> (Year, MonthRep, DayOfMonth)
   calendarName : String
 
-  day' : Lens' DateRep DayOfMonth
+  day' : Lens' DateRep Integer
   month' : DateRep -> MonthRep
   monthl' : Lens' DateRep Integer
   year' : Lens' DateRep Year
@@ -44,7 +32,7 @@ CalendarDate : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 CalendarDate calendar @{cal} = DateRep @{cal}
 
 public export
-day : {calendar : Type} -> {auto cal : Calendar calendar} -> Lens' (CalendarDate calendar @{cal}) DayOfMonth
+day : {calendar : Type} -> {auto cal : Calendar calendar} -> Lens' (CalendarDate calendar @{cal}) Integer
 day @{cal} = day' @{cal}
 
 public export

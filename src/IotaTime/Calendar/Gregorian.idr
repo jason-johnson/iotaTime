@@ -130,7 +130,8 @@ weekdayFromNumber value = case value `mod` 7 of
 public export
 isLeapYear : Year -> Bool
 isLeapYear value =
-  value `mod` 400 == 0 || (value `mod` 4 == 0 && value `mod` 100 /= 0)
+  let number = yearValue value
+   in number `mod` 400 == 0 || (number `mod` 4 == 0 && number `mod` 100 /= 0)
 
 public export
 maxDaysInMonth : Month -> Year -> DayOfMonth
@@ -144,21 +145,25 @@ maxDaysInMonth _ _ = 31
 public export
 isValidGregorianDate : DayOfMonth -> Month -> Year -> Bool
 isValidGregorianDate valueDay valueMonth valueYear =
-  valueDay >= 1 &&
-  valueDay <= maxDaysInMonth valueMonth valueYear &&
-  (valueYear > 1582 ||
-    (valueYear == 1582 &&
+  let dayNumber = dayOfMonthValue valueDay
+      yearNumber = yearValue valueYear
+   in dayNumber >= 1 &&
+    dayNumber <= dayOfMonthValue (maxDaysInMonth valueMonth valueYear) &&
+    (yearNumber > 1582 ||
+      (yearNumber == 1582 &&
       (monthNumber valueMonth > monthNumber October ||
-        (valueMonth == October && valueDay >= 15))))
+        (valueMonth == October && dayNumber >= 15))))
 
 daysFromCivil : Year -> Month -> DayOfMonth -> Integer
 daysFromCivil valueYear valueMonth valueDay =
   let number = monthNumber valueMonth
-      shiftedYear = if number <= 2 then valueYear - 1 else valueYear
+      yearNumber = yearValue valueYear
+      dayNumber = dayOfMonthValue valueDay
+      shiftedYear = if number <= 2 then yearNumber - 1 else yearNumber
       era = shiftedYear `div` 400
       yearOfEra = shiftedYear - era * 400
       shiftedMonth = number + if number > 2 then -3 else 9
-      dayOfYear = (153 * shiftedMonth + 2) `div` 5 + valueDay - 1
+      dayOfYear = (153 * shiftedMonth + 2) `div` 5 + dayNumber - 1
       dayOfEra = yearOfEra * 365 + yearOfEra `div` 4 - yearOfEra `div` 100 + dayOfYear
    in era * 146097 + dayOfEra - 730485
 
@@ -176,7 +181,7 @@ civilFromDays value =
       valueDay = dayOfYear - (153 * shiftedMonth + 2) `div` 5 + 1
       monthValue = shiftedMonth + if shiftedMonth < 10 then 3 else -9
       valueYear = partialYear + if monthValue <= 2 then 1 else 0
-   in (valueYear, monthFromNumber monthValue, valueDay)
+  in (yearFromInteger valueYear, monthFromNumber monthValue, dayOfMonthFromInteger valueDay)
 
 firstGregorianDay : Integer
 firstGregorianDay = -152444
@@ -192,18 +197,19 @@ makeDate : Year -> Month -> DayOfMonth -> GregorianDate
 makeDate valueYear valueMonth valueDay =
   MkGregorianDate (clampToGregorian (daysFromCivil valueYear valueMonth valueDay))
 
-modifyGregorianDay : (DayOfMonth -> DayOfMonth) -> GregorianDate -> GregorianDate
+modifyGregorianDay : (Integer -> Integer) -> GregorianDate -> GregorianDate
 modifyGregorianDay transform date =
   let (valueYear, valueMonth, valueDay) = civilFromDays date.daysSinceEpoch
       firstOfMonth = daysFromCivil valueYear valueMonth 1
-   in MkGregorianDate (clampToGregorian (firstOfMonth + transform valueDay - 1))
+  in MkGregorianDate
+      (clampToGregorian (firstOfMonth + transform (dayOfMonthValue valueDay) - 1))
 
 modifyGregorianMonth : (Integer -> Integer) -> GregorianDate -> GregorianDate
 modifyGregorianMonth transform date =
   let (valueYear, valueMonth, valueDay) = civilFromDays date.daysSinceEpoch
       zeroBased = monthNumber valueMonth - 1
       transformed = transform zeroBased
-      targetYear = valueYear + transformed `div` 12
+      targetYear = yearFromInteger (yearValue valueYear + transformed `div` 12)
       targetMonth = monthFromNumber (transformed `mod` 12 + 1)
       targetDay = min valueDay (maxDaysInMonth targetMonth targetYear)
    in makeDate targetYear targetMonth targetDay
@@ -215,9 +221,9 @@ modifyGregorianYear transform date =
       targetDay = min valueDay (maxDaysInMonth valueMonth targetYear)
    in makeDate targetYear valueMonth targetDay
 
-gregorianDayLens : Lens' GregorianDate DayOfMonth
+gregorianDayLens : Lens' GregorianDate Integer
 gregorianDayLens = lens
-  (\date => let (_, _, valueDay) = civilFromDays date.daysSinceEpoch in valueDay)
+  (\date => let (_, _, valueDay) = civilFromDays date.daysSinceEpoch in dayOfMonthValue valueDay)
   (\date, valueDay => modifyGregorianDay (const valueDay) date)
 
 gregorianMonthLens : Lens' GregorianDate Integer
@@ -311,18 +317,19 @@ nthDayOfMonth nth target valueMonth valueYear =
       firstOffset = (weekdayNumber target - weekdayNumber (gregorianDayOfWeek firstDate)) `mod` 7
       lastDate = MkGregorianDate (daysFromCivil valueYear valueMonth monthLength)
       lastOffset = (weekdayNumber (gregorianDayOfWeek lastDate) - weekdayNumber target) `mod` 7
-   in case nth of
+      dayNumber = case nth of
         First => 1 + firstOffset
         Second => 8 + firstOffset
         Third => 15 + firstOffset
         Fourth => 22 + firstOffset
         Fifth => 29 + firstOffset
-        Last => monthLength - lastOffset
+        Last => dayOfMonthValue monthLength - lastOffset
+   in dayOfMonthFromInteger dayNumber
 
 public export
 isValidGregorianNthDay : DayNth -> DayOfWeek -> Month -> Year -> Bool
 isValidGregorianNthDay nth target valueMonth valueYear =
-  if valueYear > 1582
+  if yearValue valueYear > 1582
     then case nth of
       Fifth => nthDayOfMonth nth target valueMonth valueYear <= maxDaysInMonth valueMonth valueYear
       _ => True
@@ -350,12 +357,12 @@ weekDateDays : WeekNumber -> DayOfWeek -> Year -> Integer
 weekDateDays week target valueYear =
   let firstDay = daysFromCivil valueYear January 1
       firstWeekStart = firstDay - weekdayNumber (gregorianDayOfWeek (MkGregorianDate firstDay))
-   in firstWeekStart + 7 * (week - 1) + weekdayNumber target
+  in firstWeekStart + 7 * (weekNumberValue week - 1) + weekdayNumber target
 
 public export
 isValidGregorianWeekDate : WeekNumber -> DayOfWeek -> Year -> Bool
 isValidGregorianWeekDate week target valueYear =
-  (valueYear > 1582 && week >= 0) ||
+  (yearValue valueYear > 1582 && weekNumberValue week >= 0) ||
     isValidGregorianDays (weekDateDays week target valueYear)
 
 public export

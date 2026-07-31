@@ -20,7 +20,7 @@ independentOver optic transform source =
 ymd : CalendarDate Gregorian -> (Year, Month, DayOfMonth)
 ymd = yearMonthDay {calendar = Gregorian}
 
-modifyDateDay : (DayOfMonth -> DayOfMonth) -> CalendarDate Gregorian -> CalendarDate Gregorian
+modifyDateDay : (Integer -> Integer) -> CalendarDate Gregorian -> CalendarDate Gregorian
 modifyDateDay transform = modify transform (day {calendar = Gregorian})
 
 modifyDateMonth : (Integer -> Integer) -> CalendarDate Gregorian -> CalendarDate Gregorian
@@ -28,6 +28,9 @@ modifyDateMonth transform = modify transform (monthl {calendar = Gregorian})
 
 modifyDateYear : (Year -> Year) -> CalendarDate Gregorian -> CalendarDate Gregorian
 modifyDateYear transform = modify transform (year {calendar = Gregorian})
+
+shiftYear : Integer -> Year -> Year
+shiftYear amount value = yearFromInteger (yearValue value + amount)
 
 weekday : CalendarDate Gregorian -> DayOfWeek
 weekday = dayOfWeek {calendar = Gregorian}
@@ -97,6 +100,18 @@ gregorianCases =
             (hasYmd (1582, October, 15) (refinedYmd (refineGregorianDays (-152444))))
         , MkRuntimeCase "dynamic invalid day of month is rejected"
             (isLeft (refineGregorianDate 30 February 2000))
+        , MkRuntimeCase "day-of-month refinement accepts one"
+            (case refineDayOfMonth 1 of
+                Right value => dayOfMonthValue value == 1
+                Left _ => False)
+        , MkRuntimeCase "day-of-month refinement accepts thirty-one"
+            (case refineDayOfMonth 31 of
+                Right value => dayOfMonthValue value == 31
+                Left _ => False)
+        , MkRuntimeCase "day-of-month refinement rejects zero"
+            (isLeft (refineDayOfMonth 0))
+        , MkRuntimeCase "day-of-month refinement rejects thirty-two"
+            (isLeft (refineDayOfMonth 32))
         , MkRuntimeCase "2000 is a leap year"
             (ymd (calendarDate 29 February 2000) == (2000, February, 29))
         , MkRuntimeCase "dynamic 2100 leap day is rejected"
@@ -126,9 +141,11 @@ gregorianCases =
         , MkRuntimeCase "month modification clamps at Gregorian changeover"
             (ymd (modifyDateMonth (subtract 1) (calendarDate 14 November 1582)) == (1582, October, 15))
         , MkRuntimeCase "year modification clamps leap day"
-            (ymd (modifyDateYear (+ 1) (calendarDate 29 February 2000)) == (2001, February, 28))
+            (ymd (modifyDateYear (shiftYear 1) (calendarDate 29 February 2000)) ==
+                (2001, February, 28))
         , MkRuntimeCase "year modification clamps at Gregorian changeover"
-            (ymd (modifyDateYear (subtract 1) (calendarDate 14 October 1583)) == (1582, October, 15))
+            (ymd (modifyDateYear (shiftYear (-1)) (calendarDate 14 October 1583)) ==
+                (1582, October, 15))
         , MkRuntimeCase "March 1 2000 is Wednesday"
             (weekday (calendarDate 1 March 2000) == Wednesday)
         , MkRuntimeCase "Gregorian dates compare by flat day"

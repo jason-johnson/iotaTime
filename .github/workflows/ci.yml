@@ -33,8 +33,7 @@ jobs:
         run: |
           git clone --depth 1 --branch v0.7.0 https://github.com/idris-lang/Idris2.git /tmp/Idris2
           make -C /tmp/Idris2 bootstrap SCHEME=chezscheme
-          make -C /tmp/Idris2 install
-          echo "$HOME/.idris2/bin" >> "$GITHUB_PATH"
+          sudo make -C /tmp/Idris2 install
           rm -rf /tmp/Idris2
           idris2 --version
 

@@ -110,12 +110,28 @@ gregorianCases =
       (ymd (modifyDateYear (subtract 1) (calendarDate 14 October 1583)) == Just (1582, October, 15))
   , MkRuntimeCase "March 1 2000 is Wednesday"
       (weekday (calendarDate 1 March 2000) == Just Wednesday)
+    , MkRuntimeCase "Gregorian dates compare by flat day"
+            (calendarDate 29 February 2000 < calendarDate 1 March 2000)
+    , MkRuntimeCase "equal Gregorian civil dates compare equal"
+            (calendarDate 1 March 2000 == calendarDate 1 March 2000)
   , MkRuntimeCase "next Monday selects the following matching day"
       (ymd (map (next {calendar = Gregorian} 1 Monday) (calendarDate 31 January 2000)) ==
         Just (2000, February, 7))
+    , MkRuntimeCase "next zero selects the previous matching day"
+            (ymd (map (next {calendar = Gregorian} 0 Monday) (calendarDate 2 February 2000)) ==
+                Just (2000, January, 31))
+    , MkRuntimeCase "next negative one moves one match further backward"
+            (ymd (map (next {calendar = Gregorian} (-1) Monday) (calendarDate 2 February 2000)) ==
+                Just (2000, January, 24))
   , MkRuntimeCase "previous Monday selects the preceding matching day"
       (ymd (map (previous {calendar = Gregorian} 1 Monday) (calendarDate 31 January 2000)) ==
         Just (2000, January, 24))
+    , MkRuntimeCase "previous zero selects the following matching day"
+            (ymd (map (previous {calendar = Gregorian} 0 Monday) (calendarDate 2 February 2000)) ==
+                Just (2000, February, 7))
+    , MkRuntimeCase "previous negative one moves one match further forward"
+            (ymd (map (previous {calendar = Gregorian} (-1) Monday) (calendarDate 2 February 2000)) ==
+                Just (2000, February, 14))
   , MkRuntimeCase "third Monday of January 2000"
       (ymd (fromNthDay Third Monday January 2000) == Just (2000, January, 17))
   , MkRuntimeCase "last weekday includes a matching final day"

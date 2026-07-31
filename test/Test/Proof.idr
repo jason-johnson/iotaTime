@@ -17,3 +17,11 @@ largeTickRoundTrip = Refl
 public export
 roundTripConstructor : MkInstant (ticks (MkInstant 42)) = MkInstant 42
 roundTripConstructor = Refl
+
+public export
+gregorianLeapCycle : isLeapYear 2000 = True
+gregorianLeapCycle = Refl
+
+public export
+gregorianCenturyException : isLeapYear 2100 = False
+gregorianCenturyException = Refl

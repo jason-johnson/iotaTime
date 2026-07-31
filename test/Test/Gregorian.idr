@@ -20,12 +20,6 @@ independentOver optic transform source =
 ymd : CalendarDate Gregorian -> (Year, Month, DayOfMonth)
 ymd = yearMonthDay {calendar = Gregorian}
 
-modifyDateDay : (Integer -> Integer) -> CalendarDate Gregorian -> CalendarDate Gregorian
-modifyDateDay transform = modify transform (day {calendar = Gregorian})
-
-modifyDateMonth : (Integer -> Integer) -> CalendarDate Gregorian -> CalendarDate Gregorian
-modifyDateMonth transform = modify transform (monthl {calendar = Gregorian})
-
 modifyDateYear : (Year -> Year) -> CalendarDate Gregorian -> CalendarDate Gregorian
 modifyDateYear transform = modify transform (year {calendar = Gregorian})
 
@@ -90,6 +84,11 @@ gregorianCases =
             validCivilRoundTrips
         , MkRuntimeCase "day lens views the day of month"
                         (view (day {calendar = Gregorian}) (calendarDate 31 January 2000) == 31)
+        , MkRuntimeCase "day lens normalizes a valid component against the current month"
+            (ymd (set (day {calendar = Gregorian}) 31 (calendarDate 1 February 2000)) ==
+                (2000, March, 2))
+        , MkRuntimeCase "month lens views the typed Gregorian month"
+            (view (monthl {calendar = Gregorian}) (calendarDate 31 January 2000) == January)
     , MkRuntimeCase "Gregorian changeover is the first valid date"
             (ymd (calendarDate 15 October 1582) == (1582, October, 15))
         , MkRuntimeCase "dynamic date before Gregorian changeover is rejected"
@@ -119,27 +118,38 @@ gregorianCases =
         , MkRuntimeCase "2400 is a leap year"
             (ymd (calendarDate 29 February 2400) == (2400, February, 29))
         , MkRuntimeCase "day modification rolls into the next year"
-            (ymd (modifyDateDay (+ 1) (calendarDate 31 December 2000)) == (2001, January, 1))
+            (ymd (shiftDays {calendar = Gregorian} 1 (calendarDate 31 December 2000)) ==
+                (2001, January, 1))
         , MkRuntimeCase "day modification crosses a non-leap century"
-            (ymd (modifyDateDay (+ 1) (calendarDate 28 February 2100)) == (2100, March, 1))
+            (ymd (shiftDays {calendar = Gregorian} 1 (calendarDate 28 February 2100)) ==
+                (2100, March, 1))
         , MkRuntimeCase "day modification crosses the 400-year leap day"
-            (ymd (modifyDateDay (+ 1) (calendarDate 29 February 2400)) == (2400, March, 1))
+            (ymd (shiftDays {calendar = Gregorian} 1 (calendarDate 29 February 2400)) ==
+                (2400, March, 1))
     , MkRuntimeCase "setting day 40 normalizes into the following month"
-                        (ymd (set (day {calendar = Gregorian}) 40 (calendarDate 1 March 2000)) ==
+            (ymd (normalizeDay {calendar = Gregorian} 40 (calendarDate 1 March 2000)) ==
                                 (2000, April, 9))
     , MkRuntimeCase "day lens works with an independent van Laarhoven consumer"
-                        (ymd (independentOver (day {calendar = Gregorian}) (+ 10)
-                                (calendarDate 25 March 2000)) == (2000, April, 4))
+            (ymd (independentOver (day {calendar = Gregorian}) (const 31)
+                (calendarDate 25 March 2000)) == (2000, March, 31))
         , MkRuntimeCase "day modification clamps at Gregorian changeover"
-            (modifyDateDay (subtract 1) (calendarDate 15 October 1582) == calendarDate 15 October 1582)
+            (shiftDays {calendar = Gregorian} (-1) (calendarDate 15 October 1582) ==
+                calendarDate 15 October 1582)
         , MkRuntimeCase "month modification preserves a valid end-of-month day"
-            (ymd (modifyDateMonth (+ 2) (calendarDate 31 January 2000)) == (2000, March, 31))
+            (ymd (shiftMonths {calendar = Gregorian} 2 (calendarDate 31 January 2000)) ==
+                (2000, March, 31))
         , MkRuntimeCase "month modification clamps an invalid end-of-month day"
-            (ymd (modifyDateMonth (+ 1) (calendarDate 31 January 2000)) == (2000, February, 29))
+            (ymd (set (monthl {calendar = Gregorian}) February (calendarDate 31 January 2000)) ==
+                (2000, February, 29))
         , MkRuntimeCase "month modification crosses a year boundary"
-            (ymd (modifyDateMonth (+ 1) (calendarDate 15 December 2000)) == (2001, January, 15))
+            (ymd (shiftMonths {calendar = Gregorian} 1 (calendarDate 15 December 2000)) ==
+                (2001, January, 15))
+        , MkRuntimeCase "normalizing month ordinal twelve crosses a year boundary"
+            (ymd (normalizeMonth {calendar = Gregorian} 12 (calendarDate 15 June 2000)) ==
+                (2001, January, 15))
         , MkRuntimeCase "month modification clamps at Gregorian changeover"
-            (ymd (modifyDateMonth (subtract 1) (calendarDate 14 November 1582)) == (1582, October, 15))
+            (ymd (shiftMonths {calendar = Gregorian} (-1) (calendarDate 14 November 1582)) ==
+                (1582, October, 15))
         , MkRuntimeCase "year modification clamps leap day"
             (ymd (modifyDateYear (shiftYear 1) (calendarDate 29 February 2000)) ==
                 (2001, February, 28))

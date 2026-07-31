@@ -197,22 +197,29 @@ makeDate : Year -> Month -> DayOfMonth -> GregorianDate
 makeDate valueYear valueMonth valueDay =
   MkGregorianDate (clampToGregorian (daysFromCivil valueYear valueMonth valueDay))
 
-modifyGregorianDay : (Integer -> Integer) -> GregorianDate -> GregorianDate
-modifyGregorianDay transform date =
+normalizeGregorianDay : Integer -> GregorianDate -> GregorianDate
+normalizeGregorianDay targetDay date =
   let (valueYear, valueMonth, valueDay) = civilFromDays date.daysSinceEpoch
       firstOfMonth = daysFromCivil valueYear valueMonth 1
   in MkGregorianDate
-      (clampToGregorian (firstOfMonth + transform (dayOfMonthValue valueDay) - 1))
+        (clampToGregorian (firstOfMonth + targetDay - 1))
 
-modifyGregorianMonth : (Integer -> Integer) -> GregorianDate -> GregorianDate
-modifyGregorianMonth transform date =
+shiftGregorianDays : Integer -> GregorianDate -> GregorianDate
+shiftGregorianDays amount date =
+  MkGregorianDate (clampToGregorian (date.daysSinceEpoch + amount))
+
+normalizeGregorianMonth : Integer -> GregorianDate -> GregorianDate
+normalizeGregorianMonth targetMonth date =
   let (valueYear, valueMonth, valueDay) = civilFromDays date.daysSinceEpoch
-      zeroBased = monthNumber valueMonth - 1
-      transformed = transform zeroBased
-      targetYear = yearFromInteger (yearValue valueYear + transformed `div` 12)
-      targetMonth = monthFromNumber (transformed `mod` 12 + 1)
-      targetDay = min valueDay (maxDaysInMonth targetMonth targetYear)
-   in makeDate targetYear targetMonth targetDay
+      targetYear = yearFromInteger (yearValue valueYear + targetMonth `div` 12)
+      normalizedMonth = monthFromNumber (targetMonth `mod` 12 + 1)
+      targetDay = min valueDay (maxDaysInMonth normalizedMonth targetYear)
+   in makeDate targetYear normalizedMonth targetDay
+
+shiftGregorianMonths : Integer -> GregorianDate -> GregorianDate
+shiftGregorianMonths amount date =
+  let (_, valueMonth, _) = civilFromDays date.daysSinceEpoch
+   in normalizeGregorianMonth (monthNumber valueMonth - 1 + amount) date
 
 modifyGregorianYear : (Year -> Year) -> GregorianDate -> GregorianDate
 modifyGregorianYear transform date =
@@ -221,15 +228,15 @@ modifyGregorianYear transform date =
       targetDay = min valueDay (maxDaysInMonth valueMonth targetYear)
    in makeDate targetYear valueMonth targetDay
 
-gregorianDayLens : Lens' GregorianDate Integer
+gregorianDayLens : Lens' GregorianDate DayOfMonth
 gregorianDayLens = lens
-  (\date => let (_, _, valueDay) = civilFromDays date.daysSinceEpoch in dayOfMonthValue valueDay)
-  (\date, valueDay => modifyGregorianDay (const valueDay) date)
+  (\date => let (_, _, valueDay) = civilFromDays date.daysSinceEpoch in valueDay)
+  (\date, valueDay => normalizeGregorianDay (dayOfMonthValue valueDay) date)
 
-gregorianMonthLens : Lens' GregorianDate Integer
+gregorianMonthLens : Lens' GregorianDate Month
 gregorianMonthLens = lens
-  (\date => let (_, valueMonth, _) = civilFromDays date.daysSinceEpoch in monthNumber valueMonth - 1)
-  (\date, valueMonth => modifyGregorianMonth (const valueMonth) date)
+  (\date => let (_, valueMonth, _) = civilFromDays date.daysSinceEpoch in valueMonth)
+  (\date, valueMonth => normalizeGregorianMonth (monthNumber valueMonth - 1) date)
 
 gregorianYearLens : Lens' GregorianDate Year
 gregorianYearLens = lens
@@ -270,6 +277,11 @@ Calendar Gregorian where
   month' date = let (_, value, _) = civilFromDays date.daysSinceEpoch in value
   monthl' = gregorianMonthLens
   year' = gregorianYearLens
+
+  normalizeDay' = normalizeGregorianDay
+  shiftDays' = shiftGregorianDays
+  normalizeMonth' = normalizeGregorianMonth
+  shiftMonths' = shiftGregorianMonths
 
   dayOfWeek = gregorianDayOfWeek
   next = nextGregorian

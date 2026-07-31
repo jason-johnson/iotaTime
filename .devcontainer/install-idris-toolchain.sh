@@ -102,7 +102,6 @@ EOF
 cat >"${PACK_CONFIG_DIR}/pack.toml" <<'EOF'
 [install]
 with-src = true
-apps = [ "idris2-lsp" ]
 whitelist = [ "pack", "idris2-lsp" ]
 
 [idris2]
@@ -113,20 +112,11 @@ bootstrap-stage3 = true
 repl.rlwrap = true
 EOF
 
-cat >"${PACK_BIN_DIR}/idris2" <<EOF
-#!/bin/sh
-APPLICATION="\$(${PACK_BIN_DIR}/pack app-path idris2)"
-export IDRIS2_PACKAGE_PATH="\$(${PACK_BIN_DIR}/pack package-path)"
-export IDRIS2_LIBS="\$(${PACK_BIN_DIR}/pack libs-path)"
-export IDRIS2_DATA="\$(${PACK_BIN_DIR}/pack data-path)"
-export IDRIS2_CG=chez
-exec "\$APPLICATION" "\$@"
-EOF
-chmod +x "${PACK_BIN_DIR}/idris2"
+ln -s "$IDRIS2_BOOT" "${PACK_BIN_DIR}/idris2"
 
 chown -R vscode:vscode "${PACK_HOME}/.local" "${PACK_HOME}/.cache" "${PACK_HOME}/.config"
 rm -rf "$BUILD_ROOT"
 
-sudo -u vscode --preserve-env=PATH "${PACK_BIN_DIR}/idris2" --version
-sudo -u vscode --preserve-env=PATH "${PACK_BIN_DIR}/pack" info
-sudo -u vscode --preserve-env=PATH "${PACK_BIN_DIR}/idris2-lsp" --version
+sudo -u vscode env PATH="$PATH" "${PACK_BIN_DIR}/idris2" --version
+sudo -u vscode env PATH="$PATH" "${PACK_BIN_DIR}/pack" info
+sudo -u vscode env PATH="$PATH" "${PACK_BIN_DIR}/idris2-lsp" --version

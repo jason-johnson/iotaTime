@@ -15,12 +15,18 @@ This repository is configured for GitHub Codespaces and VS Code Dev Containers v
 - `iotaTime.ipkg` — Idris 2 library package definition
 - `src/IotaTime.idr` — library entry module
 - `test/iotaTime-test.ipkg` — test package
-- `test/Main.idr` — basic compile/runtime smoke test
+- `test/Main.idr` — test orchestrator
+- `test/Test/Proof.idr` — compile-time proof tests
+- `test/Test/Runtime.idr` — runtime behavior tests
+- `test/Test/Regression.idr` — regression tests
+- `test/Test/Support.idr` — runtime assertions and suite reporting
+- `.github/workflows/ci.yml` — CI build+test workflow for push and pull requests
 
 ## Build and test
 
 ```bash
 idris2 --build iotaTime.ipkg
+idris2 --install iotaTime.ipkg
 idris2 --build test/iotaTime-test.ipkg
-./build/exec/iotaTime-test
+./test/build/exec/iotaTime-test
 ```

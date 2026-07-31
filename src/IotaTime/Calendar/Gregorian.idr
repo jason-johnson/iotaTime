@@ -200,6 +200,21 @@ modifyGregorianYear transform date =
       targetDay = min valueDay (maxDaysInMonth valueMonth targetYear)
    in makeDate targetYear valueMonth targetDay
 
+gregorianDayLens : Lens' GregorianDate DayOfMonth
+gregorianDayLens = lens
+  (\date => let (_, _, valueDay) = civilFromDays date.daysSinceEpoch in valueDay)
+  (\date, valueDay => modifyGregorianDay (const valueDay) date)
+
+gregorianMonthLens : Lens' GregorianDate Integer
+gregorianMonthLens = lens
+  (\date => let (_, valueMonth, _) = civilFromDays date.daysSinceEpoch in monthNumber valueMonth - 1)
+  (\date, valueMonth => modifyGregorianMonth (const valueMonth) date)
+
+gregorianYearLens : Lens' GregorianDate Year
+gregorianYearLens = lens
+  (\date => let (valueYear, _, _) = civilFromDays date.daysSinceEpoch in valueYear)
+  (\date, valueYear => modifyGregorianYear (const valueYear) date)
+
 gregorianDayOfWeek : GregorianDate -> DayOfWeek
 gregorianDayOfWeek date = weekdayFromNumber (date.daysSinceEpoch + 3)
 
@@ -228,10 +243,10 @@ Calendar Gregorian where
   toYmd = civilFromDays . daysSinceEpoch
   calendarName = "Gregorian"
 
-  modifyDay = modifyGregorianDay
-  month date = let (_, value, _) = civilFromDays date.daysSinceEpoch in value
-  modifyMonth = modifyGregorianMonth
-  modifyYear = modifyGregorianYear
+  day' = gregorianDayLens
+  month' date = let (_, value, _) = civilFromDays date.daysSinceEpoch in value
+  monthl' = gregorianMonthLens
+  year' = gregorianYearLens
 
   dayOfWeek = gregorianDayOfWeek
   next = nextGregorian

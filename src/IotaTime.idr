@@ -1,5 +1,6 @@
 module IotaTime
 
+import public IotaTime.Optics
 import public IotaTime.Calendar
 import public IotaTime.Calendar.Gregorian
 

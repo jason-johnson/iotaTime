@@ -1,5 +1,7 @@
 module IotaTime.Calendar
 
+import public IotaTime.Optics
+
 public export
 Year : Type
 Year = Integer
@@ -26,10 +28,10 @@ interface Calendar calendar where
   toYmd : DateRep -> (Year, MonthRep, DayOfMonth)
   calendarName : String
 
-  modifyDay : (DayOfMonth -> DayOfMonth) -> DateRep -> DateRep
-  month : DateRep -> MonthRep
-  modifyMonth : (Integer -> Integer) -> DateRep -> DateRep
-  modifyYear : (Year -> Year) -> DateRep -> DateRep
+  day' : Lens' DateRep DayOfMonth
+  month' : DateRep -> MonthRep
+  monthl' : Lens' DateRep Integer
+  year' : Lens' DateRep Year
 
   dayOfWeek : DateRep -> WeekdayRep
   next : Integer -> WeekdayRep -> DateRep -> DateRep
@@ -40,12 +42,20 @@ CalendarDate : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 CalendarDate calendar @{cal} = DateRep @{cal}
 
 public export
-day : {calendar : Type} -> {auto cal : Calendar calendar} -> CalendarDate calendar @{cal} -> DayOfMonth
-day @{cal} date = let (_, _, value) = toYmd @{cal} date in value
+day : {calendar : Type} -> {auto cal : Calendar calendar} -> Lens' (CalendarDate calendar @{cal}) DayOfMonth
+day @{cal} = day' @{cal}
 
 public export
-year : {calendar : Type} -> {auto cal : Calendar calendar} -> CalendarDate calendar @{cal} -> Year
-year @{cal} date = let (value, _, _) = toYmd @{cal} date in value
+month : {calendar : Type} -> {auto cal : Calendar calendar} -> CalendarDate calendar @{cal} -> MonthRep @{cal}
+month @{cal} = month' @{cal}
+
+public export
+monthl : {calendar : Type} -> {auto cal : Calendar calendar} -> Lens' (CalendarDate calendar @{cal}) Integer
+monthl @{cal} = monthl' @{cal}
+
+public export
+year : {calendar : Type} -> {auto cal : Calendar calendar} -> Lens' (CalendarDate calendar @{cal}) Year
+year @{cal} = year' @{cal}
 
 public export
 yearMonthDay : {calendar : Type} -> {auto cal : Calendar calendar} ->

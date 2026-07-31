@@ -3,17 +3,31 @@ module Test.Gregorian
 import IotaTime
 import Test.Support
 
+record TestIdentity (value : Type) where
+    constructor MkTestIdentity
+    runTestIdentity : value
+
+Functor TestIdentity where
+    map function (MkTestIdentity value) = MkTestIdentity (function value)
+
+independentOver :
+    ({0 effect : Type -> Type} -> Functor effect =>
+        (focus -> effect replacement) -> source -> effect target) ->
+    (focus -> replacement) -> source -> target
+independentOver optic transform source =
+    runTestIdentity (optic (MkTestIdentity . transform) source)
+
 ymd : Maybe (CalendarDate Gregorian) -> Maybe (Year, Month, DayOfMonth)
 ymd = map (yearMonthDay {calendar = Gregorian})
 
 modifyDateDay : (DayOfMonth -> DayOfMonth) -> Maybe (CalendarDate Gregorian) -> Maybe (CalendarDate Gregorian)
-modifyDateDay transform = map (modifyDay {calendar = Gregorian} transform)
+modifyDateDay transform = map (modify transform (day {calendar = Gregorian}))
 
 modifyDateMonth : (Integer -> Integer) -> Maybe (CalendarDate Gregorian) -> Maybe (CalendarDate Gregorian)
-modifyDateMonth transform = map (modifyMonth {calendar = Gregorian} transform)
+modifyDateMonth transform = map (modify transform (monthl {calendar = Gregorian}))
 
 modifyDateYear : (Year -> Year) -> Maybe (CalendarDate Gregorian) -> Maybe (CalendarDate Gregorian)
-modifyDateYear transform = map (modifyYear {calendar = Gregorian} transform)
+modifyDateYear transform = map (modify transform (year {calendar = Gregorian}))
 
 weekday : Maybe (CalendarDate Gregorian) -> Maybe DayOfWeek
 weekday = map (dayOfWeek {calendar = Gregorian})
@@ -24,6 +38,8 @@ gregorianCases =
             (yearMonthDay {calendar = Gregorian} (fromDays {calendar = Gregorian} 0) == (2000, March, 1))
     , MkRuntimeCase "flat day conversion round-trips"
             (toDays {calendar = Gregorian} (fromDays {calendar = Gregorian} 42) == 42)
+        , MkRuntimeCase "day lens views the day of month"
+            (map (view (day {calendar = Gregorian})) (calendarDate 31 January 2000) == Just 31)
     , MkRuntimeCase "Gregorian changeover is the first valid date"
       (ymd (calendarDate 15 October 1582) == Just (1582, October, 15))
   , MkRuntimeCase "date before Gregorian changeover is rejected"
@@ -42,6 +58,12 @@ gregorianCases =
       (ymd (modifyDateDay (+ 1) (calendarDate 28 February 2100)) == Just (2100, March, 1))
   , MkRuntimeCase "day modification crosses the 400-year leap day"
       (ymd (modifyDateDay (+ 1) (calendarDate 29 February 2400)) == Just (2400, March, 1))
+    , MkRuntimeCase "setting day 40 normalizes into the following month"
+            (ymd (map (set (day {calendar = Gregorian}) 40) (calendarDate 1 March 2000)) ==
+                Just (2000, April, 9))
+    , MkRuntimeCase "day lens works with an independent van Laarhoven consumer"
+            (ymd (map (independentOver (day {calendar = Gregorian}) (+ 10))
+                (calendarDate 25 March 2000)) == Just (2000, April, 4))
   , MkRuntimeCase "day modification clamps at Gregorian changeover"
       (modifyDateDay (subtract 1) (calendarDate 15 October 1582) == calendarDate 15 October 1582)
   , MkRuntimeCase "month modification preserves a valid end-of-month day"

@@ -1,4 +1,5 @@
 module ForgedGregorianDate
+-- EXPECT: MkGregorianDate is private.
 
 import IotaTime
 

@@ -1,4 +1,5 @@
 module InvalidLeapDay
+-- EXPECT: Can't find an implementation
 
 import IotaTime
 

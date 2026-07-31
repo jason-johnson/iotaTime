@@ -18,9 +18,9 @@ interface Calendar calendar where
   toYmd : DateRep -> (Year, MonthRep, DayOfMonth)
   calendarName : String
 
-  day' : Lens' DateRep DayOfMonth
+  day' : Lens' DateRep Integer
   month' : DateRep -> MonthRep
-  monthl' : Lens' DateRep MonthRep
+  monthl' : Lens' DateRep Integer
   year' : Lens' DateRep Year
 
   normalizeDay' : Integer -> DateRep -> DateRep
@@ -38,7 +38,7 @@ CalendarDate calendar @{cal} = DateRep @{cal}
 
 public export
 day : {calendar : Type} -> {auto cal : Calendar calendar} ->
-  Lens' (CalendarDate calendar @{cal}) DayOfMonth
+  Lens' (CalendarDate calendar @{cal}) Integer
 day @{cal} = day' @{cal}
 
 public export
@@ -47,7 +47,7 @@ month @{cal} = month' @{cal}
 
 public export
 monthl : {calendar : Type} -> {auto cal : Calendar calendar} ->
-         Lens' (CalendarDate calendar @{cal}) (MonthRep @{cal})
+         Lens' (CalendarDate calendar @{cal}) Integer
 monthl @{cal} = monthl' @{cal}
 
 public export

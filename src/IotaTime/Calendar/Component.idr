@@ -19,6 +19,17 @@ public export
 Show Year where
   show value = show value.integerValue
 
+public export
+Num Year where
+  MkYear left + MkYear right = MkYear (left + right)
+  MkYear left * MkYear right = MkYear (left * right)
+  fromInteger = MkYear
+
+public export
+Neg Year where
+  negate (MkYear value) = MkYear (negate value)
+  MkYear left - MkYear right = MkYear (left - right)
+
 namespace Year
   public export
   fromInteger : Integer -> Year
@@ -94,6 +105,17 @@ Ord WeekNumber where
 public export
 Show WeekNumber where
   show value = show value.integerValue
+
+public export
+Num WeekNumber where
+  MkWeekNumber left + MkWeekNumber right = MkWeekNumber (left + right)
+  MkWeekNumber left * MkWeekNumber right = MkWeekNumber (left * right)
+  fromInteger = MkWeekNumber
+
+public export
+Neg WeekNumber where
+  negate (MkWeekNumber value) = MkWeekNumber (negate value)
+  MkWeekNumber left - MkWeekNumber right = MkWeekNumber (left - right)
 
 namespace WeekNumber
   public export

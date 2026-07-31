@@ -1,4 +1,5 @@
 module ForgedWeekNumber
+-- EXPECT: MkWeekNumber is private.
 
 import IotaTime
 

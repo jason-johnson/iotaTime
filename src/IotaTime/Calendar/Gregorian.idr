@@ -228,15 +228,15 @@ modifyGregorianYear transform date =
       targetDay = min valueDay (maxDaysInMonth valueMonth targetYear)
    in makeDate targetYear valueMonth targetDay
 
-gregorianDayLens : Lens' GregorianDate DayOfMonth
+gregorianDayLens : Lens' GregorianDate Integer
 gregorianDayLens = lens
-  (\date => let (_, _, valueDay) = civilFromDays date.daysSinceEpoch in valueDay)
-  (\date, valueDay => normalizeGregorianDay (dayOfMonthValue valueDay) date)
+  (\date => let (_, _, valueDay) = civilFromDays date.daysSinceEpoch in dayOfMonthValue valueDay)
+  (\date, valueDay => normalizeGregorianDay valueDay date)
 
-gregorianMonthLens : Lens' GregorianDate Month
+gregorianMonthLens : Lens' GregorianDate Integer
 gregorianMonthLens = lens
-  (\date => let (_, valueMonth, _) = civilFromDays date.daysSinceEpoch in valueMonth)
-  (\date, valueMonth => normalizeGregorianMonth (monthNumber valueMonth - 1) date)
+  (\date => let (_, valueMonth, _) = civilFromDays date.daysSinceEpoch in monthNumber valueMonth - 1)
+  (\date, valueMonth => normalizeGregorianMonth valueMonth date)
 
 gregorianYearLens : Lens' GregorianDate Year
 gregorianYearLens = lens

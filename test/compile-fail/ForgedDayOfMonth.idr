@@ -1,4 +1,5 @@
 module ForgedDayOfMonth
+-- EXPECT: MkDayOfMonth is private.
 
 import IotaTime
 

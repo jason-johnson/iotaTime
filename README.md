@@ -75,7 +75,9 @@ components = yearMonthDay {calendar = Gregorian} date
 - `WeekNumber` is also an opaque semantic integer. Gregorian week-date arithmetic intentionally supports zero and negative week numbers for HodaTime compatibility.
 - `yearValue`, `dayOfMonthValue`, and `weekNumberValue` explicitly expose integer representations when arithmetic is required. Component constructors remain hidden.
 
-The `day`, `monthl`, and `year` optics focus on `DayOfMonth`, the calendar's month type, and `Year` respectively. Their setters therefore accept domain values rather than raw integers. Date-level normalization still applies: setting February's day to 31 rolls into March, and setting January 31's month to February clamps the day to February's end.
+The optics preserve HodaTime's operational semantics. `day` focuses on a one-based `Integer` and `monthl` on a zero-based `Integer`, so transformations can cross component boundaries: modifying December 31's day by `(+ 1)` produces January 1, and setting March's day to 40 moves into April. `year` focuses on `Year`; because every integer year is representable, `Year` safely supports numeric arithmetic such as `(+ 1)`. Every setter normalizes to another valid `CalendarDate`.
+
+`DayOfMonth` remains the refined civil component returned by `yearMonthDay` and accepted by `calendarDate`. The distinction is intentional: a standalone day-of-month must be in 1 through 31, while an intermediate operational lens value may overflow because the surrounding date supplies the context needed to normalize it.
 
 Arithmetic rollover is explicit rather than encoded as an invalid component assignment:
 
@@ -100,12 +102,12 @@ The public Gregorian operations are:
 - `refineGregorianDate`, `refineGregorianNthDay`, `refineGregorianWeekDate`, and `refineGregorianDays` handle values first learned at runtime. They return `Either GregorianDateError (CalendarDate Gregorian)` and are the only fallible construction boundary.
 - `isLeapYear`, `maxDaysInMonth`, and the `isValidGregorian...` predicates expose Gregorian rules and decision procedures.
 - `dayOfWeek`, `next`, and `previous` provide calendar-polymorphic weekday navigation. Date-returning operations clamp at October 15, 1582, so they preserve the type's validity invariant without `Maybe`.
-- `yearMonthDay`, `month`, and the `day`, `monthl`, and `year` lenses expose typed date components.
+- `yearMonthDay` and `month` expose typed civil components; the operational `day`, `monthl`, and `year` lenses preserve HodaTime's normalizing update behavior.
 
 `gregorianFromDays` and `toDays` convert relative to the March 1, 2000 epoch. Flat days before the public Gregorian boundary cannot be constructed without an impossible proof. The generic `fromDays` method carries the same calendar-specific proof requirement.
 
 Lens updates normalize component combinations and clamp results at October 15, 1582. These operational lenses intentionally do not satisfy every traditional lens law: for example, setting January 31's month to February produces February 29 in a leap year. Arbitrary integer rollover uses the explicit normalization operations described above.
 
-The negative compiler fixtures under `test/compile-fail/` verify that invalid component literals, forged component/date representations, invalid leap days, pre-changeover dates, absent fifth weekdays, and pre-changeover flat days remain compile errors.
+The negative compiler fixtures under `test/compile-fail/` verify that invalid component literals, forged component/date representations, invalid leap days, pre-changeover dates, absent fifth weekdays, and pre-changeover flat days remain compile errors. Each fixture declares an expected diagnostic fragment so unrelated import or harness failures cannot produce false positives.
 
 The optics in `IotaTime.Optics` use the dependency-free van Laarhoven representation. They can be consumed directly by code using the same rank-2 lens type.

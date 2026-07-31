@@ -1,4 +1,5 @@
 module ForgedYear
+-- EXPECT: MkYear is private.
 
 import IotaTime
 

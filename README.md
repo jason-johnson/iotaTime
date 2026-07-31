@@ -54,45 +54,36 @@ idris2 --build test/iotaTime-test.ipkg
 
 ## Gregorian calendar API
 
-> **Transitional API:** The current Gregorian surface preserves HodaTime behavior while the interface is being ported and tested. Its `Maybe` constructors, raw public `CalendarDate`, and parallel `ValidatedDate` wrapper do not yet satisfy the project-wide design goal above. They are scaffolding for the next redesign, in which `CalendarDate` itself will be proof-carrying and invalid literal dates will fail to compile.
-
 Import `IotaTime` to use the calendar-polymorphic API and its Gregorian implementation. `CalendarDate Gregorian` is the Gregorian date type; `Month` and `DayOfWeek` provide the named Gregorian components.
 
 ```idris
-date : Maybe (CalendarDate Gregorian)
+date : CalendarDate Gregorian
 date = calendarDate 29 February 2000
 
-components : Maybe (Year, Month, DayOfMonth)
-components = map (yearMonthDay {calendar = Gregorian}) date
+components : (Year, Month, DayOfMonth)
+components = yearMonthDay {calendar = Gregorian} date
+```
+
+`calendarDate` requires an erased proof of `So (isValidGregorianDate day month year)`. Idris finds that proof automatically for valid literals. Invalid literals fail to compile:
+
+```idris
+invalidDate : CalendarDate Gregorian
+invalidDate = calendarDate 29 February 2021
+-- Compile error: Can't find an implementation for So False.
 ```
 
 The public Gregorian operations are:
 
-- `calendarDate day month year` validates a civil date and rejects dates before October 15, 1582.
-- `fromNthDay` constructs the first through fifth, or last, requested weekday in a month.
-- `fromWeekDate` uses Sunday-based arithmetic week numbering, matching HodaTime. Week one contains January 1; integer week numbers are not restricted to positive values.
-- `isLeapYear` and `maxDaysInMonth` expose Gregorian calendar rules.
-- `dayOfWeek`, `next`, and `previous` provide calendar-polymorphic weekday navigation.
+- `calendarDate`, `fromNthDay`, `fromWeekDate`, and `gregorianFromDays` construct dates under erased validity proofs. Statically invalid calls do not compile.
+- `refineGregorianDate`, `refineGregorianNthDay`, `refineGregorianWeekDate`, and `refineGregorianDays` handle values first learned at runtime. They return `Either GregorianDateError (CalendarDate Gregorian)` and are the only fallible construction boundary.
+- `isLeapYear`, `maxDaysInMonth`, and the `isValidGregorian...` predicates expose Gregorian rules and decision procedures.
+- `dayOfWeek`, `next`, and `previous` provide calendar-polymorphic weekday navigation. Date-returning operations clamp at October 15, 1582, so they preserve the type's validity invariant without `Maybe`.
 - `yearMonthDay`, `month`, and the `day`, `monthl`, and `year` lenses expose date components. `monthl` is zero-based.
 
-`fromDays` and `toDays` are raw, inverse representation conversions relative to the March 1, 2000 epoch. They intentionally represent dates before the public Gregorian boundary. Validity belongs to smart constructors; lens updates normalize overflowing components and clamp results at October 15, 1582. Consequently these operational lenses intentionally do not satisfy every traditional lens law: for example, setting day 40 on March 1, 2000 produces April 9, 2000.
+`gregorianFromDays` and `toDays` convert relative to the March 1, 2000 epoch. Flat days before the public Gregorian boundary cannot be constructed without an impossible proof. The generic `fromDays` method carries the same calendar-specific proof requirement.
 
-### Validated dates
+Lens updates normalize overflowing components and clamp results at October 15, 1582. These operational lenses intentionally do not satisfy every traditional lens law: for example, setting day 40 on March 1, 2000 produces April 9, 2000.
 
-`ValidatedDate calendar` is an opaque wrapper for code that must carry calendar validity in the type. Existing `CalendarDate` operations remain available for HodaTime compatibility and raw representation work.
-
-```idris
-safeDate : Maybe (ValidatedDate Gregorian)
-safeDate = validatedCalendarDate 29 February 2000
-
-safeComponents : Maybe (Year, Month, DayOfMonth)
-safeComponents = map validatedYearMonthDay safeDate
-```
-
-- `validateDate` checks an existing `CalendarDate`; `validatedFromDays` checks a raw day count.
-- `validatedCalendarDate`, `validatedFromNthDay`, and `validatedFromWeekDate` are Gregorian smart constructors that return the opaque type directly.
-- `validatedToDays`, `validatedYearMonthDay`, and `validatedDayOfWeek` inspect a validated date without discarding its guarantee.
-- `updateValidated`, `nextValidated`, and `previousValidated` revalidate their results and return `Nothing` if an operation crosses the calendar's valid boundary.
-- `forgetValidation` explicitly returns to the raw compatibility API. `validatedEquals` and `validatedCompare` delegate comparison to the underlying calendar date.
+The negative compiler fixtures under `test/compile-fail/` verify that invalid leap days, pre-changeover dates, absent fifth weekdays, and pre-changeover flat days remain compile errors.
 
 The optics in `IotaTime.Optics` use the dependency-free van Laarhoven representation. They can be consumed directly by code using the same rank-2 lens type.

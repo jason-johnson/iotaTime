@@ -51,3 +51,6 @@ jobs:
 
       - name: Run tests
         run: ./test/build/exec/iotaTime-test
+
+      - name: Run compile-fail tests
+        run: sh test/run-compile-fail-tests.sh

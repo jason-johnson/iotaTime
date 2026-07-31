@@ -32,6 +32,13 @@ modifyDateYear transform = map (modify transform (year {calendar = Gregorian}))
 weekday : Maybe (CalendarDate Gregorian) -> Maybe DayOfWeek
 weekday = map (dayOfWeek {calendar = Gregorian})
 
+validatedYmd : Maybe (ValidatedDate Gregorian) -> Maybe (Year, Month, DayOfMonth)
+validatedYmd = map validatedYearMonthDay
+
+isNothing : Maybe value -> Bool
+isNothing Nothing = True
+isNothing (Just _) = False
+
 rawDaySamples : List Integer
 rawDaySamples =
     [ -1000000, -152446, -152445, -152444, -1, 0, 1, 42, 36524, 146096, 146097, 1000000 ]
@@ -74,6 +81,34 @@ gregorianCases =
       (ymd (calendarDate 15 October 1582) == Just (1582, October, 15))
   , MkRuntimeCase "date before Gregorian changeover is rejected"
       (calendarDate 14 October 1582 == Nothing)
+        , MkRuntimeCase "raw pre-changeover date cannot cross the validated boundary"
+            (isNothing (validateDate {calendar = Gregorian}
+                (fromDays {calendar = Gregorian} (-152445))))
+        , MkRuntimeCase "validated raw conversion accepts the Gregorian changeover"
+            (validatedYmd (validatedFromDays {calendar = Gregorian} (-152444)) ==
+                Just (1582, October, 15))
+        , MkRuntimeCase "validated civil constructor preserves a valid date"
+            (validatedYmd (validatedCalendarDate 29 February 2000) ==
+                Just (2000, February, 29))
+        , MkRuntimeCase "validated civil constructor rejects an invalid date"
+            (isNothing (validatedCalendarDate 30 February 2000))
+        , MkRuntimeCase "validated update rejects crossing the Gregorian boundary"
+            (case validatedCalendarDate 15 October 1582 of
+                Nothing => False
+                Just date => isNothing (previousValidated 1 Thursday date))
+        , MkRuntimeCase "validated navigation preserves valid results"
+            (case validatedCalendarDate 31 January 2000 of
+                Nothing => False
+                Just date => validatedYmd (nextValidated 1 Monday date) ==
+                    Just (2000, February, 7))
+        , MkRuntimeCase "validated dates preserve underlying equality"
+            (case (validatedCalendarDate 1 March 2000, validatedCalendarDate 1 March 2000) of
+                (Just left, Just right) => validatedEquals left right
+                _ => False)
+        , MkRuntimeCase "validated dates preserve underlying ordering"
+            (case (validatedCalendarDate 29 February 2000, validatedCalendarDate 1 March 2000) of
+                (Just left, Just right) => validatedCompare left right == LT
+                _ => False)
   , MkRuntimeCase "invalid day of month is rejected"
       (calendarDate 30 February 2000 == Nothing)
   , MkRuntimeCase "2000 is a leap year"
@@ -134,6 +169,9 @@ gregorianCases =
                 Just (2000, February, 14))
   , MkRuntimeCase "third Monday of January 2000"
       (ymd (fromNthDay Third Monday January 2000) == Just (2000, January, 17))
+    , MkRuntimeCase "validated nth-day constructor preserves its guarantee"
+            (validatedYmd (validatedFromNthDay Third Monday January 2000) ==
+                Just (2000, January, 17))
   , MkRuntimeCase "last weekday includes a matching final day"
       (ymd (fromNthDay Last Sunday December 2000) == Just (2000, December, 31))
   , MkRuntimeCase "fifth weekday is rejected when absent"
@@ -144,6 +182,9 @@ gregorianCases =
       (ymd (fromWeekDate 0 Sunday 2000) == Just (1999, December, 19))
   , MkRuntimeCase "Gregorian week five starts on January 23"
       (ymd (fromWeekDate 5 Sunday 2000) == Just (2000, January, 23))
+    , MkRuntimeCase "validated week-date constructor preserves its guarantee"
+            (validatedYmd (validatedFromWeekDate 5 Sunday 2000) ==
+                Just (2000, January, 23))
   ]
 
 export

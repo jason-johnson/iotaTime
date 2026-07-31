@@ -26,6 +26,7 @@ interface Calendar calendar where
   fromDays : Integer -> DateRep
   toDays : DateRep -> Integer
   toYmd : DateRep -> (Year, MonthRep, DayOfMonth)
+  isValidDate' : DateRep -> Bool
   calendarName : String
 
   day' : Lens' DateRep DayOfMonth
@@ -40,6 +41,73 @@ interface Calendar calendar where
 public export
 CalendarDate : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 CalendarDate calendar @{cal} = DateRep @{cal}
+
+export
+data ValidatedDate : (calendar : Type) -> {auto cal : Calendar calendar} -> Type where
+  MkValidatedDate : CalendarDate calendar @{cal} -> ValidatedDate calendar @{cal}
+
+public export
+validatedEquals : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                  Eq (CalendarDate calendar @{cal}) =>
+                  ValidatedDate calendar @{cal} -> ValidatedDate calendar @{cal} -> Bool
+validatedEquals (MkValidatedDate left) (MkValidatedDate right) = left == right
+
+public export
+validatedCompare : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                   Ord (CalendarDate calendar @{cal}) =>
+                   ValidatedDate calendar @{cal} -> ValidatedDate calendar @{cal} -> Ordering
+validatedCompare (MkValidatedDate left) (MkValidatedDate right) = compare left right
+
+public export
+validateDate : {calendar : Type} -> {auto cal : Calendar calendar} ->
+               CalendarDate calendar @{cal} -> Maybe (ValidatedDate calendar @{cal})
+validateDate @{cal} date =
+  if isValidDate' @{cal} date then Just (MkValidatedDate date) else Nothing
+
+public export
+validatedFromDays : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                    Integer -> Maybe (ValidatedDate calendar @{cal})
+validatedFromDays @{cal} = validateDate @{cal} . fromDays @{cal}
+
+public export
+forgetValidation : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                   ValidatedDate calendar @{cal} -> CalendarDate calendar @{cal}
+forgetValidation (MkValidatedDate date) = date
+
+public export
+validatedToDays : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                  ValidatedDate calendar @{cal} -> Integer
+validatedToDays @{cal} = toDays @{cal} . forgetValidation
+
+public export
+validatedYearMonthDay : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                        ValidatedDate calendar @{cal} ->
+                        (Year, MonthRep @{cal}, DayOfMonth)
+validatedYearMonthDay @{cal} = toYmd @{cal} . forgetValidation
+
+public export
+validatedDayOfWeek : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                     ValidatedDate calendar @{cal} -> WeekdayRep @{cal}
+validatedDayOfWeek @{cal} = dayOfWeek @{cal} . forgetValidation
+
+public export
+updateValidated : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                  (CalendarDate calendar @{cal} -> CalendarDate calendar @{cal}) ->
+                  ValidatedDate calendar @{cal} -> Maybe (ValidatedDate calendar @{cal})
+updateValidated @{cal} transform = validateDate @{cal} . transform . forgetValidation
+
+public export
+nextValidated : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                Integer -> WeekdayRep @{cal} ->
+                ValidatedDate calendar @{cal} -> Maybe (ValidatedDate calendar @{cal})
+nextValidated @{cal} count target = updateValidated @{cal} (next @{cal} count target)
+
+public export
+previousValidated : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                    Integer -> WeekdayRep @{cal} ->
+                    ValidatedDate calendar @{cal} -> Maybe (ValidatedDate calendar @{cal})
+previousValidated @{cal} count target =
+  updateValidated @{cal} (previous @{cal} count target)
 
 public export
 day : {calendar : Type} -> {auto cal : Calendar calendar} -> Lens' (CalendarDate calendar @{cal}) DayOfMonth

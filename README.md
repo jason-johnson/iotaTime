@@ -58,4 +58,22 @@ The public Gregorian operations are:
 
 `fromDays` and `toDays` are raw, inverse representation conversions relative to the March 1, 2000 epoch. They intentionally represent dates before the public Gregorian boundary. Validity belongs to smart constructors; lens updates normalize overflowing components and clamp results at October 15, 1582. Consequently these operational lenses intentionally do not satisfy every traditional lens law: for example, setting day 40 on March 1, 2000 produces April 9, 2000.
 
+### Validated dates
+
+`ValidatedDate calendar` is an opaque wrapper for code that must carry calendar validity in the type. Existing `CalendarDate` operations remain available for HodaTime compatibility and raw representation work.
+
+```idris
+safeDate : Maybe (ValidatedDate Gregorian)
+safeDate = validatedCalendarDate 29 February 2000
+
+safeComponents : Maybe (Year, Month, DayOfMonth)
+safeComponents = map validatedYearMonthDay safeDate
+```
+
+- `validateDate` checks an existing `CalendarDate`; `validatedFromDays` checks a raw day count.
+- `validatedCalendarDate`, `validatedFromNthDay`, and `validatedFromWeekDate` are Gregorian smart constructors that return the opaque type directly.
+- `validatedToDays`, `validatedYearMonthDay`, and `validatedDayOfWeek` inspect a validated date without discarding its guarantee.
+- `updateValidated`, `nextValidated`, and `previousValidated` revalidate their results and return `Nothing` if an operation crosses the calendar's valid boundary.
+- `forgetValidation` explicitly returns to the raw compatibility API. `validatedEquals` and `validatedCompare` delegate comparison to the underlying calendar date.
+
 The optics in `IotaTime.Optics` use the dependency-free van Laarhoven representation. They can be consumed directly by code using the same rank-2 lens type.

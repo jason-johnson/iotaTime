@@ -241,6 +241,7 @@ Calendar Gregorian where
   fromDays = MkGregorianDate
   toDays date = date.daysSinceEpoch
   toYmd = civilFromDays . daysSinceEpoch
+  isValidDate' date = date.daysSinceEpoch >= firstGregorianDay
   calendarName = "Gregorian"
 
   day' = gregorianDayLens
@@ -261,6 +262,13 @@ calendarDate valueDay valueMonth valueYear =
         else Just (MkGregorianDate rawDays)
 
 public export
+validatedCalendarDate : DayOfMonth -> Month -> Year -> Maybe (ValidatedDate Gregorian)
+validatedCalendarDate valueDay valueMonth valueYear =
+  case calendarDate valueDay valueMonth valueYear of
+    Nothing => Nothing
+    Just date => validateDate date
+
+public export
 fromNthDay : DayNth -> DayOfWeek -> Month -> Year -> Maybe (CalendarDate Gregorian)
 fromNthDay nth target valueMonth valueYear =
   let monthLength = maxDaysInMonth valueMonth valueYear
@@ -278,6 +286,13 @@ fromNthDay nth target valueMonth valueYear =
    in calendarDate valueDay valueMonth valueYear
 
 public export
+validatedFromNthDay : DayNth -> DayOfWeek -> Month -> Year -> Maybe (ValidatedDate Gregorian)
+validatedFromNthDay nth target valueMonth valueYear =
+  case fromNthDay nth target valueMonth valueYear of
+    Nothing => Nothing
+    Just date => validateDate date
+
+public export
 fromWeekDate : WeekNumber -> DayOfWeek -> Year -> Maybe (CalendarDate Gregorian)
 fromWeekDate week target valueYear =
   let firstDay = daysFromCivil valueYear January 1
@@ -286,3 +301,10 @@ fromWeekDate week target valueYear =
   in if result < firstGregorianDay
         then Nothing
         else Just (MkGregorianDate result)
+
+public export
+validatedFromWeekDate : WeekNumber -> DayOfWeek -> Year -> Maybe (ValidatedDate Gregorian)
+validatedFromWeekDate week target valueYear =
+  case fromWeekDate week target valueYear of
+    Nothing => Nothing
+    Just date => validateDate date

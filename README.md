@@ -34,3 +34,28 @@ idris2 --install iotaTime.ipkg
 idris2 --build test/iotaTime-test.ipkg
 ./test/build/exec/iotaTime-test
 ```
+
+## Gregorian calendar API
+
+Import `IotaTime` to use the calendar-polymorphic API and its Gregorian implementation. `CalendarDate Gregorian` is the Gregorian date type; `Month` and `DayOfWeek` provide the named Gregorian components.
+
+```idris
+date : Maybe (CalendarDate Gregorian)
+date = calendarDate 29 February 2000
+
+components : Maybe (Year, Month, DayOfMonth)
+components = map (yearMonthDay {calendar = Gregorian}) date
+```
+
+The public Gregorian operations are:
+
+- `calendarDate day month year` validates a civil date and rejects dates before October 15, 1582.
+- `fromNthDay` constructs the first through fifth, or last, requested weekday in a month.
+- `fromWeekDate` uses Sunday-based arithmetic week numbering, matching HodaTime. Week one contains January 1; integer week numbers are not restricted to positive values.
+- `isLeapYear` and `maxDaysInMonth` expose Gregorian calendar rules.
+- `dayOfWeek`, `next`, and `previous` provide calendar-polymorphic weekday navigation.
+- `yearMonthDay`, `month`, and the `day`, `monthl`, and `year` lenses expose date components. `monthl` is zero-based.
+
+`fromDays` and `toDays` are raw, inverse representation conversions relative to the March 1, 2000 epoch. They intentionally represent dates before the public Gregorian boundary. Validity belongs to smart constructors; lens updates normalize overflowing components and clamp results at October 15, 1582. Consequently these operational lenses intentionally do not satisfy every traditional lens law: for example, setting day 40 on March 1, 2000 produces April 9, 2000.
+
+The optics in `IotaTime.Optics` use the dependency-free van Laarhoven representation. They can be consumed directly by code using the same rank-2 lens type.

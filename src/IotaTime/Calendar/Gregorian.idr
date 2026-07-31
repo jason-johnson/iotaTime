@@ -238,7 +238,7 @@ Calendar Gregorian where
   MonthRep = Month
   WeekdayRep = DayOfWeek
 
-  fromDays value = MkGregorianDate (clampToGregorian value)
+  fromDays = MkGregorianDate
   toDays date = date.daysSinceEpoch
   toYmd = civilFromDays . daysSinceEpoch
   calendarName = "Gregorian"
@@ -283,6 +283,6 @@ fromWeekDate week target valueYear =
   let firstDay = daysFromCivil valueYear January 1
       firstWeekStart = firstDay - weekdayNumber (gregorianDayOfWeek (MkGregorianDate firstDay))
       result = firstWeekStart + 7 * (week - 1) + weekdayNumber target
-   in if week < 1 || result < firstGregorianDay
+  in if result < firstGregorianDay
         then Nothing
         else Just (MkGregorianDate result)

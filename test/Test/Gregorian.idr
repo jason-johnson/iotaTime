@@ -32,12 +32,42 @@ modifyDateYear transform = map (modify transform (year {calendar = Gregorian}))
 weekday : Maybe (CalendarDate Gregorian) -> Maybe DayOfWeek
 weekday = map (dayOfWeek {calendar = Gregorian})
 
+rawDaySamples : List Integer
+rawDaySamples =
+    [ -1000000, -152446, -152445, -152444, -1, 0, 1, 42, 36524, 146096, 146097, 1000000 ]
+
+rawDayRoundTrips : Bool
+rawDayRoundTrips = all
+    (\value => toDays {calendar = Gregorian} (fromDays {calendar = Gregorian} value) == value)
+    rawDaySamples
+
+civilRoundTrips : Integer -> Integer -> Bool
+civilRoundTrips current final =
+    if current > final
+        then True
+        else
+            let date = fromDays {calendar = Gregorian} current
+                (valueYear, valueMonth, valueDay) = yearMonthDay {calendar = Gregorian} date
+             in case calendarDate valueDay valueMonth valueYear of
+                    Just rebuilt =>
+                        if toDays {calendar = Gregorian} rebuilt == current
+                            then civilRoundTrips (current + 1) final
+                            else False
+                    Nothing => False
+
+validCivilRoundTrips : Bool
+validCivilRoundTrips = civilRoundTrips (-152444) 146096
+
 gregorianCases : List RuntimeCase
 gregorianCases =
     [ MkRuntimeCase "Gregorian epoch decodes to March 1 2000"
             (yearMonthDay {calendar = Gregorian} (fromDays {calendar = Gregorian} 0) == (2000, March, 1))
     , MkRuntimeCase "flat day conversion round-trips"
             (toDays {calendar = Gregorian} (fromDays {calendar = Gregorian} 42) == 42)
+        , MkRuntimeCase "raw day conversion round-trips across the Gregorian boundary"
+            rawDayRoundTrips
+        , MkRuntimeCase "civil conversion round-trips every valid day through February 2400"
+            validCivilRoundTrips
         , MkRuntimeCase "day lens views the day of month"
             (map (view (day {calendar = Gregorian})) (calendarDate 31 January 2000) == Just 31)
     , MkRuntimeCase "Gregorian changeover is the first valid date"
@@ -94,6 +124,8 @@ gregorianCases =
       (fromNthDay Fifth Monday February 2000 == Nothing)
   , MkRuntimeCase "Gregorian week one starts on Sunday"
       (ymd (fromWeekDate 1 Sunday 2000) == Just (1999, December, 26))
+  , MkRuntimeCase "Gregorian week zero uses arithmetic week numbering"
+      (ymd (fromWeekDate 0 Sunday 2000) == Just (1999, December, 19))
   , MkRuntimeCase "Gregorian week five starts on January 23"
       (ymd (fromWeekDate 5 Sunday 2000) == Just (2000, January, 23))
   ]

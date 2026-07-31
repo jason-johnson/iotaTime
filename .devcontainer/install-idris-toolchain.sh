@@ -118,5 +118,5 @@ chown -R vscode:vscode "${PACK_HOME}/.local" "${PACK_HOME}/.cache" "${PACK_HOME}
 rm -rf "$BUILD_ROOT"
 
 sudo -u vscode env PATH="$PATH" "${PACK_BIN_DIR}/idris2" --version
-sudo -u vscode env PATH="$PATH" "${PACK_BIN_DIR}/pack" info
+sudo -u vscode env PATH="$PATH" "${PACK_BIN_DIR}/pack" help
 sudo -u vscode env PATH="$PATH" "${PACK_BIN_DIR}/idris2-lsp" --version

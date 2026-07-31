@@ -25,6 +25,6 @@
       }
     }
   },
-  "postCreateCommand": "git lfs install && idris2 --version && pack info && idris2-lsp --version && node --version && gh --version",
+  "postCreateCommand": "git lfs install && idris2 --version && pack help && idris2-lsp --version && node --version && gh --version",
   "remoteUser": "vscode"
 }

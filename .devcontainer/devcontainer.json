@@ -9,21 +9,22 @@
       "username": "vscode",
       "installZsh": true,
       "upgradePackages": false
-    }
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   "customizations": {
     "vscode": {
       "extensions": [
-        "zjhmale.idris2-lsp",
+        "bamboo.idris2-lsp",
         "redhat.vscode-yaml",
         "github.vscode-github-actions",
         "eamodio.gitlens"
       ],
       "settings": {
-        "idris2.idrisCommand": "/usr/local/bin/idris2"
+        "idris2-lsp.path": "/home/vscode/.local/bin/idris2-lsp"
       }
     }
   },
-  "postCreateCommand": "idris2 --version",
+  "postCreateCommand": "git lfs install && idris2 --version && pack info && idris2-lsp --version && node --version && gh --version",
   "remoteUser": "vscode"
 }

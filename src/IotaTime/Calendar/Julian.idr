@@ -167,6 +167,13 @@ isValidJulianDays : Integer -> Bool
 isValidJulianDays value = value >= -746631
 
 public export
+HasCalendarDate JulianDate where
+  calendarDays date = date.daysSinceEpoch + 13
+  acceptsCalendarDays days = isValidJulianDays (days - 13)
+  calendarDateFromDays days = MkJulianDate (days - 13)
+  calendarDateName = "Julian"
+
+public export
 isValidJulianDate : DayOfMonth -> JulianMonth -> Year -> Bool
 isValidJulianDate valueDay valueMonth valueYear =
   dayOfMonthValue valueDay <= dayOfMonthValue (maxJulianDaysInMonth valueMonth valueYear) &&

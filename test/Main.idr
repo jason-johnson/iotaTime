@@ -8,6 +8,7 @@ import Test.LocalTime
 import Test.CalendarDateTime
 import Test.Julian
 import Test.Hebrew
+import Test.WithCalendar
 import Test.Support
 
 proofsChecked : ()
@@ -32,6 +33,7 @@ main = do
   calendarDateTimePassed <- Test.CalendarDateTime.run
   julianPassed <- Test.Julian.run
   hebrewPassed <- Test.Hebrew.run
+  withCalendarPassed <- Test.WithCalendar.run
   finalizeResults
     [ ("proof tests (compile-time)", True)
     , ("runtime behavior tests", runtimePassed)
@@ -41,4 +43,5 @@ main = do
     , ("calendar date-time tests", calendarDateTimePassed)
     , ("Julian calendar tests", julianPassed)
     , ("Hebrew calendar tests", hebrewPassed)
+    , ("withCalendar conversion tests", withCalendarPassed)
     ]

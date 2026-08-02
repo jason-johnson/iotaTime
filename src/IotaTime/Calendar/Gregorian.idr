@@ -191,6 +191,13 @@ public export
 isValidGregorianDays : Integer -> Bool
 isValidGregorianDays value = value >= -152444
 
+public export
+HasCalendarDate GregorianDate where
+  calendarDays = daysSinceEpoch
+  acceptsCalendarDays = isValidGregorianDays
+  calendarDateFromDays days = MkGregorianDate days
+  calendarDateName = "Gregorian"
+
 clampToGregorian : Integer -> Integer
 clampToGregorian value = max firstGregorianDay value
 

@@ -186,3 +186,19 @@ The calendar implements the 19-year leap cycle, the Rosh Hashanah postponement r
 - `isHebrewLeapYear`, `daysInHebrewYear`, `maxHebrewDaysInMonth`, and the `isValidHebrew...` predicates expose Hebrew decision procedures.
 - Month periods skip absent Adar I in common years. Year periods map leap-year Adar I into common-year Adar and clamp the day when necessary.
 - Hebrew dates support weekday navigation, mixed `CalendarDateTime` periods, and the same capability constraints as Gregorian and Julian dates.
+
+## Calendar conversion
+
+`withCalendar` preserves the underlying absolute day and reinterprets it through the target calendar. The expected result type selects the target representation:
+
+```idris
+christmasJulian : Either CalendarConversionError (CalendarDate Julian)
+christmasJulian =
+	IotaTime.Calendar.withCalendar (calendarDate 25 December 2024)
+
+newYearHebrew : Either CalendarConversionError (CalendarDate HebrewCivil)
+newYearHebrew =
+	IotaTime.Calendar.withCalendar (calendarDate 16 September 2023)
+```
+
+The result is an `Either` because each calendar has a different supported range; `TargetCalendarOutOfRange` reports the target name and absolute day. `IotaTime.CalendarDateTime.withCalendar` applies the same date conversion while preserving the `LocalTime` unchanged.

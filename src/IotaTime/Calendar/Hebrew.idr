@@ -412,6 +412,13 @@ isValidHebrewDays : Integer -> Bool
 isValidHebrewDays value = value >= -2103607
 
 public export
+{numbering : HebrewNumbering} -> HasCalendarDate (HebrewDate numbering) where
+  calendarDays = daysSinceEpoch
+  acceptsCalendarDays = isValidHebrewDays
+  calendarDateFromDays days = makeHebrewDate days
+  calendarDateName = "Hebrew"
+
+public export
 total
 isValidHebrewDate : (valueDay : DayOfMonth) -> (valueYear : Year) ->
                     HebrewMonth numbering valueYear -> Bool

@@ -32,6 +32,19 @@ localTimeOfDay : {calendar : Type} -> {auto cal : Calendar calendar} ->
 localTimeOfDay = time
 
 public export
+withCalendar : {source : Type} -> {target : Type} ->
+               {auto sourceCal : Calendar source} ->
+               {auto targetCal : Calendar target} ->
+               {auto sourceRep : HasCalendarDate (CalendarDate source @{sourceCal})} ->
+               {auto targetRep : HasCalendarDate (CalendarDate target @{targetCal})} ->
+               CalendarDateTime source @{sourceCal} ->
+               Either CalendarConversionError (CalendarDateTime target @{targetCal})
+withCalendar @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value =
+  case IotaTime.Calendar.withCalendar @{sourceRep} @{targetRep} value.date of
+    Left error => Left error
+    Right convertedDate => Right (MkCalendarDateTime convertedDate value.time)
+
+public export
 implementation {calendar : Type} -> {cal : Calendar calendar} ->
   HasCalendar (CalendarDateTime calendar @{cal}) where
   calendarCapability = ()

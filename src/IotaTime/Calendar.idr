@@ -7,6 +7,9 @@ public export
 data DayNth = First | Second | Third | Fourth | Fifth | Last
 
 public export
+data CalendarConversionError = TargetCalendarOutOfRange String Integer
+
+public export
 interface Calendar calendar where
   DateRep : Type
   MonthRep : Year -> Type
@@ -32,6 +35,14 @@ interface Calendar calendar where
 public export
 CalendarDate : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 CalendarDate calendar @{cal} = DateRep @{cal}
+
+public export
+interface HasCalendarDate date where
+  calendarDays : date -> Integer
+  acceptsCalendarDays : Integer -> Bool
+  calendarDateFromDays : (days : Integer) ->
+                         {auto 0 valid : So (acceptsCalendarDays days)} -> date
+  calendarDateName : String
 
 public export
 year : {calendar : Type} -> {auto cal : Calendar calendar} ->
@@ -66,3 +77,16 @@ yearMonthDay : {calendar : Type} -> {auto cal : Calendar calendar} ->
                (valueYear : Year ** (MonthRep @{cal} valueYear, DayOfMonth))
 yearMonthDay @{cal} date =
   (year' @{cal} date ** toYmd @{cal} date)
+
+public export
+withCalendar : {sourceDate : Type} -> {targetDate : Type} ->
+               {auto sourceRep : HasCalendarDate sourceDate} ->
+               {auto targetRep : HasCalendarDate targetDate} ->
+               sourceDate ->
+               Either CalendarConversionError targetDate
+withCalendar @{sourceRep} @{targetRep} date =
+  let valueDays = calendarDays @{sourceRep} date
+   in case choose (acceptsCalendarDays @{targetRep} valueDays) of
+        Left valid => Right (calendarDateFromDays @{targetRep} valueDays @{valid})
+        Right _ => Left
+          (TargetCalendarOutOfRange (calendarDateName @{targetRep}) valueDays)

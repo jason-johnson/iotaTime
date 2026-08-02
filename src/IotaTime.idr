@@ -1,8 +1,10 @@
 module IotaTime
 
 import public IotaTime.Period
+import public IotaTime.LocalTime
 import public IotaTime.Calendar
 import public IotaTime.Calendar.Gregorian
+import public IotaTime.CalendarDateTime
 
 public export
 record Instant where

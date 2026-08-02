@@ -70,10 +70,12 @@ Monoid (Period target) where
 ||| Types with calendar-relative date fields.
 public export
 interface HasCalendar target where
+  0 calendarCapability : ()
 
 ||| Types with local time-of-day fields.
 public export
 interface HasTime target where
+  0 timeCapability : ()
 
 ||| Types to which periods can be applied.
 public export

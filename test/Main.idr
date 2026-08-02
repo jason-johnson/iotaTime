@@ -4,6 +4,8 @@ import Test.Proof
 import Test.Runtime
 import Test.Regression
 import Test.Gregorian
+import Test.LocalTime
+import Test.CalendarDateTime
 import Test.Support
 
 proofsChecked : ()
@@ -22,9 +24,13 @@ main = do
   runtimePassed <- Test.Runtime.run
   regressionPassed <- Test.Regression.run
   gregorianPassed <- Test.Gregorian.run
+  localTimePassed <- Test.LocalTime.run
+  calendarDateTimePassed <- Test.CalendarDateTime.run
   finalizeResults
     [ ("proof tests (compile-time)", True)
     , ("runtime behavior tests", runtimePassed)
     , ("regression tests", regressionPassed)
     , ("Gregorian calendar tests", gregorianPassed)
+    , ("local time tests", localTimePassed)
+    , ("calendar date-time tests", calendarDateTimePassed)
     ]

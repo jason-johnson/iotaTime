@@ -1,6 +1,7 @@
 module IotaTime.Calendar
 
 import public IotaTime.Calendar.Component
+import IotaTime.Period
 
 public export
 data DayNth = First | Second | Third | Fourth | Fifth | Last
@@ -20,6 +21,9 @@ interface Calendar calendar where
   day' : DateRep -> DayOfMonth
   month' : DateRep -> MonthRep
   year' : DateRep -> Year
+
+  applyCalendarPeriod' : Period target -> DateRep -> DateRep
+  shiftCalendarDays' : Integer -> DateRep -> DateRep
 
   dayOfWeek : DateRep -> WeekdayRep
   next : Integer -> WeekdayRep -> DateRep -> DateRep
@@ -42,6 +46,17 @@ public export
 year : {calendar : Type} -> {auto cal : Calendar calendar} ->
   CalendarDate calendar @{cal} -> Year
 year @{cal} = year' @{cal}
+
+export
+applyCalendarPeriod : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                      Period target -> CalendarDate calendar @{cal} ->
+                      CalendarDate calendar @{cal}
+applyCalendarPeriod @{cal} = applyCalendarPeriod' @{cal}
+
+export
+shiftCalendarDays : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                    Integer -> CalendarDate calendar @{cal} -> CalendarDate calendar @{cal}
+shiftCalendarDays @{cal} = shiftCalendarDays' @{cal}
 
 public export
 yearMonthDay : {calendar : Type} -> {auto cal : Calendar calendar} ->

@@ -229,7 +229,7 @@ modifyGregorianYear transform date =
       targetDay = min valueDay (maxDaysInMonth valueMonth targetYear)
    in makeDate targetYear valueMonth targetDay
 
-applyGregorianPeriod : Period GregorianDate -> GregorianDate -> GregorianDate
+applyGregorianPeriod : Period target -> GregorianDate -> GregorianDate
 applyGregorianPeriod period =
     shiftGregorianDays (periodDays period)
   . shiftGregorianDays (7 * periodWeeks period)
@@ -239,6 +239,7 @@ applyGregorianPeriod period =
 
 public export
 HasCalendar GregorianDate where
+  calendarCapability = ()
 
 public export
 ApplyPeriod GregorianDate where
@@ -277,6 +278,9 @@ Calendar Gregorian where
   day' date = let (_, _, value) = civilFromDays date.daysSinceEpoch in value
   month' date = let (_, value, _) = civilFromDays date.daysSinceEpoch in value
   year' date = let (value, _, _) = civilFromDays date.daysSinceEpoch in value
+
+  applyCalendarPeriod' = applyGregorianPeriod
+  shiftCalendarDays' = shiftGregorianDays
 
   dayOfWeek = gregorianDayOfWeek
   next = nextGregorian

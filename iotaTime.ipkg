@@ -6,6 +6,9 @@ sourcedir = "src"
 
 modules = IotaTime,
 		  IotaTime.Period,
+		  IotaTime.Time.Component,
+		  IotaTime.LocalTime,
 		  IotaTime.Calendar.Component,
 		  IotaTime.Calendar,
-		  IotaTime.Calendar.Gregorian
+		  IotaTime.Calendar.Gregorian,
+		  IotaTime.CalendarDateTime

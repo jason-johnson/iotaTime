@@ -36,6 +36,9 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `iotaTime.ipkg` — Idris 2 library package definition
 - `src/IotaTime.idr` — library entry module
 - `src/IotaTime/Period.idr` — target-indexed calendar-relative periods
+- `src/IotaTime/Time/Component.idr` — opaque, range-checked clock components
+- `src/IotaTime/LocalTime.idr` — proof-carrying local time of day
+- `src/IotaTime/CalendarDateTime.idr` — calendar date paired with local time
 - `src/IotaTime/Calendar/Component.idr` — opaque and refined calendar component types
 - `test/iotaTime-test.ipkg` — test package
 - `test/Main.idr` — test orchestrator
@@ -93,6 +96,28 @@ later = applyPeriod (months 2 <+> days 3) (calendarDate 31 January 2000)
 Combining periods with `<+>` aggregates corresponding fields before application. Thus `months 1 <+> months 1` is a two-month period and moves January 31 directly to March 31 rather than clamping through February. Date fields apply from largest to smallest: years, months, weeks, then days. Every application returns a valid date; Gregorian results clamp at October 15, 1582.
 
 The target index prevents applying unsupported units to a value. Date units require `HasCalendar target`, time units require `HasTime target`, and mixed periods require both capabilities. For example, `months 2 <+> minutes 20` can target a `CalendarDateTime`, but neither a date-only nor a time-only value. The hidden constructor prevents callers from bypassing those constraints. `ApplyPeriod.applyPeriod` is the sole public application operation.
+
+## Local time and date-time
+
+`Hour`, `Minute`, `Second`, and `Nanosecond` are opaque refined components. Their literal ranges are 0–23, 0–59, 0–59, and 0–999,999,999 respectively. Invalid literals passed to `localTime` fail compilation; `refineLocalTime` validates integers learned at runtime and returns `Either LocalTimeError LocalTime`.
+
+```idris
+late : LocalTime
+late = localTime 23 30 0 0
+
+wrapped : LocalTime
+wrapped = applyPeriod (hours 2) late
+-- 01:30:00
+
+lateDateTime : CalendarDateTime Gregorian
+lateDateTime = on late (calendarDate 31 January 2000)
+
+advanced : CalendarDateTime Gregorian
+advanced = applyPeriod (months 1 <+> hours 2) lateDateTime
+-- March 1, 2000 at 01:30:00
+```
+
+Time-only periods wrap a `LocalTime` within its 24-hour day. On `CalendarDateTime`, date fields apply first from largest to smallest, then time fields apply and any positive or negative day carry adjusts the resulting date. `CalendarDate` supports only calendar units, `LocalTime` only time units, and `CalendarDateTime` both.
 
 `calendarDate` requires an erased proof of `So (isValidGregorianDate day month year)`. Idris finds that proof automatically for valid literals. Invalid literals fail to compile:
 

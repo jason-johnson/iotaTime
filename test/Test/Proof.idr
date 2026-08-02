@@ -7,9 +7,13 @@ data TimeCapability = TimeOnly
 data MixedCapability = CalendarAndTime
 
 HasCalendar CalendarCapability where
+	calendarCapability = ()
 HasTime TimeCapability where
+	timeCapability = ()
 HasCalendar MixedCapability where
+	calendarCapability = ()
 HasTime MixedCapability where
+	timeCapability = ()
 
 calendarPeriod : Period CalendarCapability
 calendarPeriod = months 2

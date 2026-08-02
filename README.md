@@ -40,6 +40,8 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/LocalTime.idr` — proof-carrying local time of day
 - `src/IotaTime/CalendarDateTime.idr` — calendar date paired with local time
 - `src/IotaTime/Calendar/Component.idr` — opaque and refined calendar component types
+- `src/IotaTime/Calendar/Gregorian.idr` — proof-carrying Gregorian calendar
+- `src/IotaTime/Calendar/Julian.idr` — proof-carrying Julian calendar
 - `test/iotaTime-test.ipkg` — test package
 - `test/Main.idr` — test orchestrator
 - `test/Test/Proof.idr` — compile-time proof tests
@@ -139,3 +141,24 @@ The public Gregorian operations are:
 `gregorianFromDays` and `toDays` convert relative to the March 1, 2000 epoch. Flat days before the public Gregorian boundary cannot be constructed without an impossible proof. The generic `fromDays` method carries the same calendar-specific proof requirement.
 
 The negative compiler fixtures under `test/compile-fail/` verify that invalid component literals, forged component/date/period representations, invalid leap days, pre-changeover dates, absent fifth weekdays, pre-changeover flat days, and periods with unsupported target capabilities remain compile errors. Each fixture declares an expected diagnostic fragment so unrelated import or harness failures cannot produce false positives.
+
+## Julian calendar API
+
+`CalendarDate Julian` uses the proleptic every-fourth-year leap rule from the Julian calendar's introduction on January 1, astronomical year -44 (45 BC). Earlier dates and flat days before `-746631` are rejected. Its calendar-local flat day zero is March 1, 2000 Julian.
+
+Julian components are nominally distinct from Gregorian components. Use `JulianMonth` and `JulianDayOfWeek` as their types, with constructors qualified through `JulianMonths` and `JulianWeekdays`:
+
+```idris
+leapDay : CalendarDate Julian
+leapDay = julianDate 29 JulianMonths.February 1900
+
+thirdMonday : CalendarDate Julian
+thirdMonday = julianFromNthDay Third JulianWeekdays.Monday JulianMonths.January 2000
+```
+
+The public Julian operations mirror the proof-carrying Gregorian boundary:
+
+- `julianDate`, `julianFromDays`, `julianFromNthDay`, and `julianFromWeekDate` require erased validity proofs, inferred automatically for valid literals.
+- `refineJulianDate`, `refineJulianDays`, `refineJulianNthDay`, and `refineJulianWeekDate` validate values learned at runtime.
+- `isJulianLeapYear`, `maxJulianDaysInMonth`, and the `isValidJulian...` predicates expose Julian rules.
+- Calendar periods and mixed `CalendarDateTime Julian` periods use the same target-indexed period API as Gregorian values.

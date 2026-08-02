@@ -4,6 +4,7 @@ import public IotaTime.Period
 import public IotaTime.LocalTime
 import public IotaTime.Calendar
 import public IotaTime.Calendar.Gregorian
+import public IotaTime.Calendar.Julian
 import public IotaTime.CalendarDateTime
 
 public export

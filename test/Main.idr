@@ -6,6 +6,7 @@ import Test.Regression
 import Test.Gregorian
 import Test.LocalTime
 import Test.CalendarDateTime
+import Test.Julian
 import Test.Support
 
 proofsChecked : ()
@@ -16,6 +17,7 @@ proofsChecked =
   let _ = roundTripConstructor in
   let _ = gregorianLeapCycle in
   let _ = gregorianCenturyException in
+  let _ = julianCenturyLeap in
   ()
 
 main : IO ()
@@ -26,6 +28,7 @@ main = do
   gregorianPassed <- Test.Gregorian.run
   localTimePassed <- Test.LocalTime.run
   calendarDateTimePassed <- Test.CalendarDateTime.run
+  julianPassed <- Test.Julian.run
   finalizeResults
     [ ("proof tests (compile-time)", True)
     , ("runtime behavior tests", runtimePassed)
@@ -33,4 +36,5 @@ main = do
     , ("Gregorian calendar tests", gregorianPassed)
     , ("local time tests", localTimePassed)
     , ("calendar date-time tests", calendarDateTimePassed)
+    , ("Julian calendar tests", julianPassed)
     ]

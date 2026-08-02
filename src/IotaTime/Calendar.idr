@@ -1,6 +1,5 @@
 module IotaTime.Calendar
 
-import public IotaTime.Optics
 import public IotaTime.Calendar.Component
 
 public export
@@ -18,15 +17,9 @@ interface Calendar calendar where
   toYmd : DateRep -> (Year, MonthRep, DayOfMonth)
   calendarName : String
 
-  day' : Lens' DateRep Integer
+  day' : DateRep -> DayOfMonth
   month' : DateRep -> MonthRep
-  monthl' : Lens' DateRep Integer
-  year' : Lens' DateRep Year
-
-  normalizeDay' : Integer -> DateRep -> DateRep
-  shiftDays' : Integer -> DateRep -> DateRep
-  normalizeMonth' : Integer -> DateRep -> DateRep
-  shiftMonths' : Integer -> DateRep -> DateRep
+  year' : DateRep -> Year
 
   dayOfWeek : DateRep -> WeekdayRep
   next : Integer -> WeekdayRep -> DateRep -> DateRep
@@ -38,7 +31,7 @@ CalendarDate calendar @{cal} = DateRep @{cal}
 
 public export
 day : {calendar : Type} -> {auto cal : Calendar calendar} ->
-  Lens' (CalendarDate calendar @{cal}) Integer
+  CalendarDate calendar @{cal} -> DayOfMonth
 day @{cal} = day' @{cal}
 
 public export
@@ -46,33 +39,9 @@ month : {calendar : Type} -> {auto cal : Calendar calendar} -> CalendarDate cale
 month @{cal} = month' @{cal}
 
 public export
-monthl : {calendar : Type} -> {auto cal : Calendar calendar} ->
-         Lens' (CalendarDate calendar @{cal}) Integer
-monthl @{cal} = monthl' @{cal}
-
-public export
-year : {calendar : Type} -> {auto cal : Calendar calendar} -> Lens' (CalendarDate calendar @{cal}) Year
+year : {calendar : Type} -> {auto cal : Calendar calendar} ->
+  CalendarDate calendar @{cal} -> Year
 year @{cal} = year' @{cal}
-
-public export
-normalizeDay : {calendar : Type} -> {auto cal : Calendar calendar} ->
-               Integer -> CalendarDate calendar @{cal} -> CalendarDate calendar @{cal}
-normalizeDay @{cal} = normalizeDay' @{cal}
-
-public export
-shiftDays : {calendar : Type} -> {auto cal : Calendar calendar} ->
-            Integer -> CalendarDate calendar @{cal} -> CalendarDate calendar @{cal}
-shiftDays @{cal} = shiftDays' @{cal}
-
-public export
-normalizeMonth : {calendar : Type} -> {auto cal : Calendar calendar} ->
-                 Integer -> CalendarDate calendar @{cal} -> CalendarDate calendar @{cal}
-normalizeMonth @{cal} = normalizeMonth' @{cal}
-
-public export
-shiftMonths : {calendar : Type} -> {auto cal : Calendar calendar} ->
-              Integer -> CalendarDate calendar @{cal} -> CalendarDate calendar @{cal}
-shiftMonths @{cal} = shiftMonths' @{cal}
 
 public export
 yearMonthDay : {calendar : Type} -> {auto cal : Calendar calendar} ->

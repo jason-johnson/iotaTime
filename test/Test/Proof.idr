@@ -2,6 +2,24 @@ module Test.Proof
 
 import IotaTime
 
+data CalendarCapability = CalendarOnly
+data TimeCapability = TimeOnly
+data MixedCapability = CalendarAndTime
+
+HasCalendar CalendarCapability where
+HasTime TimeCapability where
+HasCalendar MixedCapability where
+HasTime MixedCapability where
+
+calendarPeriod : Period CalendarCapability
+calendarPeriod = months 2
+
+timePeriod : Period TimeCapability
+timePeriod = minutes 20
+
+mixedPeriod : Period MixedCapability
+mixedPeriod = months 2 <+> minutes 20
+
 public export
 zeroTickRoundTrip : ticks (MkInstant 0) = 0
 zeroTickRoundTrip = Refl

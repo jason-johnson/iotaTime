@@ -17,7 +17,8 @@ for fixture in "$fixture_dir"/*.idr; do
     echo "Expected compilation to fail: $fixture" >&2
     exit 1
   fi
-  if ! printf '%s\n' "$output" | grep -Fq "$expected"; then
+  normalized_output="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]][[:space:]]*/ /g')"
+  if ! printf '%s\n' "$normalized_output" | grep -Fq "$expected"; then
     echo "Compilation failed for the wrong reason: $fixture" >&2
     printf '%s\n' "$output" >&2
     exit 1

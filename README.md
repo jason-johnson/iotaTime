@@ -35,6 +35,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 
 - `iotaTime.ipkg` — Idris 2 library package definition
 - `src/IotaTime.idr` — library entry module
+- `src/IotaTime/Period.idr` — target-indexed calendar-relative periods
 - `src/IotaTime/Calendar/Component.idr` — opaque and refined calendar component types
 - `test/iotaTime-test.ipkg` — test package
 - `test/Main.idr` — test orchestrator
@@ -75,18 +76,23 @@ components = yearMonthDay {calendar = Gregorian} date
 - `WeekNumber` is also an opaque semantic integer. Gregorian week-date arithmetic intentionally supports zero and negative week numbers for HodaTime compatibility.
 - `yearValue`, `dayOfMonthValue`, and `weekNumberValue` explicitly expose integer representations when arithmetic is required. Component constructors remain hidden.
 
-The optics preserve HodaTime's operational semantics. `day` focuses on a one-based `Integer` and `monthl` on a zero-based `Integer`, so transformations can cross component boundaries: modifying December 31's day by `(+ 1)` produces January 1, and setting March's day to 40 moves into April. `year` focuses on `Year`; because every integer year is representable, `Year` safely supports numeric arithmetic such as `(+ 1)`. Every setter normalizes to another valid `CalendarDate`.
+`day`, `month`, and `year` are typed civil accessors. `day` returns `DayOfMonth`; component assignment is not used to represent calendar arithmetic.
 
-`DayOfMonth` remains the refined civil component returned by `yearMonthDay` and accepted by `calendarDate`. The distinction is intentional: a standalone day-of-month must be in 1 through 31, while an intermediate operational lens value may overflow because the surrounding date supplies the context needed to normalize it.
+Calendar-relative arithmetic uses target-indexed `Period` values:
 
-Arithmetic rollover is explicit rather than encoded as an invalid component assignment:
+```idris
+tomorrow : CalendarDate Gregorian
+tomorrow = applyPeriod (days 1) (calendarDate 31 December 2000)
 
-- `normalizeDay ordinal` interprets an integer as a one-based day ordinal relative to the current month. For example, ordinal 40 in March normalizes into April.
-- `shiftDays amount` moves by a number of flat days.
-- `normalizeMonth ordinal` interprets an integer as a zero-based month ordinal relative to the current year, allowing values outside 0 through 11 to cross years.
-- `shiftMonths amount` moves by a number of calendar months and clamps the day when necessary.
+later : CalendarDate Gregorian
+later = applyPeriod (months 2 <+> days 3) (calendarDate 31 January 2000)
+```
 
-All four operations return a valid `CalendarDate`; Gregorian results clamp at October 15, 1582.
+`years`, `months`, `weeks`, and `days` accept signed integers, so subtraction needs no parallel API: `days (-2)` moves two days backward. `negatePeriod` reverses every component and `scalePeriod` multiplies every component.
+
+Combining periods with `<+>` aggregates corresponding fields before application. Thus `months 1 <+> months 1` is a two-month period and moves January 31 directly to March 31 rather than clamping through February. Date fields apply from largest to smallest: years, months, weeks, then days. Every application returns a valid date; Gregorian results clamp at October 15, 1582.
+
+The target index prevents applying unsupported units to a value. Date units require `HasCalendar target`, time units require `HasTime target`, and mixed periods require both capabilities. For example, `months 2 <+> minutes 20` can target a `CalendarDateTime`, but neither a date-only nor a time-only value. The hidden constructor prevents callers from bypassing those constraints. `ApplyPeriod.applyPeriod` is the sole public application operation.
 
 `calendarDate` requires an erased proof of `So (isValidGregorianDate day month year)`. Idris finds that proof automatically for valid literals. Invalid literals fail to compile:
 
@@ -102,12 +108,9 @@ The public Gregorian operations are:
 - `refineGregorianDate`, `refineGregorianNthDay`, `refineGregorianWeekDate`, and `refineGregorianDays` handle values first learned at runtime. They return `Either GregorianDateError (CalendarDate Gregorian)` and are the only fallible construction boundary.
 - `isLeapYear`, `maxDaysInMonth`, and the `isValidGregorian...` predicates expose Gregorian rules and decision procedures.
 - `dayOfWeek`, `next`, and `previous` provide calendar-polymorphic weekday navigation. Date-returning operations clamp at October 15, 1582, so they preserve the type's validity invariant without `Maybe`.
-- `yearMonthDay` and `month` expose typed civil components; the operational `day`, `monthl`, and `year` lenses preserve HodaTime's normalizing update behavior.
+- `yearMonthDay`, `day`, `month`, and `year` expose typed civil components.
+- `years`, `months`, `weeks`, `days`, and `applyPeriod` provide signed calendar-relative arithmetic.
 
 `gregorianFromDays` and `toDays` convert relative to the March 1, 2000 epoch. Flat days before the public Gregorian boundary cannot be constructed without an impossible proof. The generic `fromDays` method carries the same calendar-specific proof requirement.
 
-Lens updates normalize component combinations and clamp results at October 15, 1582. These operational lenses intentionally do not satisfy every traditional lens law: for example, setting January 31's month to February produces February 29 in a leap year. Arbitrary integer rollover uses the explicit normalization operations described above.
-
-The negative compiler fixtures under `test/compile-fail/` verify that invalid component literals, forged component/date representations, invalid leap days, pre-changeover dates, absent fifth weekdays, and pre-changeover flat days remain compile errors. Each fixture declares an expected diagnostic fragment so unrelated import or harness failures cannot produce false positives.
-
-The optics in `IotaTime.Optics` use the dependency-free van Laarhoven representation. They can be consumed directly by code using the same rank-2 lens type.
+The negative compiler fixtures under `test/compile-fail/` verify that invalid component literals, forged component/date/period representations, invalid leap days, pre-changeover dates, absent fifth weekdays, pre-changeover flat days, and periods with unsupported target capabilities remain compile errors. Each fixture declares an expected diagnostic fragment so unrelated import or harness failures cannot produce false positives.

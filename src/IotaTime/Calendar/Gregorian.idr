@@ -1,6 +1,7 @@
 module IotaTime.Calendar.Gregorian
 
 import IotaTime.Calendar
+import IotaTime.Period
 import Data.So
 
 public export
@@ -228,20 +229,20 @@ modifyGregorianYear transform date =
       targetDay = min valueDay (maxDaysInMonth valueMonth targetYear)
    in makeDate targetYear valueMonth targetDay
 
-gregorianDayLens : Lens' GregorianDate Integer
-gregorianDayLens = lens
-  (\date => let (_, _, valueDay) = civilFromDays date.daysSinceEpoch in dayOfMonthValue valueDay)
-  (\date, valueDay => normalizeGregorianDay valueDay date)
+applyGregorianPeriod : Period GregorianDate -> GregorianDate -> GregorianDate
+applyGregorianPeriod period =
+    shiftGregorianDays (periodDays period)
+  . shiftGregorianDays (7 * periodWeeks period)
+  . shiftGregorianMonths (periodMonths period)
+  . modifyGregorianYear
+      (\valueYear => yearFromInteger (yearValue valueYear + periodYears period))
 
-gregorianMonthLens : Lens' GregorianDate Integer
-gregorianMonthLens = lens
-  (\date => let (_, valueMonth, _) = civilFromDays date.daysSinceEpoch in monthNumber valueMonth - 1)
-  (\date, valueMonth => normalizeGregorianMonth valueMonth date)
+public export
+HasCalendar GregorianDate where
 
-gregorianYearLens : Lens' GregorianDate Year
-gregorianYearLens = lens
-  (\date => let (valueYear, _, _) = civilFromDays date.daysSinceEpoch in valueYear)
-  (\date, valueYear => modifyGregorianYear (const valueYear) date)
+public export
+ApplyPeriod GregorianDate where
+  applyPeriod = applyGregorianPeriod
 
 gregorianDayOfWeek : GregorianDate -> DayOfWeek
 gregorianDayOfWeek date = weekdayFromNumber (date.daysSinceEpoch + 3)
@@ -273,15 +274,9 @@ Calendar Gregorian where
   toYmd = civilFromDays . daysSinceEpoch
   calendarName = "Gregorian"
 
-  day' = gregorianDayLens
+  day' date = let (_, _, value) = civilFromDays date.daysSinceEpoch in value
   month' date = let (_, value, _) = civilFromDays date.daysSinceEpoch in value
-  monthl' = gregorianMonthLens
-  year' = gregorianYearLens
-
-  normalizeDay' = normalizeGregorianDay
-  shiftDays' = shiftGregorianDays
-  normalizeMonth' = normalizeGregorianMonth
-  shiftMonths' = shiftGregorianMonths
+  year' date = let (value, _, _) = civilFromDays date.daysSinceEpoch in value
 
   dayOfWeek = gregorianDayOfWeek
   next = nextGregorian

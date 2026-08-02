@@ -5,7 +5,7 @@ version = 0.1.0
 sourcedir = "src"
 
 modules = IotaTime,
-		  IotaTime.Optics,
+		  IotaTime.Period,
 		  IotaTime.Calendar.Component,
 		  IotaTime.Calendar,
 		  IotaTime.Calendar.Gregorian

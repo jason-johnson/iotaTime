@@ -12,4 +12,5 @@ modules = IotaTime,
 		  IotaTime.Calendar,
 		  IotaTime.Calendar.Gregorian,
 		  IotaTime.Calendar.Julian,
+		  IotaTime.Calendar.Hebrew,
 		  IotaTime.CalendarDateTime

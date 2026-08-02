@@ -266,18 +266,19 @@ previousGregorian count target date =
 public export
 Calendar Gregorian where
   DateRep = GregorianDate
-  MonthRep = Month
+  MonthRep _ = Month
   WeekdayRep = DayOfWeek
 
   isValidDays = isValidGregorianDays
   fromDays days = MkGregorianDate days
   toDays date = date.daysSinceEpoch
-  toYmd = civilFromDays . daysSinceEpoch
   calendarName = "Gregorian"
 
+  year' date = let (value, _, _) = civilFromDays date.daysSinceEpoch in value
+  toYmd date = let (_, valueMonth, valueDay) = civilFromDays date.daysSinceEpoch
+                in (valueMonth, valueDay)
   day' date = let (_, _, value) = civilFromDays date.daysSinceEpoch in value
   month' date = let (_, value, _) = civilFromDays date.daysSinceEpoch in value
-  year' date = let (value, _, _) = civilFromDays date.daysSinceEpoch in value
 
   applyCalendarPeriod' = applyGregorianPeriod
   shiftCalendarDays' = shiftGregorianDays

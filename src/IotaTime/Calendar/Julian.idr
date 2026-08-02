@@ -222,18 +222,19 @@ previousJulian count target date =
 public export
 Calendar Julian where
   DateRep = JulianDate
-  MonthRep = JulianMonth
+  MonthRep _ = JulianMonth
   WeekdayRep = JulianDayOfWeek
 
   isValidDays = isValidJulianDays
   fromDays days = MkJulianDate days
   toDays date = date.daysSinceEpoch
-  toYmd = julianCivilFromDays . daysSinceEpoch
   calendarName = "Julian"
 
+  year' date = let (value, _, _) = julianCivilFromDays date.daysSinceEpoch in value
+  toYmd date = let (_, valueMonth, valueDay) = julianCivilFromDays date.daysSinceEpoch
+                in (valueMonth, valueDay)
   day' date = let (_, _, value) = julianCivilFromDays date.daysSinceEpoch in value
   month' date = let (_, value, _) = julianCivilFromDays date.daysSinceEpoch in value
-  year' date = let (value, _, _) = julianCivilFromDays date.daysSinceEpoch in value
 
   applyCalendarPeriod' = applyJulianPeriod
   shiftCalendarDays' = shiftJulianDays

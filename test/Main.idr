@@ -7,6 +7,7 @@ import Test.Gregorian
 import Test.LocalTime
 import Test.CalendarDateTime
 import Test.Julian
+import Test.Hebrew
 import Test.Support
 
 proofsChecked : ()
@@ -18,6 +19,7 @@ proofsChecked =
   let _ = gregorianLeapCycle in
   let _ = gregorianCenturyException in
   let _ = julianCenturyLeap in
+  let _ = hebrewLeapCycle in
   ()
 
 main : IO ()
@@ -29,6 +31,7 @@ main = do
   localTimePassed <- Test.LocalTime.run
   calendarDateTimePassed <- Test.CalendarDateTime.run
   julianPassed <- Test.Julian.run
+  hebrewPassed <- Test.Hebrew.run
   finalizeResults
     [ ("proof tests (compile-time)", True)
     , ("runtime behavior tests", runtimePassed)
@@ -37,4 +40,5 @@ main = do
     , ("local time tests", localTimePassed)
     , ("calendar date-time tests", calendarDateTimePassed)
     , ("Julian calendar tests", julianPassed)
+    , ("Hebrew calendar tests", hebrewPassed)
     ]

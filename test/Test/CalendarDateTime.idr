@@ -4,7 +4,8 @@ import IotaTime
 import Test.Support
 
 ymd : CalendarDate Gregorian -> (Year, Month, DayOfMonth)
-ymd = yearMonthDay {calendar = Gregorian}
+ymd date = case yearMonthDay {calendar = Gregorian} date of
+  (valueYear ** (valueMonth, valueDay)) => (valueYear, valueMonth, valueDay)
 
 timeComponents : LocalTime -> (Hour, Minute, Second, Nanosecond)
 timeComponents value = (hour value, minute value, second value, nanosecond value)

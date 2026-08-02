@@ -4,7 +4,8 @@ import IotaTime
 import Test.Support
 
 jymd : CalendarDate Julian -> (Year, JulianMonth, DayOfMonth)
-jymd = yearMonthDay {calendar = Julian}
+jymd date = case yearMonthDay {calendar = Julian} date of
+  (valueYear ** (valueMonth, valueDay)) => (valueYear, valueMonth, valueDay)
 
 isLeft : Either left right -> Bool
 isLeft (Left _) = True

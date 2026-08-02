@@ -162,3 +162,27 @@ The public Julian operations mirror the proof-carrying Gregorian boundary:
 - `refineJulianDate`, `refineJulianDays`, `refineJulianNthDay`, and `refineJulianWeekDate` validate values learned at runtime.
 - `isJulianLeapYear`, `maxJulianDaysInMonth`, and the `isValidJulian...` predicates expose Julian rules.
 - Calendar periods and mixed `CalendarDateTime Julian` periods use the same target-indexed period API as Gregorian values.
+
+## Hebrew calendar API
+
+`CalendarDate (Hebrew numbering)` supports both civil and scriptural month numbering through `HebrewCivil` and `HebrewScriptural`. Both representations identify the same dates and flat days; only `hebrewMonthNumber` changes its starting month. Hebrew flat days begin at 1 Tishri 1 (`-2103607` relative to the shared epoch).
+
+Hebrew months are indexed by year. `HebrewMonths.AdarI` carries erased evidence that its year is a leap year, so selecting Adar I in a common year is unrepresentable:
+
+```idris
+leapAdar : CalendarDate HebrewCivil
+leapAdar = hebrewDate 1 5784 HebrewMonths.AdarI
+
+-- Does not compile: 5786 is a common year.
+invalidAdar : CalendarDate HebrewCivil
+invalidAdar = hebrewDate 1 5786 HebrewMonths.AdarI
+```
+
+The calendar implements the 19-year leap cycle, the Rosh Hashanah postponement rules, variable Cheshvan and Kislev lengths, and distinct civil/scriptural month numbers. Its public construction boundary follows the other calendars:
+
+- `hebrewDate`, `hebrewFromDays`, `hebrewFromNthDay`, and `hebrewFromWeekDate` construct civil dates under erased proofs. Their primed variants select either numbering system.
+- `refineHebrewDate`, `refineHebrewDays`, `refineHebrewNthDay`, and `refineHebrewWeekDate` validate runtime civil values; primed variants support either numbering.
+- `refineHebrewMonth` converts a runtime `HebrewMonthName` into a month indexed by its year, rejecting Adar I in common years.
+- `isHebrewLeapYear`, `daysInHebrewYear`, `maxHebrewDaysInMonth`, and the `isValidHebrew...` predicates expose Hebrew decision procedures.
+- Month periods skip absent Adar I in common years. Year periods map leap-year Adar I into common-year Adar and clamp the day when necessary.
+- Hebrew dates support weekday navigation, mixed `CalendarDateTime` periods, and the same capability constraints as Gregorian and Julian dates.

@@ -51,3 +51,7 @@ gregorianCenturyException = Refl
 public export
 julianCenturyLeap : isJulianLeapYear 1900 = True
 julianCenturyLeap = Refl
+
+public export
+hebrewLeapCycle : isHebrewLeapYear 5784 = True
+hebrewLeapCycle = Refl

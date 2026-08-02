@@ -4,7 +4,8 @@ import IotaTime
 import Test.Support
 
 ymd : CalendarDate Gregorian -> (Year, Month, DayOfMonth)
-ymd = yearMonthDay {calendar = Gregorian}
+ymd date = case yearMonthDay {calendar = Gregorian} date of
+    (valueYear ** (valueMonth, valueDay)) => (valueYear, valueMonth, valueDay)
 
 weekday : CalendarDate Gregorian -> DayOfWeek
 weekday = dayOfWeek {calendar = Gregorian}
@@ -55,7 +56,7 @@ validCivilRoundTrips = civilRoundTrips (-152444) 146096
 gregorianCases : List RuntimeCase
 gregorianCases =
     [ MkRuntimeCase "Gregorian epoch decodes to March 1 2000"
-            (yearMonthDay {calendar = Gregorian} (gregorianFromDays 0) == (2000, March, 1))
+            (ymd (gregorianFromDays 0) == (2000, March, 1))
     , MkRuntimeCase "flat day conversion round-trips"
             (toDays {calendar = Gregorian} (gregorianFromDays 42) == 42)
         , MkRuntimeCase "valid day conversion round-trips from the Gregorian boundary"

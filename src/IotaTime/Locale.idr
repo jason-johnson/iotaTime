@@ -2,6 +2,7 @@ module IotaTime.Locale
 
 import Data.Vect
 import IotaTime.Locale.Unix.Platform
+import IotaTime.Locale.Windows.Platform
 import System
 import System.Info
 
@@ -123,20 +124,49 @@ unixCurrentLocale = do
         Nothing => Left (LocalePlatformError
           "native Unix locale access could not load the POSIX C locale"))
 
+fromWindowsData : WindowsLocaleData -> Locale
+fromWindowsData localeData =
+  let dateFormat = IotaTime.Locale.Windows.Platform.localeDateFormat localeData
+      timeFormat = IotaTime.Locale.Windows.Platform.localeTimeFormat localeData
+   in MkLocale
+        (localeIdentifier localeData)
+        (IotaTime.Locale.Windows.Platform.localeMonthNames localeData)
+        (IotaTime.Locale.Windows.Platform.localeMonthNamesShort localeData)
+        (IotaTime.Locale.Windows.Platform.localeDayNames localeData)
+        (IotaTime.Locale.Windows.Platform.localeDayNamesShort localeData)
+        (IotaTime.Locale.Windows.Platform.localeAmName localeData)
+        (IotaTime.Locale.Windows.Platform.localePmName localeData)
+        dateFormat
+        timeFormat
+        (dateFormat ++ " " ++ timeFormat)
+
+windowsLocaleByName : String -> IO (Either LocaleError Locale)
+windowsLocaleByName name = do
+  loaded <- loadWindowsLocaleData False name
+  pure (case loaded of
+    Nothing => Left (LocaleNotFound name)
+    Just localeData => Right (fromWindowsData localeData))
+
+windowsCurrentLocale : IO (Either LocaleError Locale)
+windowsCurrentLocale = do
+  loaded <- loadWindowsLocaleData True ""
+  pure (case loaded of
+    Nothing => Left (LocalePlatformError
+      "native Windows locale access could not load the user locale")
+    Just localeData => Right (fromWindowsData localeData))
+
 ||| Read a named locale from the operating system locale database.
 public export
 localeByName : String -> IO (Either LocaleError Locale)
 localeByName name = if isWindows
-  then pure (Left (LocalePlatformError
-    "native Windows locale access is not yet available"))
+  then windowsLocaleByName name
   else unixLocaleByName name
 
 ||| Read the locale selected by LC_ALL, LC_TIME, or LANG.
 public export
 currentLocale : IO (Either LocaleError Locale)
 currentLocale = if isWindows
-  then pure (Left (LocalePlatformError
-    "native Windows locale access is not yet available"))
+  then windowsCurrentLocale
   else unixCurrentLocale
 
 public export

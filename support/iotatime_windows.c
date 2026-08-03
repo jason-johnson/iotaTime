@@ -17,6 +17,95 @@ typedef struct {
     int failed;
 } StringBuilder;
 
+#define IOTATIME_WINDOWS_LOCALE_ITEM_COUNT 43
+
+typedef struct {
+    char *items[IOTATIME_WINDOWS_LOCALE_ITEM_COUNT];
+} WindowsLocaleSnapshot;
+
+static char *copy_string(const char *value) {
+    size_t length = strlen(value);
+    char *copy = (char *)malloc(length + 1);
+
+    if (copy != NULL) {
+        memcpy(copy, value, length + 1);
+    }
+    return copy;
+}
+
+static char *wide_to_utf8(const WCHAR *value) {
+    int required = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, value, -1,
+                                       NULL, 0, NULL, NULL);
+    char *result;
+
+    if (required <= 0) {
+        return NULL;
+    }
+    result = (char *)malloc((size_t)required);
+    if (result == NULL) {
+        return NULL;
+    }
+    if (WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, value, -1, result,
+                            required, NULL, NULL) <= 0) {
+        free(result);
+        return NULL;
+    }
+    return result;
+}
+
+static WCHAR *utf8_to_wide(const char *value) {
+    int required = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, value, -1,
+                                       NULL, 0);
+    WCHAR *result;
+
+    if (required <= 0) {
+        return NULL;
+    }
+    result = (WCHAR *)malloc((size_t)required * sizeof(WCHAR));
+    if (result == NULL) {
+        return NULL;
+    }
+    if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, value, -1, result,
+                            required) <= 0) {
+        free(result);
+        return NULL;
+    }
+    return result;
+}
+
+static char *locale_info_utf8(LPCWSTR locale_name, LCTYPE type) {
+    int required = GetLocaleInfoEx(locale_name, type, NULL, 0);
+    WCHAR *wide;
+    char *result;
+
+    if (required <= 0) {
+        return NULL;
+    }
+    wide = (WCHAR *)malloc((size_t)required * sizeof(WCHAR));
+    if (wide == NULL) {
+        return NULL;
+    }
+    if (GetLocaleInfoEx(locale_name, type, wide, required) <= 0) {
+        free(wide);
+        return NULL;
+    }
+    result = wide_to_utf8(wide);
+    free(wide);
+    return result;
+}
+
+static void free_locale_snapshot(WindowsLocaleSnapshot *snapshot) {
+    int index;
+
+    if (snapshot == NULL) {
+        return;
+    }
+    for (index = 0; index < IOTATIME_WINDOWS_LOCALE_ITEM_COUNT; ++index) {
+        free(snapshot->items[index]);
+    }
+    free(snapshot);
+}
+
 static void builder_reserve(StringBuilder *builder, size_t extra) {
     size_t required;
     size_t capacity;
@@ -345,6 +434,82 @@ IOTATIME_EXPORT void *iotatime_windows_registry_snapshot(void) {
     return builder.data;
 }
 
+IOTATIME_EXPORT void *iotatime_windows_locale_snapshot(const char *name,
+                                                        int current) {
+    WindowsLocaleSnapshot *snapshot;
+    WCHAR *wide_name = NULL;
+    LPCWSTR locale_name;
+    int index;
+
+    if (current) {
+        locale_name = LOCALE_NAME_USER_DEFAULT;
+    } else if (strcmp(name, "C") == 0 || strcmp(name, "POSIX") == 0 ||
+               name[0] == '\0') {
+        locale_name = LOCALE_NAME_INVARIANT;
+    } else {
+        wide_name = utf8_to_wide(name);
+        if (wide_name == NULL) {
+            return NULL;
+        }
+        locale_name = wide_name;
+    }
+    if (GetLocaleInfoEx(locale_name, LOCALE_SMONTHNAME1, NULL, 0) <= 0) {
+        free(wide_name);
+        return NULL;
+    }
+    snapshot = (WindowsLocaleSnapshot *)calloc(1, sizeof(*snapshot));
+    if (snapshot == NULL) {
+        free(wide_name);
+        return NULL;
+    }
+    snapshot->items[0] = current
+        ? locale_info_utf8(locale_name, LOCALE_SNAME)
+        : copy_string(name);
+    for (index = 0; index < 12; ++index) {
+        snapshot->items[1 + index] = locale_info_utf8(
+            locale_name, LOCALE_SMONTHNAME1 + (LCTYPE)index);
+        snapshot->items[13 + index] = locale_info_utf8(
+            locale_name, LOCALE_SABBREVMONTHNAME1 + (LCTYPE)index);
+    }
+    snapshot->items[25] = locale_info_utf8(locale_name, LOCALE_SDAYNAME7);
+    snapshot->items[32] = locale_info_utf8(locale_name,
+                                            LOCALE_SABBREVDAYNAME7);
+    for (index = 0; index < 6; ++index) {
+        snapshot->items[26 + index] = locale_info_utf8(
+            locale_name, LOCALE_SDAYNAME1 + (LCTYPE)index);
+        snapshot->items[33 + index] = locale_info_utf8(
+            locale_name, LOCALE_SABBREVDAYNAME1 + (LCTYPE)index);
+    }
+    snapshot->items[39] = locale_info_utf8(locale_name, LOCALE_S1159);
+    snapshot->items[40] = locale_info_utf8(locale_name, LOCALE_S2359);
+    snapshot->items[41] = locale_info_utf8(locale_name, LOCALE_SSHORTDATE);
+    snapshot->items[42] = locale_info_utf8(locale_name, LOCALE_STIMEFORMAT);
+    free(wide_name);
+
+    for (index = 0; index < IOTATIME_WINDOWS_LOCALE_ITEM_COUNT; ++index) {
+        if (snapshot->items[index] == NULL) {
+            free_locale_snapshot(snapshot);
+            return NULL;
+        }
+    }
+    return snapshot;
+}
+
+IOTATIME_EXPORT const char *iotatime_windows_locale_item(void *value,
+                                                          int index) {
+    WindowsLocaleSnapshot *snapshot = (WindowsLocaleSnapshot *)value;
+
+    if (snapshot == NULL || index < 0 ||
+        index >= IOTATIME_WINDOWS_LOCALE_ITEM_COUNT) {
+        return "";
+    }
+    return snapshot->items[index];
+}
+
+IOTATIME_EXPORT void iotatime_windows_locale_free(void *snapshot) {
+    free_locale_snapshot((WindowsLocaleSnapshot *)snapshot);
+}
+
 #else
 
 #define IOTATIME_EXPORT
@@ -357,6 +522,24 @@ IOTATIME_EXPORT void *iotatime_windows_registry_snapshot(void) {
         memcpy(result, message, sizeof(message));
     }
     return result;
+}
+
+IOTATIME_EXPORT void *iotatime_windows_locale_snapshot(const char *name,
+                                                        int current) {
+    (void)name;
+    (void)current;
+    return NULL;
+}
+
+IOTATIME_EXPORT const char *iotatime_windows_locale_item(void *snapshot,
+                                                          int index) {
+    (void)snapshot;
+    (void)index;
+    return "";
+}
+
+IOTATIME_EXPORT void iotatime_windows_locale_free(void *snapshot) {
+    (void)snapshot;
 }
 
 #endif

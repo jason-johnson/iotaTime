@@ -64,6 +64,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Calendar/Islamic.idr` — indexed tabular Islamic calendars
 - `src/IotaTime/Calendar/Persian.idr` — bounded astronomical Persian calendar
 - `src/IotaTime/Locale/Unix/Platform.idr` — native POSIX locale acquisition
+- `src/IotaTime/Locale/Windows/Platform.idr` — native Win32 locale acquisition
 - `src/IotaTime/Locale.idr` — opaque locale data, built-ins, and public acquisition
 - `src/IotaTime/Pattern.idr` — composable typed parsing and formatting core
 - `src/IotaTime/Pattern/CalendarDate.idr` — Gregorian numeric date patterns
@@ -420,7 +421,11 @@ japaneseMonth = format (pMMMM' jaJP) (calendarDate 3 March 2020)
 
 Named locale fields parse case-insensitively. As with the fixed English weekday fields, locale weekday names are consumed but not validated against the resolved date.
 
-On Unix, `localeByName` reads an installed locale through `newlocale` and `nl_langinfo_l`, while `currentLocale` follows `LC_ALL`, `LC_TIME`, and `LANG` and falls back to the POSIX `C` locale. Both return `IO (Either LocaleError Locale)`, keeping unknown names and platform failures explicit at the native trust boundary. The per-locale C APIs do not mutate process-global locale state, and native snapshots are copied before their handles are freed.
+On Unix, `localeByName` reads an installed locale through `newlocale` and `nl_langinfo_l`, while `currentLocale` follows `LC_ALL`, `LC_TIME`, and `LANG` and falls back to the POSIX `C` locale. The per-locale C APIs do not mutate process-global locale state.
+
+On Windows, both functions read through `GetLocaleInfoEx`. Windows date and time picture strings are translated into the supported `strftime` subset, and Monday-first Win32 weekday tables are normalized to the library's Sunday-first order. `C` and `POSIX` names select the Windows invariant locale.
+
+Both platforms return `IO (Either LocaleError Locale)`, keeping unknown names and platform failures explicit at the native trust boundary. Native snapshots are copied before their handles are freed.
 
 `localeDatePattern` compiles a locale's date layout into a bidirectional Gregorian pattern. `compileDatePattern` accepts an explicit `strftime` layout. Date conversion support includes `%Y`, `%y`, `%m`, `%d`, `%e`, `%B`, `%b`, `%h`, `%A`, and `%a`, plus `%%`, `%n`, `%t`, and the composite `%F` and `%D` layouts. Unsupported conversions return `Left (UnsupportedSpecifier value)` and a trailing bare percent returns `Left DanglingPercent`.
 
@@ -428,7 +433,7 @@ On Unix, `localeByName` reads an installed locale through `newlocale` and `nl_la
 
 `localeDateTimePattern` compiles the combined locale layout into a Gregorian `CalendarDateTime` pattern, and `compileDateTimePattern` accepts an explicit combined layout. Date and time fields share a `DateTimeFields` accumulator, so their order is independent. Because `CalendarDateTime` represents civil time without a zone, `%Z` and `%z` fields and their preceding layout spaces are deliberately omitted.
 
-Native Windows locale acquisition remains to be implemented; the public acquisition functions currently return `LocalePlatformError` there.
+Machine locale acquisition and locale-driven date, time, and combined date-time patterns are available on Unix and Windows.
 
 ## Calendar conversion
 

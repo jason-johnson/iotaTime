@@ -21,6 +21,9 @@ main = do
   easternResult <- timeZone "Eastern Standard Time"
   localResult <- localZone
   missingResult <- timeZone "IotaTime Missing Zone"
+  germanLocaleResult <- localeByName "de-DE"
+  currentLocaleResult <- currentLocale
+  missingLocaleResult <- localeByName "iotatime-LOCALE-DOES-NOT-EXIST"
 
   utcPassed <- report "UTC loads without registry dependence"
     (case utcResult of
@@ -46,8 +49,30 @@ main = do
     (case missingResult of
       Left (WindowsZoneNotFound "IotaTime Missing Zone") => True
       _ => False)
+  germanLocalePassed <- report "de-DE locale loads and compiles its date layout"
+    (case germanLocaleResult of
+      Left _ => False
+      Right locale => case localeDatePattern locale of
+        Left _ => False
+        Right pattern =>
+          IotaTime.Pattern.format pattern (calendarDate 15 March 2020) ==
+            "15.03.2020")
+  currentLocalePassed <- report "current Windows locale is structurally complete"
+    (case currentLocaleResult of
+      Left _ => False
+      Right locale =>
+        localeId locale /= "" &&
+        case (localeDatePattern locale, localeTimePattern locale) of
+          (Right _, Right _) => True
+          _ => False)
+  missingLocalePassed <- report "unknown Windows locale remains explicit"
+    (case missingLocaleResult of
+      Left (LocaleNotFound "iotatime-LOCALE-DOES-NOT-EXIST") => True
+      _ => False)
 
   if allPassed
-    [utcPassed, zonesPassed, dynamicPassed, localPassed, missingPassed]
+    [ utcPassed, zonesPassed, dynamicPassed, localPassed, missingPassed
+    , germanLocalePassed, currentLocalePassed, missingLocalePassed
+    ]
     then putStrLn "All Windows registry smoke tests passed"
     else exitFailure

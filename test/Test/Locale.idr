@@ -2,6 +2,7 @@ module Test.Locale
 
 import Data.Vect
 import IotaTime
+import IotaTime.Locale.Windows.Platform
 import System.Info
 import Test.Support
 
@@ -168,6 +169,16 @@ localeCases =
   , MkRuntimeCase "date-time compiler rejects unsupported fields"
       (hasStrftimeError (UnsupportedSpecifier 'Q')
         (compileDateTimePattern enUS "%F %Q"))
+  , MkRuntimeCase "Windows pictures translate field widths"
+      (windowsPictureToStrftime "dddd, dd MMMM yyyy HH:mm:ss tt" ==
+        "%A, %d %B %Y %H:%M:%S %p" &&
+       windowsPictureToStrftime "ddd d MMM yy h:m:s t" ==
+        "%a %e %b %y %I:%M:%S %p")
+  , MkRuntimeCase "Windows pictures preserve quoted literals"
+      (windowsPictureToStrftime "yyyy'年'MM'月'dd'日'" ==
+        "%Y年%m月%d日" &&
+       windowsPictureToStrftime "hh 'o''clock' tt 100%" ==
+        "%I o'clock %p 100%%")
   ]
 
 patternsCompile : Locale -> Bool

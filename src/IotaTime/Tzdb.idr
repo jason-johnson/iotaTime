@@ -2,10 +2,12 @@ module IotaTime.Tzdb
 
 import public IotaTime.Tzdb.Tzif
 import public IotaTime.Tzdb.Posix
+import public IotaTime.Tzdb.Windows
 import public Data.Buffer
 import public System.File.Buffer
 import public System
 import public System.Directory
+import public System.Info
 import Data.List
 
 %default total
@@ -17,6 +19,17 @@ data TzdbError
   | TzdbPosixError PosixTzError
   | TzdbZoneError DateTimeZoneError
   | InvalidZoneName String
+  | UnsupportedPlatform String
+
+||| Platform-specific time-zone discovery. Native adapters can provide
+||| registry-backed implementations without coupling them to TZif decoding.
+public export
+record TimeZoneProvider where
+  constructor MkTimeZoneProvider
+  providerUtc : IO (Either TzdbError TimeZone)
+  providerTimeZone : String -> IO (Either TzdbError TimeZone)
+  providerLocalZone : IO (Either TzdbError TimeZone)
+  providerAvailableZones : IO (Either TzdbError (List String))
 
 mapLeft : (left -> mapped) -> Either left right -> Either mapped right
 mapLeft convert (Left error) = Left (convert error)
@@ -107,39 +120,32 @@ validZoneName source =
 zonePath : String -> String -> String
 zonePath root name = root ++ "/" ++ name
 
-||| Load a named IANA zone from `TZDIR` or `/usr/share/zoneinfo`.
-public export
-timeZone : String -> IO (Either TzdbError TimeZone)
-timeZone name = if validZoneName name
+unixTimeZone : String -> IO (Either TzdbError TimeZone)
+unixTimeZone name = if validZoneName name
   then do
     root <- zoneInfoRoot
     loadTimeZoneFile name (zonePath root name)
   else pure (Left (InvalidZoneName name))
 
-||| Load UTC from the platform TZDB.
-public export
-utc : IO (Either TzdbError TimeZone)
-utc = timeZone "UTC"
+unixUtc : IO (Either TzdbError TimeZone)
+unixUtc = unixTimeZone "UTC"
 
 stripLeadingColon : String -> String
 stripLeadingColon source = case unpack source of
   ':' :: rest => pack rest
   _ => source
 
-||| Load the locally configured zone. `TZ` takes precedence; otherwise the
-||| platform `/etc/localtime` file is decoded directly.
-public export
-localZone : IO (Either TzdbError TimeZone)
-localZone = do
+unixLocalZone : IO (Either TzdbError TimeZone)
+unixLocalZone = do
   configured <- getEnv "TZ"
   case configured of
     Nothing => loadTimeZoneFile "local" "/etc/localtime"
-    Just "" => utc
+    Just "" => unixUtc
     Just source =>
       let value = stripLeadingColon source
        in case unpack value of
             '/' :: _ => loadTimeZoneFile value value
-            _ => timeZone value
+            _ => unixTimeZone value
 
 collectZonePath : String -> String -> IO (List String)
 collectZonePath root relative = do
@@ -161,12 +167,71 @@ collectZonePath root relative = do
       remaining <- collectEntries rest
       pure (found ++ remaining)
 
-||| List every parseable TZif zone beneath `TZDIR` or `/usr/share/zoneinfo`.
-public export
-availableZones : IO (Either TzdbError (List String))
-availableZones = do
+unixAvailableZones : IO (Either TzdbError (List String))
+unixAvailableZones = do
   root <- zoneInfoRoot
   listed <- listDir root
   case listed of
     Left error => pure (Left (TzdbFileError (show error)))
     Right _ => map (Right . sort) (collectZonePath root "")
+
+||| The built-in Unix filesystem provider.
+public export
+unixTimeZoneProvider : TimeZoneProvider
+unixTimeZoneProvider = MkTimeZoneProvider unixUtc unixTimeZone
+  unixLocalZone unixAvailableZones
+
+unsupportedWindowsProvider : TimeZoneProvider
+unsupportedWindowsProvider = MkTimeZoneProvider unsupported
+  (\_ => unsupported) unsupported unsupported
+  where
+    unsupported : IO (Either TzdbError value)
+    unsupported = pure (Left (UnsupportedPlatform
+      "Windows TZDB discovery requires a registry/ICU TimeZoneProvider"))
+
+||| The provider selected for the current operating system.
+public export
+systemTimeZoneProvider : TimeZoneProvider
+systemTimeZoneProvider = if isWindows
+  then unsupportedWindowsProvider
+  else unixTimeZoneProvider
+
+||| Load UTC through an explicit platform provider.
+public export
+utcWith : TimeZoneProvider -> IO (Either TzdbError TimeZone)
+utcWith = providerUtc
+
+||| Load a named zone through an explicit platform provider.
+public export
+timeZoneWith : TimeZoneProvider -> String -> IO (Either TzdbError TimeZone)
+timeZoneWith = providerTimeZone
+
+||| Load the local zone through an explicit platform provider.
+public export
+localZoneWith : TimeZoneProvider -> IO (Either TzdbError TimeZone)
+localZoneWith = providerLocalZone
+
+||| Enumerate zones through an explicit platform provider.
+public export
+availableZonesWith : TimeZoneProvider -> IO (Either TzdbError (List String))
+availableZonesWith = providerAvailableZones
+
+||| Load UTC from the platform TZDB.
+public export
+utc : IO (Either TzdbError TimeZone)
+utc = utcWith systemTimeZoneProvider
+
+||| Load a named zone from the platform TZDB.
+public export
+timeZone : String -> IO (Either TzdbError TimeZone)
+timeZone = timeZoneWith systemTimeZoneProvider
+
+||| Load the locally configured platform zone.
+public export
+localZone : IO (Either TzdbError TimeZone)
+localZone = localZoneWith systemTimeZoneProvider
+
+||| List every zone available through the platform provider.
+public export
+availableZones : IO (Either TzdbError (List String))
+availableZones = availableZonesWith systemTimeZoneProvider

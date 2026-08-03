@@ -3,6 +3,7 @@ module Test.Tzif
 import IotaTime
 import IotaTime.Tzdb
 import IotaTime.Tzdb.Tzif
+import IotaTime.Tzdb.Windows
 import Test.Support
 
 zeros : Nat -> List Bits8
@@ -49,6 +50,15 @@ springGapLocal = on (localTime 2 30 0 0) (calendarDate 10 March 2024)
 
 autumnOverlapLocal : CalendarDateTime Gregorian
 autumnOverlapLocal = on (localTime 1 30 0 0) (calendarDate 3 November 2024)
+
+windowsEastern : WindowsZoneRule
+windowsEastern = MkWindowsZoneRule 300 0 (-60) "EST" "EDT"
+  (MkWindowsTransitionDate 3 2 0 2 0 0)
+  (MkWindowsTransitionDate 11 1 0 2 0 0)
+
+windowsEasternZone : Either WindowsTimeZoneError TimeZone
+windowsEasternZone = windowsRecurringTimeZone "Eastern Standard Time"
+  (transitionInfo (offsetFromHours (-5)) False "EST") [] windowsEastern
 
 tzifCases : List RuntimeCase
 tzifCases =
@@ -114,19 +124,54 @@ tzifCases =
               offsetOf second == offsetFromHours (-5)
             _ => False
         Left _ => False)
+  , MkRuntimeCase "Windows bias rules enter daylight time"
+      (case windowsEasternZone of
+        Right zone =>
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1710053999) ==
+            offsetFromHours (-5) &&
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1710054000) ==
+            offsetFromHours (-4)
+        _ => False)
+  , MkRuntimeCase "Windows bias rules return to standard time"
+      (case windowsEasternZone of
+        Right zone =>
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1730613599) ==
+            offsetFromHours (-4) &&
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1730613600) ==
+            offsetFromHours (-5)
+        _ => False)
+  , MkRuntimeCase "Windows transition clock fields are validated"
+      (case windowsRecurringTimeZone "Invalid"
+        (transitionInfo (offsetFromHours (-5)) False "EST") []
+        (MkWindowsZoneRule 300 0 (-60) "EST" "EDT"
+        (MkWindowsTransitionDate 3 2 0 24 0 0)
+        (MkWindowsTransitionDate 11 1 0 2 0 0)) of
+          Left (InvalidWindowsRule (WindowsTimeOutOfRange 24 0 0)) => True
+          _ => False)
   ]
 
 export
 run : IO Bool
 run = do
   purePassed <- runSuite "TZif tests" tzifCases
+  let injectedZone = fixedDateTimeZone "Injected/Zone" (offsetFromHours 9)
+  let injectedProvider = MkTimeZoneProvider
+        (pure (Right injectedZone))
+        (\_ => pure (Right injectedZone))
+        (pure (Right injectedZone))
+        (pure (Right ["Injected/Zone"]))
+  injected <- timeZoneWith injectedProvider "anything"
   systemUtc <- utc
   systemNewYork <- timeZone "America/New_York"
   rejectedPath <- timeZone "../etc/passwd"
   systemLocal <- localZone
   listedZones <- availableZones
   discoveryPassed <- runSuite "TZDB discovery tests"
-    [ MkRuntimeCase "system UTC zone is loaded"
+    [ MkRuntimeCase "platform providers are injectable"
+        (case injected of
+          Right value => zoneId value == "Injected/Zone"
+          Left _ => False)
+    , MkRuntimeCase "system UTC zone is loaded"
         (case systemUtc of
           Right value => zoneOffsetAt value epoch == zeroOffset
           Left _ => False)

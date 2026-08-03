@@ -45,6 +45,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/ZonedDateTime.idr` — instant, zone, offset, and calendar kept consistent
 - `src/IotaTime/Tzdb/Tzif.idr` — bounds-checked TZif v1-v4 decoder
 - `src/IotaTime/Tzdb/Posix.idr` — validated POSIX future-rule parser
+- `src/IotaTime/Tzdb/Windows.idr` — validated Windows TZI rule conversion
 - `src/IotaTime/Tzdb.idr` — typed TZDB loading and platform discovery
 - `src/IotaTime/Time/Component.idr` — opaque, range-checked clock components
 - `src/IotaTime/LocalTime.idr` — proof-carrying local time of day
@@ -147,7 +148,9 @@ localZone : IO (Either TzdbError TimeZone)
 availableZones : IO (Either TzdbError (List String))
 ```
 
-`TZDIR` overrides `/usr/share/zoneinfo`; `TZ` overrides `/etc/localtime` for the local zone. Named zones cannot escape the TZDB root. `availableZones` reports files that successfully decode as TZif rather than relying on filename conventions. Native Windows registry and ICU discovery remains a platform adapter to be implemented; the TZif and POSIX parsers themselves are backend-independent.
+`TZDIR` overrides `/usr/share/zoneinfo`; `TZ` overrides `/etc/localtime` for the local zone. Named zones cannot escape the TZDB root. `availableZones` reports files that successfully decode as TZif rather than relying on filename conventions.
+
+`TimeZoneProvider` isolates platform discovery. The `utcWith`, `timeZoneWith`, `localZoneWith`, and `availableZonesWith` variants accept an explicit provider; the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. `WindowsZoneRule` and `WindowsTransitionDate` model registry `REG_TZI_FORMAT` data, and `windowsZoneRecurrence` validates Windows bias and recurring `SYSTEMTIME` values into the shared recurrence model. On Windows, the default provider currently returns `UnsupportedPlatform` until a native registry/ICU provider is supplied. That remaining adapter only needs to acquire registry values and translate IANA/Windows identifiers; recurrence and zone behavior are already backend-independent.
 
 ## Zoned date-times
 

@@ -20,4 +20,5 @@ import public IotaTime.Calendar.Hebrew
 import public IotaTime.Locale
 import public IotaTime.Pattern
 import public IotaTime.Pattern.CalendarDate
+import public IotaTime.Pattern.Locale
 import public IotaTime.CalendarDateTime

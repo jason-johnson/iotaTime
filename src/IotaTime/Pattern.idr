@@ -40,6 +40,16 @@ char : Char -> LiteralPattern
 char value = MkLiteralPattern (pack [value])
 
 public export
+literalField : Pattern state value -> String -> Pattern state value
+literalField template text = MkPattern
+  template.initialState
+  template.finish
+  (do
+    ignore (Parser.string text)
+    pure (Right id))
+  (const text)
+
+public export
 appendLiteral : Pattern state value -> LiteralPattern -> Pattern state value
 appendLiteral pattern literal = MkPattern
   pattern.initialState

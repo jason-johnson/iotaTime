@@ -40,5 +40,6 @@ modules = IotaTime.Duration,
 		  IotaTime.Locale,
 		  IotaTime.Pattern,
 		  IotaTime.Pattern.CalendarDate,
+		  IotaTime.Pattern.Locale,
 		  IotaTime.CalendarDateTime,
 		  IotaTime

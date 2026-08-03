@@ -65,6 +65,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Locale.idr` — opaque locale data and pure built-in locales
 - `src/IotaTime/Pattern.idr` — composable typed parsing and formatting core
 - `src/IotaTime/Pattern/CalendarDate.idr` — Gregorian numeric date patterns
+- `src/IotaTime/Pattern/Locale.idr` — locale `strftime` layout compilation
 - `test/iotaTime-test.ipkg` — test package
 - `test/Main.idr` — test orchestrator
 - `test/Test/Proof.idr` — compile-time proof tests
@@ -406,7 +407,11 @@ japaneseMonth : String
 japaneseMonth = format (pMMMM' jaJP) (calendarDate 3 March 2020)
 ```
 
-Named locale fields parse case-insensitively. As with the fixed English weekday fields, locale weekday names are consumed but not validated against the resolved date. Machine locale acquisition and compilation of locale layout strings are separate runtime-boundary features.
+Named locale fields parse case-insensitively. As with the fixed English weekday fields, locale weekday names are consumed but not validated against the resolved date.
+
+`localeDatePattern` compiles a locale's date layout into a bidirectional Gregorian pattern. `compileDatePattern` accepts an explicit `strftime` layout. Date conversion support includes `%Y`, `%y`, `%m`, `%d`, `%e`, `%B`, `%b`, `%h`, `%A`, and `%a`, plus `%%`, `%n`, `%t`, and the composite `%F` and `%D` layouts. Unsupported conversions return `Left (UnsupportedSpecifier value)` and a trailing bare percent returns `Left DanglingPercent`.
+
+Machine locale acquisition, time layouts, and combined date-time layouts remain separate runtime-boundary features.
 
 ## Calendar conversion
 

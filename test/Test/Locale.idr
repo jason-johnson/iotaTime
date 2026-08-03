@@ -17,6 +17,20 @@ germanWeekdayDate : Pattern DateFields (CalendarDate Gregorian)
 germanWeekdayDate = (((pdddd' deDE <% string ", ") <+> (pdd <% char ' ')) <+>
   (pMMMM' deDE <% char ' ')) <+> pyyyy
 
+localeFormatsAs : Locale -> CalendarDate Gregorian -> String -> Bool
+localeFormatsAs locale date expected = case localeDatePattern locale of
+  Left _ => False
+  Right pattern => IotaTime.Pattern.format pattern date == expected
+
+localeParsesAs : Locale -> String -> CalendarDate Gregorian -> Bool
+localeParsesAs locale source expected = case localeDatePattern locale of
+  Left _ => False
+  Right pattern => parsesAs pattern source expected
+
+hasStrftimeError : StrftimeError -> Either StrftimeError value -> Bool
+hasStrftimeError expected (Left actual) = actual == expected
+hasStrftimeError _ (Right _) = False
+
 localeCases : List RuntimeCase
 localeCases =
   [ MkRuntimeCase "built-in locale identifiers are stable"
@@ -41,6 +55,29 @@ localeCases =
   , MkRuntimeCase "Japanese month names retain multibyte text"
       (IotaTime.Pattern.format (pMMMM' jaJP) (calendarDate 3 March 2020) ==
         "3月")
+  , MkRuntimeCase "US locale date layout is month-first"
+      (localeFormatsAs enUS (calendarDate 15 March 2020) "03/15/2020" &&
+       localeParsesAs enUS "03/15/2020" (calendarDate 15 March 2020))
+  , MkRuntimeCase "German locale date layout is day-first"
+      (localeFormatsAs deDE (calendarDate 15 March 2020) "15.03.2020" &&
+       localeParsesAs deDE "15.03.2020" (calendarDate 15 March 2020))
+  , MkRuntimeCase "Japanese locale date layout preserves separators"
+      (localeFormatsAs jaJP (calendarDate 15 March 2020) "2020年03月15日" &&
+       localeParsesAs jaJP "2020年03月15日" (calendarDate 15 March 2020))
+  , MkRuntimeCase "date layout compiler expands composites and literals"
+      (case compileDatePattern enUS "Date: %F %% %A" of
+        Left _ => False
+        Right pattern =>
+          IotaTime.Pattern.format pattern (calendarDate 15 March 2020) ==
+            "Date: 2020-03-15 % Sunday" &&
+          parsesAs pattern "Date: 2020-03-15 % Sunday"
+            (calendarDate 15 March 2020))
+  , MkRuntimeCase "date layout compiler rejects unsupported fields"
+      (hasStrftimeError (UnsupportedSpecifier 'Q')
+        (compileDatePattern enUS "%Q"))
+  , MkRuntimeCase "date layout compiler rejects a dangling percent"
+      (hasStrftimeError DanglingPercent
+        (compileDatePattern enUS "%Y-%"))
   ]
 
 export

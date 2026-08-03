@@ -6,6 +6,7 @@ import Test.Regression
 import Test.Duration
 import Test.Interval
 import Test.Offset
+import Test.OffsetDateTime
 import Test.Gregorian
 import Test.LocalTime
 import Test.CalendarDateTime
@@ -34,6 +35,7 @@ main = do
   durationPassed <- Test.Duration.run
   intervalPassed <- Test.Interval.run
   offsetPassed <- Test.Offset.run
+  offsetDateTimePassed <- Test.OffsetDateTime.run
   gregorianPassed <- Test.Gregorian.run
   localTimePassed <- Test.LocalTime.run
   calendarDateTimePassed <- Test.CalendarDateTime.run
@@ -47,6 +49,7 @@ main = do
     , ("duration and instant tests", durationPassed)
     , ("interval tests", intervalPassed)
     , ("offset tests", offsetPassed)
+    , ("offset date-time tests", offsetDateTimePassed)
     , ("Gregorian calendar tests", gregorianPassed)
     , ("local time tests", localTimePassed)
     , ("calendar date-time tests", calendarDateTimePassed)

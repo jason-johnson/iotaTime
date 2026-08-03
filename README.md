@@ -39,6 +39,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Duration.idr` — opaque fixed elapsed-time amounts
 - `src/IotaTime/Interval.idr` — proof-carrying half-open timeline intervals
 - `src/IotaTime/Offset.idr` — bounded signed UTC offsets
+- `src/IotaTime/OffsetDateTime.idr` — calendar-local date-times resolved by UTC offset
 - `src/IotaTime/Period.idr` — target-indexed calendar-relative periods
 - `src/IotaTime/Time/Component.idr` — opaque, range-checked clock components
 - `src/IotaTime/LocalTime.idr` — proof-carrying local time of day
@@ -111,6 +112,14 @@ minimumOffset = offsetFromHours (-18)
 `refineOffsetSeconds` validates an arbitrary runtime total and returns `Either OffsetError Offset`. `totalOffsetSeconds` exposes the scalar value. `offsetHours`, `offsetMinutes`, and `offsetSeconds` are sign-consistent components, so `-01:30:45` yields `(-1, -30, -45)` and the components always reconstruct the total.
 
 `addOffsetClamped` and `subtractOffsetClamped` preserve the bounded invariant by clamping at either 18-hour limit. `negateOffset` is exact because the bounds are symmetric. Offset arithmetic is separate from both fixed `Duration` arithmetic and calendar-relative `Period` application.
+
+## Offset date-times
+
+`OffsetDateTime calendar` associates a valid `CalendarDateTime calendar` with a valid `Offset`. The constructor remains private; `atOffset` is the public construction boundary. Because both components already carry their invariants, association cannot fail.
+
+`toInstant` subtracts the offset from the local date-time to resolve one unique global instant. `fromInstant` performs the inverse operation for a requested calendar and offset, returning `Left (TargetCalendarOutOfRange ...)` only when the resulting local day falls outside that calendar's supported historical range.
+
+`withOffset` preserves the instant and shifts the local date and time, including across midnight. `OffsetDateTime.withCalendar` preserves the instant, local time, and offset while changing only the calendar representation of the date; it retains the same target-range validation as other calendar conversion APIs.
 
 ## Gregorian calendar API
 

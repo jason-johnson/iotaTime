@@ -69,6 +69,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Pattern.idr` — composable typed parsing and formatting core
 - `src/IotaTime/Pattern/CalendarDate.idr` — Gregorian numeric date patterns
 - `src/IotaTime/Pattern/LocalTime.idr` — local-time field and standard patterns
+- `src/IotaTime/Pattern/Duration.idr` — signed fixed-duration patterns
 - `src/IotaTime/Pattern/Offset.idr` — signed UTC-offset patterns
 - `src/IotaTime/Pattern/CalendarDateTime.idr` — combined Gregorian date-time patterns
 - `src/IotaTime/Pattern/OffsetDateTime.idr` — fixed-offset date-time patterns
@@ -407,6 +408,12 @@ Field parsers accumulate raw components in `DateFields` and call `refineGregoria
 `phh` and `phhSpace` use the 12-hour clock. `pp`, `ppp`, `pPeriod`, and locale-aware `ppp'` provide AM/PM designators. Parsing is field-order independent: both `03:04 PM` and `PM 03:04` resolve to 15:04 when composed in the corresponding order.
 
 `pfrac width` formats and parses fixed-width fractional seconds, scaling parsed digits to nanoseconds. Its erased `So (isValidFractionWidth width)` argument restricts widths to 1 through 9, so `pfrac 0` and `pfrac 10` fail at compile time.
+
+## Duration patterns
+
+`pDuration` formats and parses fixed durations as `[-]D:HH:mm:ss`; `pDurationNano` adds exactly nine fractional digits as `[-]D:HH:mm:ss.fffffffff`. Day counts use arbitrary-precision integers, matching the underlying `Duration` representation.
+
+The optional sign belongs to the complete duration rather than an individual field. Parsing therefore reads the layout as one quantity and constructs the result through `fromNanoseconds`, preserving canonical negative values such as `-0:00:00:00.000000001` without exposing the `Duration` representation.
 
 ## Offset and date-time patterns
 

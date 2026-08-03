@@ -23,6 +23,7 @@ import Test.WithCalendar
 import Test.Pattern
 import Test.PatternLocalTime
 import Test.PatternOffset
+import Test.PatternDuration
 import Test.Locale
 import Test.Support
 
@@ -63,6 +64,7 @@ main = do
   patternPassed <- Test.Pattern.run
   patternLocalTimePassed <- Test.PatternLocalTime.run
   patternOffsetPassed <- Test.PatternOffset.run
+  patternDurationPassed <- Test.PatternDuration.run
   localePassed <- Test.Locale.run
   finalizeResults
     [ ("proof tests (compile-time)", True)
@@ -88,5 +90,6 @@ main = do
     , ("calendar date pattern tests", patternPassed)
     , ("local time pattern tests", patternLocalTimePassed)
     , ("offset pattern tests", patternOffsetPassed)
+    , ("duration pattern tests", patternDurationPassed)
     , ("locale tests", localePassed)
     ]

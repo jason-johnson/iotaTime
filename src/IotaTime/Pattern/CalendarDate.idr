@@ -6,6 +6,7 @@ import IotaTime.Pattern
 import IotaTime.Locale
 import IotaTime.Calendar
 import IotaTime.Calendar.Gregorian
+import IotaTime.Pattern.Calendar
 
 %default total
 
@@ -33,14 +34,12 @@ monthFromInteger 10 = October
 monthFromInteger 11 = November
 monthFromInteger _ = December
 
-finishDate : DateFields -> Either PatternError (CalendarDate Gregorian)
-finishDate fields = case refineDayOfMonth fields.parsedDay of
-  Left _ => Left (InvalidValue "day is outside 1-31")
-  Right valueDay => case refineGregorianDate valueDay
-    (monthFromInteger fields.parsedMonth)
-    (yearFromInteger fields.parsedYear) of
-      Left _ => Left (InvalidValue "invalid Gregorian date")
-      Right date => Right date
+finishDate : {calendar : Type} ->
+             {auto patterned : CalendarPattern calendar} ->
+             DateFields -> Either PatternError (CalendarDate calendar)
+finishDate {calendar} @{patterned} fields =
+  refinePatternDate {calendar} @{patterned} fields.parsedYear fields.parsedMonth
+  fields.parsedDay
 
 zeros : Nat -> String
 zeros Z = ""
@@ -53,11 +52,13 @@ padNumber width value =
    in if currentWidth >= width then shown
       else zeros (width `minus` currentWidth) ++ shown
 
-dateField : (CalendarDate Gregorian -> Integer) ->
+dateField : {calendar : Type} ->
+            {auto patterned : CalendarPattern calendar} ->
+            (CalendarDate calendar -> Integer) ->
             (Integer -> DateFields -> DateFields) ->
             (width : Nat) -> (maximumWidth : Nat) ->
             (minimum : Integer) -> (maximum : Integer) ->
-            Pattern DateFields (CalendarDate Gregorian)
+            Pattern DateFields (CalendarDate calendar)
 dateField getter setter width maximumWidth minimum maximum = MkPattern
   initialDateFields
   finishDate
@@ -76,14 +77,19 @@ setDayField value fields = { parsedDay := value } fields
 setMonth : Month -> DateFields -> DateFields
 setMonth value fields = { parsedMonth := monthNumber value } fields
 
-calendarYear : CalendarDate Gregorian -> Integer
-calendarYear date = yearValue (year {calendar = Gregorian} date)
+calendarYear : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+               CalendarDate calendar -> Integer
+calendarYear date = yearValue (year {calendar} date)
 
-calendarMonth : CalendarDate Gregorian -> Integer
-calendarMonth date = monthNumber (month {calendar = Gregorian} date)
+calendarMonth : {calendar : Type} ->
+                {auto patterned : CalendarPattern calendar} ->
+                CalendarDate calendar -> Integer
+calendarMonth {calendar} @{patterned} =
+  patternMonthNumber {calendar} @{patterned}
 
-calendarDay : CalendarDate Gregorian -> Integer
-calendarDay date = dayOfMonthValue (day {calendar = Gregorian} date)
+calendarDay : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+              CalendarDate calendar -> Integer
+calendarDay date = dayOfMonthValue (day {calendar} date)
 
 calendarWeekday : CalendarDate Gregorian -> DayOfWeek
 calendarWeekday = dayOfWeek {calendar = Gregorian}
@@ -129,6 +135,46 @@ nameChoices (name :: names) (value :: values) =
 abbreviate : String -> String
 abbreviate = substr 0 3
 
+indexedNames : Integer -> List String -> List (String, Integer)
+indexedNames _ [] = []
+indexedNames index (name :: names) =
+  (name, index) :: indexedNames (index + 1) names
+
+nameAt : Integer -> List String -> String
+nameAt _ [] = ""
+nameAt index (name :: names) = if index <= 1
+  then name
+  else nameAt (index - 1) names
+
+calendarMonthNamePattern : {calendar : Type} ->
+  {auto patterned : CalendarPattern calendar} ->
+  List String -> Pattern DateFields (CalendarDate calendar)
+calendarMonthNamePattern {calendar} @{patterned} names = MkPattern
+  initialDateFields
+  finishDate
+  (namedUpdatePart (indexedNames 1 names) setMonthField)
+  (\date => nameAt (calendarMonth {calendar} @{patterned} date) names)
+
+weekdayNames : List String
+weekdayNames =
+  [ "Sunday", "Monday", "Tuesday", "Wednesday"
+  , "Thursday", "Friday", "Saturday"
+  ]
+
+weekdayAbbreviations : List String
+weekdayAbbreviations =
+  [ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" ]
+
+calendarDayNamePattern : {calendar : Type} ->
+  {auto patterned : CalendarPattern calendar} ->
+  List String -> Pattern DateFields (CalendarDate calendar)
+calendarDayNamePattern {calendar} @{patterned} names = MkPattern
+  initialDateFields
+  finishDate
+  (namedConsumePart names)
+  (\date => nameAt
+    (patternWeekdayNumber {calendar} @{patterned} date + 1) names)
+
 englishMonthNames : Vect 12 String
 englishMonthNames = map show gregorianMonths
 
@@ -142,11 +188,13 @@ englishWeekdayAbbreviations : Vect 7 String
 englishWeekdayAbbreviations = map abbreviate englishWeekdayNames
 
 public export
-pyear : Nat -> Pattern DateFields (CalendarDate Gregorian)
+pyear : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Nat -> Pattern DateFields (CalendarDate calendar)
 pyear width = dateField calendarYear setYearField width 4 0 9999
 
 public export
-pyyyy : Pattern DateFields (CalendarDate Gregorian)
+pyyyy : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
 pyyyy = pyear 4
 
 inferTwoDigitYear : Integer -> Integer -> Integer
@@ -156,7 +204,8 @@ inferTwoDigitYear template value =
    in base + adjustment * 100
 
 public export
-pyy : Pattern DateFields (CalendarDate Gregorian)
+pyy : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
 pyy = MkPattern
   initialDateFields
   finishDate
@@ -167,39 +216,50 @@ pyy = MkPattern
   (padNumber 2 . (`mod` 100) . calendarYear)
 
 public export
-pmonthNum : Nat -> Pattern DateFields (CalendarDate Gregorian)
-pmonthNum width = dateField calendarMonth setMonthField width 2 1 12
+pmonthNum : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+    Nat -> Pattern DateFields (CalendarDate calendar)
+pmonthNum {calendar} @{patterned} width =
+  dateField (calendarMonth {calendar} @{patterned}) setMonthField
+    width 2 1 (patternMonthLimit {calendar} @{patterned})
 
 public export
-pMM : Pattern DateFields (CalendarDate Gregorian)
+pMM : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
 pMM = pmonthNum 2
 
 public export
 pMonthName : Vect 12 String -> Pattern DateFields (CalendarDate Gregorian)
 pMonthName names = MkPattern
   initialDateFields
-  finishDate
+  (finishDate {calendar = Gregorian})
   (namedUpdatePart (nameChoices names gregorianMonths) setMonth)
   (\date => index (monthIndex (month {calendar = Gregorian} date)) names)
 
 public export
-pMMMM : Pattern DateFields (CalendarDate Gregorian)
-pMMMM = pMonthName englishMonthNames
+pMMMM : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
+pMMMM {calendar} @{patterned} = calendarMonthNamePattern
+  (patternMonthNames {calendar} @{patterned})
 
 public export
-pMMM : Pattern DateFields (CalendarDate Gregorian)
-pMMM = pMonthName englishMonthAbbreviations
+pMMM : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
+pMMM {calendar} @{patterned} = calendarMonthNamePattern
+  (patternMonthAbbreviations {calendar} @{patterned})
 
 public export
-pday : Nat -> Pattern DateFields (CalendarDate Gregorian)
+pday : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Nat -> Pattern DateFields (CalendarDate calendar)
 pday width = dateField calendarDay setDayField width 2 1 31
 
 public export
-pdd : Pattern DateFields (CalendarDate Gregorian)
+pdd : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
 pdd = pday 2
 
 public export
-pdaySpace : Pattern DateFields (CalendarDate Gregorian)
+pdaySpace : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+            Pattern DateFields (CalendarDate calendar)
 pdaySpace = MkPattern
   initialDateFields
   finishDate
@@ -211,17 +271,19 @@ public export
 pDayName : Vect 7 String -> Pattern DateFields (CalendarDate Gregorian)
 pDayName names = MkPattern
   initialDateFields
-  finishDate
+  (finishDate {calendar = Gregorian})
   (namedConsumePart (toList names))
   (\date => index (weekdayIndex (calendarWeekday date)) names)
 
 public export
-pdddd : Pattern DateFields (CalendarDate Gregorian)
-pdddd = pDayName englishWeekdayNames
+pdddd : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
+pdddd = calendarDayNamePattern weekdayNames
 
 public export
-pddd : Pattern DateFields (CalendarDate Gregorian)
-pddd = pDayName englishWeekdayAbbreviations
+pddd : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
+pddd = calendarDayNamePattern weekdayAbbreviations
 
 public export
 pMMMM' : Locale -> Pattern DateFields (CalendarDate Gregorian)
@@ -240,22 +302,27 @@ pddd' : Locale -> Pattern DateFields (CalendarDate Gregorian)
 pddd' locale = pDayName (dayNamesShort locale)
 
 public export
-pd : Pattern DateFields (CalendarDate Gregorian)
+pd : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
 pd = ((pdd <% char '/') <+> (pMM <% char '/')) <+> pyyyy
 
 public export
-pD : Pattern DateFields (CalendarDate Gregorian)
+pD : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
 pD = (((pdddd <% string ", ") <+> (pdd <% char ' ')) <+>
   (pMMMM <% char ' ')) <+> pyyyy
 
 public export
-pR : Pattern DateFields (CalendarDate Gregorian)
+pR : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
 pR = ((pyyyy <% char '-') <+> (pMM <% char '-')) <+> pdd
 
 public export
-pmonthDay : Pattern DateFields (CalendarDate Gregorian)
+pmonthDay : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
 pmonthDay = (pMMMM <% char ' ') <+> pdd
 
 public export
-pyearMonth : Pattern DateFields (CalendarDate Gregorian)
+pyearMonth : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
 pyearMonth = (pyyyy <% char ' ') <+> pMMMM

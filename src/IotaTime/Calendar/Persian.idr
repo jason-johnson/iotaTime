@@ -4,7 +4,7 @@ import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
 
-%default covering
+%default total
 
 public export
 data Persian = PersianCalendar
@@ -217,19 +217,20 @@ persianDaysFromCivil valueYear valueMonth valueDay =
   persianNewYearDay valueYear + monthOffset valueMonth +
     dayOfMonthValue valueDay - 1
 
-findPersianYear : Integer -> Integer -> Integer
-findPersianYear estimate days =
+findPersianYear : Nat -> Integer -> Integer -> Integer
+findPersianYear Z estimate days = estimate
+findPersianYear (S fuel) estimate days =
   if days < persianNewYearDay (yearFromInteger estimate)
-    then findPersianYear (estimate - 1) days
+    then findPersianYear fuel (estimate - 1) days
     else if days >= persianNewYearDay (yearFromInteger (estimate + 1))
-      then findPersianYear (estimate + 1) days
+      then findPersianYear fuel (estimate + 1) days
       else estimate
 
 persianCivilFromDays : Integer -> (Year, PersianMonth, DayOfMonth)
 persianCivilFromDays value =
   let estimate = max minimumPersianYear (min maximumPersianYear
         ((value - persianEpoch) `div` 365 + 1))
-      yearNumber = findPersianYear estimate value
+      yearNumber = findPersianYear 1500 estimate value
       valueYear = yearFromInteger yearNumber
       dayOfYear = value - persianNewYearDay valueYear
       monthNumber = if dayOfYear == 365 then 12

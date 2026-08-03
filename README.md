@@ -67,7 +67,8 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Locale/Windows/Platform.idr` — native Win32 locale acquisition
 - `src/IotaTime/Locale.idr` — opaque locale data, built-ins, and public acquisition
 - `src/IotaTime/Pattern.idr` — composable typed parsing and formatting core
-- `src/IotaTime/Pattern/CalendarDate.idr` — Gregorian numeric date patterns
+- `src/IotaTime/Pattern/Calendar.idr` — calendar-specific pattern refinement capability
+- `src/IotaTime/Pattern/CalendarDate.idr` — calendar-polymorphic date patterns
 - `src/IotaTime/Pattern/LocalTime.idr` — local-time field and standard patterns
 - `src/IotaTime/Pattern/Duration.idr` — signed fixed-duration patterns
 - `src/IotaTime/Pattern/Instant.idr` — ISO-8601 UTC instant patterns
@@ -391,25 +392,42 @@ The calendar implements the 19-year leap cycle, the Rosh Hashanah postponement r
 
 `Pattern state value` combines formatting with full-input parsing. Fields compose with `<+>`, and `<%` appends a literal produced by `char` or `string`. The parsing engine uses `Data.String.Parser` from Idris 2's `contrib` package, while the public boundary returns `Either PatternError value`; malformed fields, values outside their field ranges, invalid final dates, and trailing input remain distinct typed failures. Formatting is specialized to `value -> String`, which provides the pattern-specific composition supplied by Haskell's `Formatting` and `HoleyMonoid` machinery without introducing a general variadic formatting layer.
 
-The calendar-date layer provides the HodaTime-compatible Gregorian numeric fields `pyear`, `pyyyy`, `pyy`, `pmonthNum`, `pMM`, `pday`, `pdd`, and `pdaySpace`. English names are available through `pMMM`, `pMMMM`, `pddd`, and `pdddd`; parsing is case-insensitive, and weekday fields are consumed without redundantly validating the date. `pd` is the slash-separated short date, `pD` is the English long date, `pR` is the ISO round-trip pattern, and `pmonthDay` and `pyearMonth` provide partial layouts:
+`CalendarPattern calendar` supplies calendar-specific numeric projection, canonical month names, month limits, weekday numbering, and runtime date refinement. Instances cover Gregorian, Julian, Coptic, Persian, every indexed Islamic leap pattern, and both Hebrew numbering systems. Parsed year, month, and day fields therefore cross each calendar's existing typed refinement boundary rather than constructing a generic unchecked date.
+
+The calendar-date layer provides the HodaTime-compatible numeric fields `pyear`, `pyyyy`, `pyy`, `pmonthNum`, `pMM`, `pday`, `pdd`, and `pdaySpace`. Canonical calendar names are available through `pMMM` and `pMMMM`; `pddd` and `pdddd` use weekday names. Parsing is case-insensitive, and weekday fields are consumed without redundantly validating the date. `pd` is the slash-separated short date, `pD` is the canonical long date, `pR` is the numeric round-trip pattern, and `pmonthDay` and `pyearMonth` provide partial layouts:
 
 ```idris
 isoText : String
-isoText = format pR (calendarDate 3 March 2020)
+isoText = format (pR {calendar = Gregorian}) (calendarDate 3 March 2020)
 
 parsed : Either PatternError (CalendarDate Gregorian)
-parsed = parse pR "2020-03-03"
+parsed = parse (pR {calendar = Gregorian}) "2020-03-03"
+
+coptic : Either PatternError (CalendarDate Coptic)
+coptic = parse (pR {calendar = Coptic}) "1731-13-06"
+
+hebrewNamed : Either PatternError (CalendarDate HebrewCivil)
+hebrewNamed = parse
+	(((pyyyy {calendar = HebrewCivil} <% char '-') <+>
+		(pMMMM {calendar = HebrewCivil} <% char '-')) <+>
+		pdd {calendar = HebrewCivil})
+	"5784-AdarI-01"
 
 unpadded : Pattern DateFields (CalendarDate Gregorian)
-unpadded = ((pyear 1 <% char '-') <+> (pmonthNum 1 <% char '-')) <+> pday 1
+unpadded =
+	((pyear {calendar = Gregorian} 1 <% char '-') <+>
+		(pmonthNum {calendar = Gregorian} 1 <% char '-')) <+>
+	pday {calendar = Gregorian} 1
 
 longText : String
-longText = format pD (calendarDate 3 March 2020)
+longText = format (pD {calendar = Gregorian}) (calendarDate 3 March 2020)
 ```
 
-`pMonthName` and `pDayName` accept `Vect 12 String` and `Vect 7 String` respectively. Unlike Haskell's list-based API, incomplete name tables therefore fail to compile rather than failing during formatting.
+Each independently composed generic field may need `{calendar = ...}` because Idris elaborates operands before `<+>` combines them. Standard whole patterns usually need the calendar annotation only once.
 
-Field parsers accumulate raw components in `DateFields` and call `refineGregorianDate` only after consuming the complete input. Custom field order is therefore independent of temporary invalid dates, while a value such as `"2021-02-29"` still fails at the runtime trust boundary.
+`pMonthName` and `pDayName` remain Gregorian custom-table APIs accepting `Vect 12 String` and `Vect 7 String`. Unlike Haskell's list-based API, incomplete tables therefore fail to compile rather than failing during formatting. Locale-aware primed fields are also Gregorian because operating-system locale snapshots contain exactly 12 Gregorian month names.
+
+Field parsers accumulate raw components in `DateFields` and call `refinePatternDate` only after consuming the complete input. Custom field order is therefore independent of temporary invalid dates, while Gregorian `"2021-02-29"`, Coptic `"1730-13-06"`, or common-year Hebrew Adar I still fail at the runtime trust boundary.
 
 ## Local time patterns
 
@@ -433,7 +451,7 @@ Use `parseInstant` for the typed `Either PatternError Instant` parsing boundary.
 
 ## Zoned date-time patterns
 
-`pZonedDateTime` formats a Gregorian zoned value as an ISO local date-time followed by its zone ID, such as `2024-04-23T09:00:00 Europe/Zurich`. `zonedDateTimePattern` adapts another Gregorian `CalendarDateTime` pattern and a zone-suffix renderer. Both produce the dedicated format-only `ZonedDateTimePattern`, so the pure `Pattern.parse` API cannot accidentally construct a zoned value without loading its rules or choosing a local-time resolution policy.
+`pZonedDateTime` formats a zoned value in its calendar as a numeric local date-time followed by its zone ID, such as `2024-04-23T09:00:00 Europe/Zurich` or `1731-13-06T01:02:03 UTC`. `zonedDateTimePattern` adapts another calendar-polymorphic `CalendarDateTime` pattern and a zone-suffix renderer. Both produce the dedicated format-only `ZonedDateTimePattern`, so the pure `Pattern.parse` API cannot accidentally construct a zoned value without loading its rules or choosing a local-time resolution policy.
 
 `parseStandardZonedDateTime` parses the standard layout. The caller supplies an effectful zone provider and an explicit resolver such as `fromCalendarDateTimeStrictly` or `fromCalendarDateTimeLeniently`; `parseZonedDateTimeWith` provides the same mechanism for a custom local pattern. `ZonedDateTimePatternError` keeps structural parsing, provider lookup, and skipped or ambiguous time resolution failures distinct. The standard parser has a distinct name in the umbrella API because locale `%Z` parsing already uses `parseZonedDateTime`.
 
@@ -441,7 +459,7 @@ Use `parseInstant` for the typed `Either PatternError Instant` parsing boundary.
 
 `pOffset` formats signed hours and minutes as `+02:00`; `pOffsetFull` includes seconds, `pOffsetZ` writes `Z` for UTC, and `pOffsetCompact` implements the `strftime` `%z` form such as `+0200`. Parsing reads the sign and all components as one quantity, then calls `refineOffsetSeconds`, so malformed components and values outside the supported plus-or-minus 18-hour range remain typed runtime failures.
 
-`pairPattern` combines two independently refined patterns through projections and a constructor. `calendarDateTimePattern` uses it for a Gregorian date and local time; the standard `ps`, `po`, `pf`, `pF`, `pg`, and `pG` layouts mirror HodaTime. `offsetDateTimePattern` then combines any such local pattern with an offset pattern. `pOffsetDateTime` is the ISO layout `yyyy-MM-ddTHH:mm:ss(+/-)HH:mm`.
+`pairPattern` combines two independently refined patterns through projections and a constructor. `calendarDateTimePattern` uses it for any `CalendarPattern` date and local time; the standard `ps`, `po`, `pf`, `pF`, `pg`, and `pG` layouts mirror HodaTime. `offsetDateTimePattern` then combines any such local pattern with an offset pattern. `pOffsetDateTime` is the calendar-polymorphic numeric layout `yyyy-MM-ddTHH:mm:ss(+/-)HH:mm`.
 
 ## Locale API
 
@@ -477,7 +495,7 @@ Both platforms return `IO (Either LocaleError Locale)`, keeping unknown names an
 
 Machine locale acquisition and locale-driven date, time, and combined date-time patterns are available on Unix and Windows.
 
-Date-bearing patterns currently target Gregorian values. The other shipped calendars retain proof-carrying construction, conversion, arithmetic, and timezone support, but calendar-polymorphic pattern fields remain a separate extension because their month types and validity refinements differ by calendar.
+Operating-system locale date layouts remain Gregorian because `Locale` intentionally stores complete `Vect 12` Gregorian month tables. Canonical and numeric patterns outside the locale compiler are calendar-polymorphic, including date, local date-time, offset date-time, and zoned date-time patterns.
 
 ## Calendar conversion
 

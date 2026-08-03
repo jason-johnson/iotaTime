@@ -13,11 +13,13 @@ parsesAs pattern source expected = case IotaTime.Pattern.parse pattern source of
   Right actual => calendarDays actual == calendarDays expected
 
 germanDate : Pattern DateFields (CalendarDate Gregorian)
-germanDate = ((pdd <% char ' ') <+> (pMMMM' deDE <% char ' ')) <+> pyyyy
+germanDate = ((pdd {calendar = Gregorian} <% char ' ') <+>
+  (pMMMM' deDE <% char ' ')) <+> pyyyy {calendar = Gregorian}
 
 germanWeekdayDate : Pattern DateFields (CalendarDate Gregorian)
-germanWeekdayDate = (((pdddd' deDE <% string ", ") <+> (pdd <% char ' ')) <+>
-  (pMMMM' deDE <% char ' ')) <+> pyyyy
+germanWeekdayDate = (((pdddd' deDE <% string ", ") <+>
+  (pdd {calendar = Gregorian} <% char ' ')) <+>
+  (pMMMM' deDE <% char ' ')) <+> pyyyy {calendar = Gregorian}
 
 localeFormatsAs : Locale -> CalendarDate Gregorian -> String -> Bool
 localeFormatsAs locale date expected = case localeDatePattern locale of

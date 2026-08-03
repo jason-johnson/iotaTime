@@ -4,7 +4,7 @@ import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
 
-%default covering
+%default total
 
 public export
 data HebrewNumbering = Civil | Scriptural
@@ -357,29 +357,33 @@ monthFromCalendarIndex _ 10 = HebrewMonths.Tammuz
 monthFromCalendarIndex _ 11 = HebrewMonths.Av
 monthFromCalendarIndex _ _ = HebrewMonths.Elul
 
-findHebrewYear : Integer -> Year -> Year
-findHebrewYear days candidate =
+findHebrewYear : Nat -> Integer -> Year -> Year
+findHebrewYear Z days candidate = candidate
+findHebrewYear (S fuel) days candidate =
   if firstHebrewDayOfYear candidate > days
-    then findHebrewYear days (yearFromInteger (yearValue candidate - 1))
+    then findHebrewYear fuel days (yearFromInteger (yearValue candidate - 1))
     else let following = yearFromInteger (yearValue candidate + 1)
           in if firstHebrewDayOfYear following <= days
-               then findHebrewYear days following
+               then findHebrewYear fuel days following
                else candidate
 
-findHebrewMonth : Year -> Integer -> Integer -> (Integer, DayOfMonth)
-findHebrewMonth valueYear index remaining =
+findHebrewMonth : Nat -> Year -> Integer -> Integer -> (Integer, DayOfMonth)
+findHebrewMonth Z valueYear index remaining =
+  (index, dayOfMonthFromInteger (remaining + 1))
+findHebrewMonth (S fuel) valueYear index remaining =
   let monthLength = hebrewMonthLengthByIndex valueYear index
    in if remaining < monthLength
         then (index, dayOfMonthFromInteger (remaining + 1))
-        else findHebrewMonth valueYear (index + 1) (remaining - monthLength)
+        else findHebrewMonth fuel valueYear (index + 1) (remaining - monthLength)
 
 hebrewCivilFromDays : {numbering : HebrewNumbering} -> Integer ->
   (valueYear : Year ** (HebrewMonth numbering valueYear, DayOfMonth))
 hebrewCivilFromDays days =
   let firstYearDay = firstHebrewDayOfYear 1
       estimate = max 1 ((days - firstYearDay) `div` 366 + 1)
-      valueYear = findHebrewYear days (yearFromInteger estimate)
-      (monthIndex, valueDay) = findHebrewMonth valueYear 0
+      valueYear = findHebrewYear (cast (abs estimate + 2)) days
+        (yearFromInteger estimate)
+      (monthIndex, valueDay) = findHebrewMonth 13 valueYear 0
         (days - firstHebrewDayOfYear valueYear)
   in (valueYear ** (monthFromCalendarIndex {numbering} valueYear monthIndex, valueDay))
 
@@ -453,17 +457,22 @@ positionToCalendarIndex valueYear position =
 
 addHebrewMonths : Year -> Integer -> Integer -> (Year, Integer)
 addHebrewMonths valueYear index amount =
-  go valueYear (calendarIndexToPosition valueYear index + amount)
+  go (cast (abs amount + 2)) valueYear
+    (calendarIndexToPosition valueYear index + amount)
   where
-    go : Year -> Integer -> (Year, Integer)
-    go currentYear position =
+    go : Nat -> Year -> Integer -> (Year, Integer)
+    go Z currentYear position =
+      (currentYear, positionToCalendarIndex currentYear
+        (max 0 (min (monthsInHebrewYear currentYear - 1) position)))
+    go (S fuel) currentYear position =
       if position < 0
         then if yearValue currentYear <= 1
           then (1, 0)
           else let previousYear = yearFromInteger (yearValue currentYear - 1)
-                in go previousYear (position + monthsInHebrewYear previousYear)
+                in go fuel previousYear
+                  (position + monthsInHebrewYear previousYear)
         else if position >= monthsInHebrewYear currentYear
-          then go (yearFromInteger (yearValue currentYear + 1))
+          then go fuel (yearFromInteger (yearValue currentYear + 1))
             (position - monthsInHebrewYear currentYear)
           else (currentYear, positionToCalendarIndex currentYear position)
 

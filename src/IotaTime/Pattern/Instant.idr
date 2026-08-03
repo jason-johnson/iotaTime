@@ -7,6 +7,7 @@ import IotaTime.Instant
 import IotaTime.Offset
 import IotaTime.OffsetDateTime
 import IotaTime.Pattern
+import IotaTime.Pattern.Calendar
 import IotaTime.Pattern.CalendarDate
 import IotaTime.Pattern.CalendarDateTime
 import IotaTime.Pattern.LocalTime
@@ -50,10 +51,10 @@ formatInstant pattern value = do
 ||| ISO-8601 UTC at whole-second precision: yyyy-MM-ddTHH:mm:ssZ.
 public export
 pInstant : InstantPattern (DateFields, TimeFields)
-pInstant = instantPattern (ps <% char 'Z')
+pInstant = instantPattern (ps {calendar = Gregorian} <% char 'Z')
 
 ||| ISO-8601 UTC with nine fractional digits:
 ||| yyyy-MM-ddTHH:mm:ss.fffffffffZ.
 public export
 pInstantNano : InstantPattern (DateFields, TimeFields)
-pInstantNano = instantPattern (po <% char 'Z')
+pInstantNano = instantPattern (po {calendar = Gregorian} <% char 'Z')

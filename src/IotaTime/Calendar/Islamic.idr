@@ -4,7 +4,7 @@ import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
 
-%default covering
+%default total
 
 public export
 data IslamicLeapPattern = Base15 | Base16 | Indian | HabashAlHasib
@@ -232,12 +232,13 @@ islamicYearLength cycleYear =
 
 findIslamicYear : {pattern : IslamicLeapPattern} ->
                   KnownIslamicLeapPattern pattern =>
-                  Integer -> Integer -> (Integer, Integer)
-findIslamicYear cycleYear remaining =
+      Nat -> Integer -> Integer -> (Integer, Integer)
+findIslamicYear Z cycleYear remaining = (cycleYear, remaining)
+findIslamicYear (S fuel) cycleYear remaining =
   let length = islamicYearLength {pattern} (cycleYear + 1)
    in if remaining < length
         then (cycleYear, remaining)
-        else findIslamicYear {pattern} (cycleYear + 1) (remaining - length)
+  else findIslamicYear {pattern} fuel (cycleYear + 1) (remaining - length)
 
 islamicCivilFromDays : {pattern : IslamicLeapPattern} ->
                        KnownIslamicLeapPattern pattern =>
@@ -246,7 +247,7 @@ islamicCivilFromDays value =
   let relative = value - islamicEpoch
       cycles = relative `div` 10631
       remaining = relative `mod` 10631
-      (yearInCycle, dayOfYear) = findIslamicYear {pattern} 0 remaining
+      (yearInCycle, dayOfYear) = findIslamicYear {pattern} 30 0 remaining
       yearNumber = cycles * 30 + yearInCycle + 1
       monthNumber = if dayOfYear == 354 then 12 else dayOfYear * 2 `div` 59 + 1
       offset = ((monthNumber - 1) * 59 + 1) `div` 2

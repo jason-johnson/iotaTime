@@ -26,4 +26,4 @@
 
 ## Scope boundary
 
-Date-bearing patterns are Gregorian-specific in version 0.1.0. Generalizing pattern fields across calendars is an optional major extension, not a release blocker for the documented API.
+Canonical and numeric date-bearing patterns support every shipped calendar through `CalendarPattern`. Operating-system locale date layouts remain Gregorian because native locale snapshots provide exactly 12 Gregorian month names.

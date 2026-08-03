@@ -49,6 +49,11 @@ hebrewCases =
       (hymd (hebrewFromDays 0) == (5760, AdarIName, 24))
   , MkRuntimeCase "Hebrew flat conversion round-trips around the shared epoch"
       (hebrewRoundTrips (-800) 800)
+  , MkRuntimeCase "Hebrew conversion remains exact in distant future years"
+      (let days = firstHebrewDayOfYear 100000 in
+        case refineHebrewDays days of
+          Left _ => False
+          Right rebuilt => hymd rebuilt == (100000, TishriName, 1))
   , MkRuntimeCase "16 September 2023 is 1 Tishri 5784"
       (toDays {calendar = HebrewCivil} (hebrewDate 1 5784 HebrewMonths.Tishri) ==
         toDays {calendar = Gregorian} (calendarDate 16 September 2023))

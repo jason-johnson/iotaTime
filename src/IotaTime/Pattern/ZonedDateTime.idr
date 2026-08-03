@@ -6,6 +6,7 @@ import IotaTime.Calendar.Gregorian
 import IotaTime.CalendarDateTime
 import IotaTime.DateTimeZone
 import IotaTime.Pattern
+import IotaTime.Pattern.Calendar
 import IotaTime.Pattern.CalendarDate
 import IotaTime.Pattern.CalendarDateTime
 import IotaTime.Pattern.LocalTime
@@ -17,32 +18,32 @@ import IotaTime.ZonedDateTime
 ||| A format-only ZonedDateTime pattern. Parsing requires loading a zone and
 ||| choosing how skipped or ambiguous local times are resolved.
 export
-record ZonedDateTimePattern state where
+record ZonedDateTimePattern state value where
   constructor MkZonedDateTimePattern
-  localPattern : Pattern state (CalendarDateTime Gregorian)
-  renderZone : ZonedDateTime Gregorian -> String
+  zonedFormatPart : value -> String
 
 ||| Build a format-only ZonedDateTime pattern from a local date-time pattern
 ||| and a function that renders the zone suffix.
 public export
 zonedDateTimePattern :
-  Pattern state (CalendarDateTime Gregorian) ->
-  (ZonedDateTime Gregorian -> String) ->
-  ZonedDateTimePattern state
-zonedDateTimePattern = MkZonedDateTimePattern
+  {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern state (CalendarDateTime calendar) ->
+  (ZonedDateTime calendar -> String) ->
+  ZonedDateTimePattern state (ZonedDateTime calendar)
+zonedDateTimePattern local render = MkZonedDateTimePattern
+  (\value => IotaTime.Pattern.format local
+    (IotaTime.ZonedDateTime.toCalendarDateTime value) ++ render value)
 
 ||| Format a zoned value using its local date-time and rendered zone suffix.
 public export
-formatZonedDateTime : ZonedDateTimePattern state ->
-                      ZonedDateTime Gregorian -> String
-formatZonedDateTime pattern value =
-  IotaTime.Pattern.format pattern.localPattern
-    (IotaTime.ZonedDateTime.toCalendarDateTime value) ++
-  pattern.renderZone value
+formatZonedDateTime : ZonedDateTimePattern state value -> value -> String
+formatZonedDateTime pattern = pattern.zonedFormatPart
 
 ||| ISO local date-time followed by a space and the zone ID.
 public export
-pZonedDateTime : ZonedDateTimePattern (DateFields, TimeFields)
+pZonedDateTime : {calendar : Type} ->
+  {auto patterned : CalendarPattern calendar} ->
+  ZonedDateTimePattern (DateFields, TimeFields) (ZonedDateTime calendar)
 pZonedDateTime = zonedDateTimePattern ps
   (\value => " " ++ IotaTime.ZonedDateTime.zoneId value)
 
@@ -80,8 +81,10 @@ zoneTokenPattern = MkPattern
         ({ pos := state.pos + cast consumed } state))))
   id
 
-zoneInfoPattern : Pattern state (CalendarDateTime Gregorian) ->
-  Pattern (state, String) (CalendarDateTime Gregorian, String)
+zoneInfoPattern : {calendar : Type} ->
+  {auto patterned : CalendarPattern calendar} ->
+  Pattern state (CalendarDateTime calendar) ->
+  Pattern (state, String) (CalendarDateTime calendar, String)
 zoneInfoPattern local = pairPattern fst snd (\dateTime, zone => (dateTime, zone))
   (local <% char ' ') zoneTokenPattern
 
@@ -89,13 +92,14 @@ zoneInfoPattern local = pairPattern fst snd (\dateTime, zone => (dateTime, zone)
 ||| resolve the local value according to the caller's chosen policy.
 public export
 parseZonedDateTimeWith :
-  Pattern state (CalendarDateTime Gregorian) ->
+  {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern state (CalendarDateTime calendar) ->
   (String -> IO (Either providerError TimeZone)) ->
-  (CalendarDateTime Gregorian -> TimeZone ->
-    Either resolverError (ZonedDateTime Gregorian)) ->
+  (CalendarDateTime calendar -> TimeZone ->
+    Either resolverError (ZonedDateTime calendar)) ->
   String ->
   IO (Either (ZonedDateTimePatternError providerError resolverError)
-    (ZonedDateTime Gregorian))
+    (ZonedDateTime calendar))
 parseZonedDateTimeWith local provider resolver source =
   case IotaTime.Pattern.parse (zoneInfoPattern local) source of
     Left error => pure (Left (ZonedDateTimeParseError error))
@@ -110,10 +114,11 @@ parseZonedDateTimeWith local provider resolver source =
 ||| Parse the standard ISO local date-time and zone-ID layout.
 public export
 parseStandardZonedDateTime :
+  {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
   (String -> IO (Either providerError TimeZone)) ->
-  (CalendarDateTime Gregorian -> TimeZone ->
-    Either resolverError (ZonedDateTime Gregorian)) ->
+  (CalendarDateTime calendar -> TimeZone ->
+    Either resolverError (ZonedDateTime calendar)) ->
   String ->
   IO (Either (ZonedDateTimePatternError providerError resolverError)
-    (ZonedDateTime Gregorian))
+    (ZonedDateTime calendar))
 parseStandardZonedDateTime = parseZonedDateTimeWith ps

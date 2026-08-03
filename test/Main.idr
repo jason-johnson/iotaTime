@@ -21,6 +21,7 @@ import Test.Persian
 import Test.Hebrew
 import Test.WithCalendar
 import Test.Pattern
+import Test.PatternCalendar
 import Test.PatternLocalTime
 import Test.PatternOffset
 import Test.PatternDuration
@@ -64,6 +65,7 @@ main = do
   hebrewPassed <- Test.Hebrew.run
   withCalendarPassed <- Test.WithCalendar.run
   patternPassed <- Test.Pattern.run
+  patternCalendarPassed <- Test.PatternCalendar.run
   patternLocalTimePassed <- Test.PatternLocalTime.run
   patternOffsetPassed <- Test.PatternOffset.run
   patternDurationPassed <- Test.PatternDuration.run
@@ -92,6 +94,7 @@ main = do
     , ("Hebrew calendar tests", hebrewPassed)
     , ("withCalendar conversion tests", withCalendarPassed)
     , ("calendar date pattern tests", patternPassed)
+    , ("calendar-polymorphic pattern tests", patternCalendarPassed)
     , ("local time pattern tests", patternLocalTimePassed)
     , ("offset pattern tests", patternOffsetPassed)
     , ("duration pattern tests", patternDurationPassed)

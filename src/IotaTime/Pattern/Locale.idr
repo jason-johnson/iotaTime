@@ -4,6 +4,7 @@ import Data.String
 import Data.String.Parser
 import IotaTime.Locale
 import IotaTime.Pattern
+import IotaTime.Pattern.Calendar
 import IotaTime.Pattern.CalendarDate
 import IotaTime.Pattern.Offset
 import IotaTime.Pattern.OffsetDateTime
@@ -94,11 +95,11 @@ toFragments = foldr step []
 dateConversion : Locale -> Char ->
                  Either StrftimeError
                    (Pattern DateFields (CalendarDate Gregorian))
-dateConversion locale 'Y' = Right pyyyy
-dateConversion locale 'y' = Right pyy
-dateConversion locale 'm' = Right pMM
-dateConversion locale 'd' = Right pdd
-dateConversion locale 'e' = Right pdaySpace
+dateConversion locale 'Y' = Right (pyyyy {calendar = Gregorian})
+dateConversion locale 'y' = Right (pyy {calendar = Gregorian})
+dateConversion locale 'm' = Right (pMM {calendar = Gregorian})
+dateConversion locale 'd' = Right (pdd {calendar = Gregorian})
+dateConversion locale 'e' = Right (pdaySpace {calendar = Gregorian})
 dateConversion locale 'B' = Right (pMMMM' locale)
 dateConversion locale 'b' = Right (pMMM' locale)
 dateConversion locale 'h' = Right (pMMM' locale)
@@ -130,7 +131,8 @@ compileDatePattern : Locale -> String ->
                        (Pattern DateFields (CalendarDate Gregorian))
 compileDatePattern locale layout = do
   tokens <- tokenize (unpack layout)
-  assemble pyyyy (dateConversion locale) (toFragments tokens)
+  assemble (pyyyy {calendar = Gregorian}) (dateConversion locale)
+    (toFragments tokens)
 
 public export
 localeDatePattern : Locale ->
@@ -167,12 +169,13 @@ record DateTimeFields where
   parsedTimeFields : TimeFields
 
 initialDateTimeFields : DateTimeFields
-initialDateTimeFields = MkDateTimeFields pyyyy.initialState pHH.initialState
+initialDateTimeFields = MkDateTimeFields
+  (pyyyy {calendar = Gregorian}).initialState pHH.initialState
 
 finishDateTime : DateTimeFields ->
                  Either PatternError (CalendarDateTime Gregorian)
 finishDateTime fields = do
-  date <- pyyyy.finish fields.parsedDateFields
+  date <- (pyyyy {calendar = Gregorian}).finish fields.parsedDateFields
   time <- pHH.finish fields.parsedTimeFields
   Right (on time date)
 
@@ -242,7 +245,8 @@ compileDateTimePattern : Locale -> String ->
                              (CalendarDateTime Gregorian))
 compileDateTimePattern locale layout = do
   tokens <- tokenize (unpack layout)
-  assemble (liftDatePattern pyyyy) (dateTimeConversion locale)
+  assemble (liftDatePattern (pyyyy {calendar = Gregorian}))
+    (dateTimeConversion locale)
     (stripZones (toFragments tokens))
 
 public export
@@ -276,7 +280,7 @@ compileOffsetDateTimePattern : Locale -> String ->
 compileOffsetDateTimePattern locale layout = do
   tokens <- tokenize (unpack layout)
   (before, trailing) <- splitOffset (toFragments tokens)
-  localPattern <- assemble (liftDatePattern pyyyy)
+  localPattern <- assemble (liftDatePattern (pyyyy {calendar = Gregorian}))
     (dateTimeConversion locale) before
   Right (offsetDateTimePattern localPattern
     (pOffsetCompact <% string trailing))
@@ -339,7 +343,7 @@ zoneInfoPattern : Locale -> String ->
 zoneInfoPattern locale layout = do
   tokens <- tokenize (unpack layout)
   (before, trailing) <- splitZone (toFragments tokens)
-  localPattern <- assemble (liftDatePattern pyyyy)
+  localPattern <- assemble (liftDatePattern (pyyyy {calendar = Gregorian}))
     (dateTimeConversion locale) before
   Right (pairPattern fst snd (\local, zone => (local, zone))
     localPattern (zoneTokenPattern trailing))

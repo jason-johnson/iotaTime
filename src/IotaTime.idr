@@ -19,6 +19,7 @@ import public IotaTime.Calendar.Persian
 import public IotaTime.Calendar.Hebrew
 import public IotaTime.Locale
 import public IotaTime.Pattern
+import public IotaTime.Pattern.Calendar
 import public IotaTime.Pattern.CalendarDate
 import public IotaTime.Pattern.LocalTime
 import public IotaTime.Pattern.Offset

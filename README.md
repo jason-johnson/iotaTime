@@ -35,6 +35,8 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 
 - `iotaTime.ipkg` — Idris 2 library package definition
 - `src/IotaTime.idr` — library entry module
+- `src/IotaTime/Instant.idr` — opaque points on the global nanosecond timeline
+- `src/IotaTime/Duration.idr` — opaque fixed elapsed-time amounts
 - `src/IotaTime/Period.idr` — target-indexed calendar-relative periods
 - `src/IotaTime/Time/Component.idr` — opaque, range-checked clock components
 - `src/IotaTime/LocalTime.idr` — proof-carrying local time of day
@@ -59,6 +61,25 @@ idris2 --build test/iotaTime-test.ipkg
 ./test/build/exec/iotaTime-test
 sh test/run-compile-fail-tests.sh
 ```
+
+## Instants and fixed durations
+
+`Instant` is an opaque point on the global timeline, stored canonically as an arbitrary-precision nanosecond count relative to March 1, 2000 UTC. `Duration` is a distinct opaque fixed amount measured in nanoseconds. Neither representation can overflow or requires carry normalization.
+
+```idris
+start : Instant
+start = fromSecondsSinceUnixEpoch 0
+
+finish : Instant
+finish = addDuration start (durationFromMinutes 90)
+
+elapsed : Duration
+elapsed = difference finish start
+```
+
+`durationFromStandardDays` and `durationFromStandardWeeks` mean exact 24-hour and seven-day amounts. Calendar-relative `days`, `weeks`, `months`, and `years` continue to construct target-indexed `Period` values instead. `now` reads the mandatory UTC system clock, and Unix conversion is available at whole-second and nanosecond precision.
+
+The scalar representation is intentionally simple. A proof-oriented representation using an `Integer` day, `Fin 86400` second-of-day, and `Fin 1000000000` nanosecond remains a future benchmarking candidate if profiling shows a material benefit.
 
 ## Gregorian calendar API
 

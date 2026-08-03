@@ -5,6 +5,9 @@ version = 0.1.0
 sourcedir = "src"
 
 modules = IotaTime,
+		  IotaTime.Duration,
+		  IotaTime.Clock,
+		  IotaTime.Instant,
 		  IotaTime.Period,
 		  IotaTime.Time.Component,
 		  IotaTime.LocalTime,

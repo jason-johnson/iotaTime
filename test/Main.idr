@@ -3,6 +3,7 @@ module Main
 import Test.Proof
 import Test.Runtime
 import Test.Regression
+import Test.Duration
 import Test.Gregorian
 import Test.LocalTime
 import Test.CalendarDateTime
@@ -28,6 +29,7 @@ main = do
   let _ = proofsChecked
   runtimePassed <- Test.Runtime.run
   regressionPassed <- Test.Regression.run
+  durationPassed <- Test.Duration.run
   gregorianPassed <- Test.Gregorian.run
   localTimePassed <- Test.LocalTime.run
   calendarDateTimePassed <- Test.CalendarDateTime.run
@@ -38,6 +40,7 @@ main = do
     [ ("proof tests (compile-time)", True)
     , ("runtime behavior tests", runtimePassed)
     , ("regression tests", regressionPassed)
+    , ("duration and instant tests", durationPassed)
     , ("Gregorian calendar tests", gregorianPassed)
     , ("local time tests", localTimePassed)
     , ("calendar date-time tests", calendarDateTimePassed)

@@ -25,20 +25,26 @@ mixedPeriod : Period MixedCapability
 mixedPeriod = months 2 <+> minutes 20
 
 public export
-zeroTickRoundTrip : ticks (MkInstant 0) = 0
-zeroTickRoundTrip = Refl
+zeroTickRoundTrip : ticks (fromNanosecondsSinceEpoch 0) = 0
+zeroTickRoundTrip = instantNanosecondsRoundTrip 0
 
 public export
-negativeTickRoundTrip : ticks (MkInstant (-1)) = -1
-negativeTickRoundTrip = Refl
+negativeTickRoundTrip : ticks (fromNanosecondsSinceEpoch (-1)) = -1
+negativeTickRoundTrip = instantNanosecondsRoundTrip (-1)
 
 public export
-largeTickRoundTrip : ticks (MkInstant 999999999999999999999999999999) = 999999999999999999999999999999
-largeTickRoundTrip = Refl
+largeTickRoundTrip :
+	ticks (fromNanosecondsSinceEpoch 999999999999999999999999999999) =
+		999999999999999999999999999999
+largeTickRoundTrip =
+	instantNanosecondsRoundTrip 999999999999999999999999999999
 
 public export
-roundTripConstructor : MkInstant (ticks (MkInstant 42)) = MkInstant 42
-roundTripConstructor = Refl
+roundTripConstructor :
+	fromNanosecondsSinceEpoch (ticks (fromNanosecondsSinceEpoch 42)) =
+		fromNanosecondsSinceEpoch 42
+roundTripConstructor =
+	cong fromNanosecondsSinceEpoch (instantNanosecondsRoundTrip 42)
 
 public export
 gregorianLeapCycle : isLeapYear 2000 = True

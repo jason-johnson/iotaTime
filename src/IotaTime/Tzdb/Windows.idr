@@ -8,6 +8,7 @@ import public IotaTime.DateTimeZone
 public export
 record WindowsTransitionDate where
   constructor MkWindowsTransitionDate
+  year : Integer
   month : Integer
   week : Integer
   weekday : Integer
@@ -32,6 +33,8 @@ public export
 data WindowsZoneError
   = WindowsOffsetOutOfRange Integer
   | WindowsTimeOutOfRange Integer Integer Integer
+  | WindowsAbsoluteTransitionUnsupported Integer
+  | IncompleteWindowsDaylightRule
   | WindowsRecurrenceError RecurrenceRuleError
 
 public export
@@ -58,6 +61,9 @@ transitionSeconds transition =
 
 windowsRule : WindowsTransitionDate -> Either WindowsZoneError RecurrenceRule
 windowsRule transition = do
+  if transition.year /= 0
+    then Left (WindowsAbsoluteTransitionUnsupported transition.year)
+    else Right ()
   seconds <- transitionSeconds transition
   case monthWeekDayRule transition.month transition.week transition.weekday
     seconds WallTime of
@@ -92,3 +98,31 @@ windowsRecurringTimeZone valueId initial transitions rule = do
   case refineRecurringDateTimeZone valueId initial transitions recurrence of
     Left error => Left (InvalidWindowsTransitions error)
     Right value => Right value
+
+noDaylightTransitions : WindowsZoneRule -> Bool
+noDaylightTransitions rule =
+  rule.daylightStart.month == 0 && rule.standardStart.month == 0
+
+incompleteDaylightTransitions : WindowsZoneRule -> Bool
+incompleteDaylightTransitions rule =
+  (rule.daylightStart.month == 0) /= (rule.standardStart.month == 0)
+
+||| Validate a complete Windows TZI value. Month-zero transition dates describe
+||| a fixed standard-offset zone; paired nonzero dates describe recurrence.
+public export
+windowsTimeZone : String -> WindowsZoneRule ->
+                  Either WindowsTimeZoneError TimeZone
+windowsTimeZone valueId rule =
+  if incompleteDaylightTransitions rule
+    then Left (InvalidWindowsRule IncompleteWindowsDaylightRule)
+  else if noDaylightTransitions rule
+    then case windowsOffset (rule.biasMinutes + rule.standardBiasMinutes) of
+      Left error => Left (InvalidWindowsRule error)
+      Right offset => Right (fixedDateTimeZone valueId offset)
+    else do
+      initialOffset <- case windowsOffset
+        (rule.biasMinutes + rule.standardBiasMinutes) of
+          Left error => Left (InvalidWindowsRule error)
+          Right value => Right value
+      windowsRecurringTimeZone valueId
+        (transitionInfo initialOffset False rule.standardName) [] rule

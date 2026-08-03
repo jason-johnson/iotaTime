@@ -150,7 +150,9 @@ availableZones : IO (Either TzdbError (List String))
 
 `TZDIR` overrides `/usr/share/zoneinfo`; `TZ` overrides `/etc/localtime` for the local zone. Named zones cannot escape the TZDB root. `availableZones` reports files that successfully decode as TZif rather than relying on filename conventions.
 
-`TimeZoneProvider` isolates platform discovery. The `utcWith`, `timeZoneWith`, `localZoneWith`, and `availableZonesWith` variants accept an explicit provider; the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. `WindowsZoneRule` and `WindowsTransitionDate` model registry `REG_TZI_FORMAT` data, and `windowsZoneRecurrence` validates Windows bias and recurring `SYSTEMTIME` values into the shared recurrence model. On Windows, the default provider currently returns `UnsupportedPlatform` until a native registry/ICU provider is supplied. That remaining adapter only needs to acquire registry values and translate IANA/Windows identifiers; recurrence and zone behavior are already backend-independent.
+`TimeZoneProvider` isolates platform discovery. The `utcWith`, `timeZoneWith`, `localZoneWith`, and `availableZonesWith` variants accept an explicit provider; the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. `WindowsZoneRule` and `WindowsTransitionDate` model complete registry `REG_TZI_FORMAT` and `SYSTEMTIME` values. `windowsTimeZone` validates Windows bias semantics, constructs fixed zones when both transition months are zero, and constructs recurring zones for paired transition dates. A nonzero `SYSTEMTIME` year denotes an absolute one-time transition and is rejected explicitly rather than being misread as annual recurrence.
+
+On Windows, the default provider currently returns `UnsupportedPlatform` until a native registry/ICU provider is supplied. Windows Dynamic DST also requires multiple year-bounded recurrence eras, while the current zone representation carries one recurrence after its explicit transition table. Both limitations remain explicit; no registry rule is flattened using an arbitrary historical cutoff.
 
 ## Zoned date-times
 

@@ -53,8 +53,8 @@ autumnOverlapLocal = on (localTime 1 30 0 0) (calendarDate 3 November 2024)
 
 windowsEastern : WindowsZoneRule
 windowsEastern = MkWindowsZoneRule 300 0 (-60) "EST" "EDT"
-  (MkWindowsTransitionDate 3 2 0 2 0 0)
-  (MkWindowsTransitionDate 11 1 0 2 0 0)
+  (MkWindowsTransitionDate 0 3 2 0 2 0 0)
+  (MkWindowsTransitionDate 0 11 1 0 2 0 0)
 
 windowsEasternZone : Either WindowsTimeZoneError TimeZone
 windowsEasternZone = windowsRecurringTimeZone "Eastern Standard Time"
@@ -144,9 +144,32 @@ tzifCases =
       (case windowsRecurringTimeZone "Invalid"
         (transitionInfo (offsetFromHours (-5)) False "EST") []
         (MkWindowsZoneRule 300 0 (-60) "EST" "EDT"
-        (MkWindowsTransitionDate 3 2 0 24 0 0)
-        (MkWindowsTransitionDate 11 1 0 2 0 0)) of
+        (MkWindowsTransitionDate 0 3 2 0 24 0 0)
+        (MkWindowsTransitionDate 0 11 1 0 2 0 0)) of
           Left (InvalidWindowsRule (WindowsTimeOutOfRange 24 0 0)) => True
+          _ => False)
+  , MkRuntimeCase "Windows absolute transition dates are not misread as recurring"
+      (case windowsTimeZone "Absolute" (MkWindowsZoneRule 300 0 (-60)
+        "EST" "EDT"
+        (MkWindowsTransitionDate 2024 3 2 0 2 0 0)
+        (MkWindowsTransitionDate 2024 11 1 0 2 0 0)) of
+          Left (InvalidWindowsRule
+            (WindowsAbsoluteTransitionUnsupported 2024)) => True
+          _ => False)
+  , MkRuntimeCase "Windows month-zero TZI produces a fixed zone"
+      (case windowsTimeZone "India Standard Time" (MkWindowsZoneRule
+        (-330) 0 0 "IST" "IST"
+        (MkWindowsTransitionDate 0 0 0 0 0 0 0)
+        (MkWindowsTransitionDate 0 0 0 0 0 0 0)) of
+          Right zone => zoneOffsetAt zone
+            (fromSecondsSinceUnixEpoch 4103697600) == offsetFromMinutes 330
+          Left _ => False)
+  , MkRuntimeCase "Windows partial daylight rules are rejected"
+      (case windowsTimeZone "Partial" (MkWindowsZoneRule 0 0 (-60)
+        "STD" "DST"
+        (MkWindowsTransitionDate 0 3 2 0 2 0 0)
+        (MkWindowsTransitionDate 0 0 0 0 0 0 0)) of
+          Left (InvalidWindowsRule IncompleteWindowsDaylightRule) => True
           _ => False)
   ]
 

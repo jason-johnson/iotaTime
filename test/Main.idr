@@ -4,6 +4,7 @@ import Test.Proof
 import Test.Runtime
 import Test.Regression
 import Test.Duration
+import Test.Interval
 import Test.Gregorian
 import Test.LocalTime
 import Test.CalendarDateTime
@@ -30,6 +31,7 @@ main = do
   runtimePassed <- Test.Runtime.run
   regressionPassed <- Test.Regression.run
   durationPassed <- Test.Duration.run
+  intervalPassed <- Test.Interval.run
   gregorianPassed <- Test.Gregorian.run
   localTimePassed <- Test.LocalTime.run
   calendarDateTimePassed <- Test.CalendarDateTime.run
@@ -41,6 +43,7 @@ main = do
     , ("runtime behavior tests", runtimePassed)
     , ("regression tests", regressionPassed)
     , ("duration and instant tests", durationPassed)
+    , ("interval tests", intervalPassed)
     , ("Gregorian calendar tests", gregorianPassed)
     , ("local time tests", localTimePassed)
     , ("calendar date-time tests", calendarDateTimePassed)

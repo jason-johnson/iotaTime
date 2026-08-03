@@ -2,6 +2,7 @@ module IotaTime
 
 import public IotaTime.Duration
 import public IotaTime.Instant
+import public IotaTime.Interval
 import public IotaTime.Period
 import public IotaTime.LocalTime
 import public IotaTime.Calendar

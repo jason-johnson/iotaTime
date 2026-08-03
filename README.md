@@ -37,6 +37,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime.idr` — library entry module
 - `src/IotaTime/Instant.idr` — opaque points on the global nanosecond timeline
 - `src/IotaTime/Duration.idr` — opaque fixed elapsed-time amounts
+- `src/IotaTime/Interval.idr` — proof-carrying half-open timeline intervals
 - `src/IotaTime/Period.idr` — target-indexed calendar-relative periods
 - `src/IotaTime/Time/Component.idr` — opaque, range-checked clock components
 - `src/IotaTime/LocalTime.idr` — proof-carrying local time of day
@@ -80,6 +81,19 @@ elapsed = difference finish start
 `durationFromStandardDays` and `durationFromStandardWeeks` mean exact 24-hour and seven-day amounts. Calendar-relative `days`, `weeks`, `months`, and `years` continue to construct target-indexed `Period` values instead. `now` reads the mandatory UTC system clock, and Unix conversion is available at whole-second and nanosecond precision.
 
 The scalar representation is intentionally simple. A proof-oriented representation using an `Integer` day, `Fin 86400` second-of-day, and `Fin 1000000000` nanosecond remains a future benchmarking candidate if profiling shows a material benefit.
+
+## Intervals
+
+`Interval` represents a half-open range `[start, end)` and always satisfies `start <= end`. Statically known epoch-relative nanosecond endpoints use `interval`; reversed literals fail compilation:
+
+```idris
+window : Interval
+window = interval 0 1000000000
+```
+
+For arbitrary `Instant` endpoints learned at runtime, `refineInterval` returns `Either IntervalError Interval`. Empty intervals are valid, contain no instants, and have zero duration. `contains` includes the start and excludes the end; `duration` returns the fixed nonnegative `Duration` between the endpoints.
+
+Static construction accepts scalar endpoints because `Instant` is intentionally opaque: Idris cannot reduce two arbitrary `Instant` values to synthesize their ordering proof outside the implementation module. Runtime refinement preserves that opacity without casts or unchecked constructors.
 
 ## Gregorian calendar API
 

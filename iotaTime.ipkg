@@ -48,6 +48,7 @@ modules = IotaTime.Duration,
 		  IotaTime.Pattern.Instant,
 		  IotaTime.Pattern.CalendarDateTime,
 		  IotaTime.Pattern.OffsetDateTime,
+		  IotaTime.Pattern.ZonedDateTime,
 		  IotaTime.Pattern.Locale,
 		  IotaTime.CalendarDateTime,
 		  IotaTime

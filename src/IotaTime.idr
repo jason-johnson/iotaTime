@@ -26,5 +26,6 @@ import public IotaTime.Pattern.Duration
 import public IotaTime.Pattern.Instant
 import public IotaTime.Pattern.CalendarDateTime
 import public IotaTime.Pattern.OffsetDateTime
+import public IotaTime.Pattern.ZonedDateTime
 import public IotaTime.Pattern.Locale
 import public IotaTime.CalendarDateTime

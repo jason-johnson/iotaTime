@@ -74,6 +74,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Pattern/Offset.idr` — signed UTC-offset patterns
 - `src/IotaTime/Pattern/CalendarDateTime.idr` — combined Gregorian date-time patterns
 - `src/IotaTime/Pattern/OffsetDateTime.idr` — fixed-offset date-time patterns
+- `src/IotaTime/Pattern/ZonedDateTime.idr` — format-only zoned patterns and effectful parsing
 - `src/IotaTime/Pattern/Locale.idr` — locale `strftime` layout compilation
 - `test/iotaTime-test.ipkg` — test package
 - `test/Main.idr` — test orchestrator
@@ -421,6 +422,12 @@ The optional sign belongs to the complete duration rather than an individual fie
 `pInstant` parses and formats UTC instants as `yyyy-MM-ddTHH:mm:ssZ`; `pInstantNano` includes exactly nine fractional digits. `instantPattern` adapts any Gregorian `CalendarDateTime` pattern and treats its value as UTC.
 
 Use `parseInstant` for the typed `Either PatternError Instant` parsing boundary. Because `Instant` has an arbitrary-precision timeline while the proof-carrying Gregorian calendar begins on October 15, 1582, `formatInstant` returns `Either CalendarConversionError String`. An earlier instant therefore reports `TargetCalendarOutOfRange` rather than hiding a partial conversion inside the total `Pattern.format` API.
+
+## Zoned date-time patterns
+
+`pZonedDateTime` formats a Gregorian zoned value as an ISO local date-time followed by its zone ID, such as `2024-04-23T09:00:00 Europe/Zurich`. `zonedDateTimePattern` adapts another Gregorian `CalendarDateTime` pattern and a zone-suffix renderer. Both produce the dedicated format-only `ZonedDateTimePattern`, so the pure `Pattern.parse` API cannot accidentally construct a zoned value without loading its rules or choosing a local-time resolution policy.
+
+`parseStandardZonedDateTime` parses the standard layout. The caller supplies an effectful zone provider and an explicit resolver such as `fromCalendarDateTimeStrictly` or `fromCalendarDateTimeLeniently`; `parseZonedDateTimeWith` provides the same mechanism for a custom local pattern. `ZonedDateTimePatternError` keeps structural parsing, provider lookup, and skipped or ambiguous time resolution failures distinct. The standard parser has a distinct name in the umbrella API because locale `%Z` parsing already uses `parseZonedDateTime`.
 
 ## Offset and date-time patterns
 

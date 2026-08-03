@@ -1,6 +1,7 @@
 module IotaTime.Tzdb.Windows
 
 import public IotaTime.DateTimeZone
+import Data.String
 
 %default total
 
@@ -46,6 +47,13 @@ record WindowsRegistryZone where
   registryDefaultTzi : List Bits8
   registryDynamicTzi : List (Integer, List Bits8)
 
+||| Complete result emitted by a native Windows registry source.
+public export
+record WindowsRegistrySnapshot where
+  constructor MkWindowsRegistrySnapshot
+  snapshotLocalZoneId : String
+  snapshotZones : List WindowsRegistryZone
+
 public export
 data WindowsZoneError
   = WindowsOffsetOutOfRange Integer
@@ -67,6 +75,14 @@ data WindowsRegistryError
   = InvalidDefaultTzi WindowsZoneError
   | InvalidDynamicTzi Integer WindowsZoneError
   | InvalidRegistryTimeZone WindowsTimeZoneError
+
+public export
+data WindowsRegistryProtocolError
+  = MissingLocalZoneId
+  | UnexpectedRegistryLine String
+  | InvalidRegistryHex String
+  | InvalidDynamicRegistryLine String
+  | IncompleteRegistryZone
 
 byteValue : Bits8 -> Integer
 byteValue = cast
@@ -100,6 +116,106 @@ readSigned32 : List Bits8 -> Maybe (Integer, List Bits8)
 readSigned32 bytes = do
   (value, remaining) <- takeBytes 4 bytes
   Just (signedLittleEndian32 value, remaining)
+
+prefixValue : List Char -> String -> Maybe String
+prefixValue expectedPrefix source = map pack (strip expectedPrefix (unpack source))
+  where
+    strip : List Char -> List Char -> Maybe (List Char)
+    strip [] remaining = Just remaining
+    strip (expected :: rest) (actual :: remaining) =
+      if expected == actual then strip rest remaining else Nothing
+    strip _ _ = Nothing
+
+hexDigit : Char -> Maybe Integer
+hexDigit value =
+  if value >= '0' && value <= '9' then Just (cast value - cast '0')
+  else if value >= 'a' && value <= 'f' then Just (cast value - cast 'a' + 10)
+  else if value >= 'A' && value <= 'F' then Just (cast value - cast 'A' + 10)
+  else Nothing
+
+hexBytes : String -> Maybe (List Bits8)
+hexBytes source = go (unpack source)
+  where
+    go : List Char -> Maybe (List Bits8)
+    go [] = Just []
+    go (high :: low :: rest) = do
+      highValue <- hexDigit high
+      lowValue <- hexDigit low
+      remaining <- go rest
+      Just (cast (highValue * 16 + lowValue) :: remaining)
+    go _ = Nothing
+
+dynamicLine : String -> Maybe (Integer, List Bits8)
+dynamicLine source = do
+  value <- prefixValue ['D', 'Y', 'N', 'A', 'M', 'I', 'C', '\t'] source
+  parseYear [] (unpack value)
+  where
+    decimalDigits : List Char -> Maybe Integer
+    decimalDigits [] = Nothing
+    decimalDigits digits = go 0 digits
+      where
+        go : Integer -> List Char -> Maybe Integer
+        go value [] = Just value
+        go value (digit :: rest) = if digit >= '0' && digit <= '9'
+          then go (value * 10 + cast digit - cast '0') rest
+          else Nothing
+
+    parseYear : List Char -> List Char -> Maybe (Integer, List Bits8)
+    parseYear digits ('\t' :: encoded) = do
+      year <- decimalDigits (reverse digits)
+      bytes <- hexBytes (pack encoded)
+      Just (year, bytes)
+    parseYear digits (value :: rest) = parseYear (value :: digits) rest
+    parseYear _ [] = Nothing
+
+parseDynamicLines : List String -> Either WindowsRegistryProtocolError
+  (List (Integer, List Bits8), List String)
+parseDynamicLines [] = Left IncompleteRegistryZone
+parseDynamicLines ("END" :: rest) = Right ([], rest)
+parseDynamicLines (line :: rest) = case dynamicLine line of
+  Nothing => Left (InvalidDynamicRegistryLine line)
+  Just value => do
+    (remainingValues, remainingLines) <- parseDynamicLines rest
+    Right (value :: remainingValues, remainingLines)
+
+parseRegistryZone : List String -> Either WindowsRegistryProtocolError
+  (WindowsRegistryZone, List String)
+parseRegistryZone (idLine :: standardLine :: daylightLine :: tziLine :: rest) = do
+  zoneId <- maybe (Left (UnexpectedRegistryLine idLine)) Right
+    (prefixValue ['I', 'D', '\t'] idLine)
+  standardName <- maybe (Left (UnexpectedRegistryLine standardLine)) Right
+    (prefixValue ['S', 'T', 'D', '\t'] standardLine)
+  daylightName <- maybe (Left (UnexpectedRegistryLine daylightLine)) Right
+    (prefixValue ['D', 'S', 'T', '\t'] daylightLine)
+  encoded <- maybe (Left (UnexpectedRegistryLine tziLine)) Right
+    (prefixValue ['T', 'Z', 'I', '\t'] tziLine)
+  defaultTzi <- maybe (Left (InvalidRegistryHex encoded)) Right
+    (hexBytes encoded)
+  (dynamicTzi, remaining) <- parseDynamicLines rest
+  Right (MkWindowsRegistryZone zoneId standardName daylightName
+    defaultTzi dynamicTzi, remaining)
+parseRegistryZone _ = Left IncompleteRegistryZone
+
+parseRegistryZones : List String -> Either WindowsRegistryProtocolError
+  (List WindowsRegistryZone)
+parseRegistryZones [] = Right []
+parseRegistryZones ("ZONE" :: rest) = do
+  (zone, remaining) <- parseRegistryZone rest
+  zones <- assert_total (parseRegistryZones remaining)
+  Right (zone :: zones)
+parseRegistryZones (line :: _) = Left (UnexpectedRegistryLine line)
+
+||| Parse the strict protocol produced by the Windows command adapter.
+public export
+parseWindowsRegistrySnapshot : String ->
+  Either WindowsRegistryProtocolError WindowsRegistrySnapshot
+parseWindowsRegistrySnapshot source = case lines source of
+  [] => Left MissingLocalZoneId
+  localLine :: rest => case prefixValue ['L', 'O', 'C', 'A', 'L', '\t'] localLine of
+    Nothing => Left MissingLocalZoneId
+    Just "" => Left MissingLocalZoneId
+    Just localZoneId => map (MkWindowsRegistrySnapshot localZoneId)
+      (parseRegistryZones rest)
 
 readTransitionDate : List Bits8 -> Maybe
   (WindowsTransitionDate, Integer, List Bits8)

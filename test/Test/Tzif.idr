@@ -4,6 +4,7 @@ import IotaTime
 import IotaTime.Tzdb
 import IotaTime.Tzdb.Tzif
 import IotaTime.Tzdb.Windows
+import Data.String
 import Test.Support
 
 zeros : Nat -> List Bits8
@@ -51,6 +52,32 @@ easternRegistryZone : WindowsRegistryZone
 easternRegistryZone = MkWindowsRegistryZone "Eastern Standard Time" "EST" "EDT"
   (easternTziBytes 0)
   [(2006, easternBefore2007TziBytes), (2007, easternTziBytes 0)]
+
+hexCharacter : Integer -> Char
+hexCharacter value = if value < 10
+  then chr (cast '0' + cast value)
+  else chr (cast 'A' + cast (value - 10))
+
+hexString : List Bits8 -> String
+hexString bytes = pack (concatMap encode bytes)
+  where
+    encode : Bits8 -> List Char
+    encode byte =
+      let value : Integer = cast byte
+       in [hexCharacter (value `div` 16), hexCharacter (value `mod` 16)]
+
+easternRegistryProtocol : String
+easternRegistryProtocol = unlines
+  [ "LOCAL\tEastern Standard Time"
+  , "ZONE"
+  , "ID\tEastern Standard Time"
+  , "STD\tEST"
+  , "DST\tEDT"
+  , "TZI\t" ++ hexString (easternTziBytes 0)
+  , "DYNAMIC\t2006\t" ++ hexString easternBefore2007TziBytes
+  , "DYNAMIC\t2007\t" ++ hexString (easternTziBytes 0)
+  , "END"
+  ]
 
 header : Bits8 -> Integer -> List Bits8
 header version transitionCount =
@@ -219,6 +246,29 @@ tzifCases =
           (MkWindowsRegistryZone "Broken" "STD" "DST" (zeros 43) []) of
             Left (InvalidDefaultTzi (WindowsTziLength 43)) => True
             _ => False)
+    , MkRuntimeCase "Windows registry command protocol converts Dynamic DST"
+        (case parseWindowsRegistrySnapshot easternRegistryProtocol of
+          Right snapshot => case snapshot.snapshotZones of
+            [registry] => case windowsRegistryTimeZone registry of
+              Right zone => snapshot.snapshotLocalZoneId ==
+                  "Eastern Standard Time" &&
+                zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1142856000) ==
+                  offsetFromHours (-5) &&
+                zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1174392000) ==
+                  offsetFromHours (-4)
+              Left _ => False
+            _ => False
+          Left _ => False)
+    , MkRuntimeCase "Windows registry command protocol rejects malformed hex"
+        (case parseWindowsRegistrySnapshot
+          "LOCAL\tUTC\nZONE\nID\tUTC\nSTD\tUTC\nDST\tUTC\nTZI\t0G\nEND\n" of
+            Left (InvalidRegistryHex "0G") => True
+            _ => False)
+    , MkRuntimeCase "Windows registry command protocol rejects missing END"
+        (case parseWindowsRegistrySnapshot
+          "LOCAL\tUTC\nZONE\nID\tUTC\nSTD\tUTC\nDST\tUTC\nTZI\t00\n" of
+            Left IncompleteRegistryZone => True
+            _ => False)
   , MkRuntimeCase "Windows transition clock fields are validated"
       (case windowsRecurringTimeZone "Invalid"
         (transitionInfo (offsetFromHours (-5)) False "EST") []
@@ -306,13 +356,13 @@ run = do
         (\_ => pure (Right injectedZone))
         (pure (Right injectedZone))
         (pure (Right ["Injected/Zone"]))
-  let registrySource = MkWindowsRegistrySource
-        (pure (Right [easternRegistryZone]))
-        (pure (Right "Eastern Standard Time"))
+  let registrySnapshot = MkWindowsRegistrySnapshot "Eastern Standard Time"
+        [easternRegistryZone]
+  let registrySource = MkWindowsRegistrySource (pure (Right registrySnapshot))
   let registryProvider = windowsRegistryTimeZoneProvider registrySource
-  let failingRegistryProvider = windowsRegistryTimeZoneProvider
-        (MkWindowsRegistrySource (pure (Left "registry unavailable"))
-          (pure (Right "Eastern Standard Time")))
+  let failingSource = MkWindowsRegistrySource
+        (pure (Left "registry unavailable"))
+  let failingRegistryProvider = windowsRegistryTimeZoneProvider failingSource
   injected <- timeZoneWith injectedProvider "anything"
   registryNamed <- timeZoneWith registryProvider "Eastern Standard Time"
   registryLocal <- localZoneWith registryProvider

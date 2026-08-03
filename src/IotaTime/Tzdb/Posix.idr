@@ -58,7 +58,8 @@ parseDigits input =
   let (digits, remaining) = spanChars isDecimalDigit input
    in if null digits
         then Left ExpectedNumber
-        else Right (cast (pack digits), remaining)
+        else Right (foldl (\value, digit =>
+          value * 10 + cast digit - cast '0') 0 digits, remaining)
 
 parseOptionalComponent : List Char -> Either PosixTzError (Integer, List Char)
 parseOptionalComponent (':' :: rest) = parseDigits rest

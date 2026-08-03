@@ -86,6 +86,7 @@ dateTimeZoneCases =
         [(epoch, transitionInfo (offsetFromHours 1) True "DST"),
          (epoch, transitionInfo zeroOffset False "STD")] of
           Left TransitionsNotStrictlyIncreasing => True
+          Left _ => False
           Right _ => False)
   , MkRuntimeCase "runtime reversed transitions are rejected"
       (case refineDateTimeZone "Runtime"
@@ -94,6 +95,7 @@ dateTimeZoneCases =
           transitionInfo (offsetFromHours 1) True "DST"),
          (epoch, transitionInfo zeroOffset False "STD")] of
           Left TransitionsNotStrictlyIncreasing => True
+          Left _ => False
           Right _ => False)
   ]
 

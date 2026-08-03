@@ -103,12 +103,19 @@ zoneRecurrence : TransitionInfo -> TransitionInfo -> RecurrenceRule ->
 zoneRecurrence = MkZoneRecurrence
 
 export
+record RecurrenceEra where
+  constructor MkRecurrenceEra
+  eraStart : Maybe Instant
+  eraInitialTransition : TransitionInfo
+  eraRecurrence : Maybe ZoneRecurrence
+
+export
 record DateTimeZoneRep where
   constructor MkDateTimeZone
   storedZoneId : String
   initialTransition : TransitionInfo
   transitions : List ZoneTransition
-  futureRecurrence : Maybe ZoneRecurrence
+  recurrenceEras : List RecurrenceEra
 
 public export
 DateTimeZone : Type
@@ -142,7 +149,7 @@ toTransitions ((instant, valueInfo) :: rest) =
 public export
 fixedDateTimeZone : String -> Offset -> DateTimeZone
 fixedDateTimeZone valueId valueOffset =
-  MkDateTimeZone valueId (transitionInfo valueOffset False valueId) [] Nothing
+  MkDateTimeZone valueId (transitionInfo valueOffset False valueId) [] []
 
 ||| Construct a transition zone from statically known, strictly increasing
 ||| nanosecond instants and the offsets effective from those instants onward.
@@ -152,10 +159,13 @@ dateTimeZone : (valueId : String) -> (valueInitialInfo : TransitionInfo) ->
                {auto 0 valid : So (isValidZoneTransitions valueTransitions)} ->
                DateTimeZone
 dateTimeZone valueId valueInitialInfo valueTransitions =
-  MkDateTimeZone valueId valueInitialInfo (toTransitions valueTransitions) Nothing
+  MkDateTimeZone valueId valueInitialInfo (toTransitions valueTransitions) []
 
 public export
-data DateTimeZoneError = TransitionsNotStrictlyIncreasing
+data DateTimeZoneError
+  = TransitionsNotStrictlyIncreasing
+  | RecurrenceErasNotStrictlyIncreasing
+  | MissingRecurrenceEra
 
 runtimeTransitionsValid : List (Instant, TransitionInfo) -> Bool
 runtimeTransitionsValid [] = True
@@ -178,7 +188,7 @@ refineDateTimeZone : String -> TransitionInfo -> List (Instant, TransitionInfo) 
 refineDateTimeZone valueId valueInitialInfo valueTransitions =
   if runtimeTransitionsValid valueTransitions
     then Right (MkDateTimeZone valueId valueInitialInfo
-      (toRuntimeTransitions valueTransitions) Nothing)
+      (toRuntimeTransitions valueTransitions) [])
     else Left TransitionsNotStrictlyIncreasing
 
 ||| Validate explicit transitions and attach recurring rules used after them.
@@ -188,9 +198,22 @@ refineRecurringDateTimeZone : String -> TransitionInfo ->
                               Either DateTimeZoneError DateTimeZone
 refineRecurringDateTimeZone valueId valueInitialInfo valueTransitions recurrence =
   if runtimeTransitionsValid valueTransitions
-    then Right (MkDateTimeZone valueId valueInitialInfo
-      (toRuntimeTransitions valueTransitions) (Just recurrence))
+    then let (boundary, initial) = finalExplicit valueInitialInfo valueTransitions
+          in Right (MkDateTimeZone valueId valueInitialInfo
+            (toRuntimeTransitions valueTransitions)
+            [MkRecurrenceEra boundary initial (Just recurrence)])
     else Left TransitionsNotStrictlyIncreasing
+  where
+    finalExplicit : TransitionInfo -> List (Instant, TransitionInfo) ->
+                    (Maybe Instant, TransitionInfo)
+    finalExplicit initial [] = (Nothing, initial)
+    finalExplicit initial ((instant, info) :: rest) = go instant info rest
+      where
+        go : Instant -> TransitionInfo -> List (Instant, TransitionInfo) ->
+             (Maybe Instant, TransitionInfo)
+        go instant info [] = (Just instant, info)
+        go instant info ((next, nextInfo) :: remaining) =
+          go next nextInfo remaining
 
 public export
 zoneId : DateTimeZone -> String
@@ -268,11 +291,16 @@ ruleInstant recurrence year before rule =
 
 recurrenceEvents : ZoneRecurrence -> Integer -> List (Instant, TransitionInfo)
 recurrenceEvents recurrence year =
-  [ (ruleInstant recurrence year recurrence.standardTransition
+  order
+    (ruleInstant recurrence year recurrence.standardTransition
       recurrence.daylightStart, recurrence.daylightTransition)
-  , (ruleInstant recurrence year recurrence.daylightTransition
+    (ruleInstant recurrence year recurrence.daylightTransition
       recurrence.standardStart, recurrence.standardTransition)
-  ]
+  where
+    order : (Instant, TransitionInfo) -> (Instant, TransitionInfo) ->
+            List (Instant, TransitionInfo)
+    order first@(firstInstant, _) second@(secondInstant, _) =
+      if firstInstant <= secondInstant then [first, second] else [second, first]
 
 recurringTransitionAt : ZoneRecurrence -> Maybe Instant -> TransitionInfo ->
                         Instant -> TransitionInfo
@@ -298,19 +326,116 @@ recurringTransitionAt recurrence cutoff initial query =
         then chooseLatest (Just event) info rest
         else chooseLatest boundary current rest
 
+eraInitial : Maybe Instant -> ZoneRecurrence -> TransitionInfo
+eraInitial Nothing recurrence = recurrence.standardTransition
+eraInitial (Just start) recurrence = recurringTransitionAt recurrence Nothing
+  recurrence.standardTransition start
+
+eraSpecsValid : List (Maybe Instant, ZoneRecurrence) -> Bool
+eraSpecsValid [] = False
+eraSpecsValid ((start, _) :: rest) = go start rest
+  where
+    go : Maybe Instant -> List (Maybe Instant, ZoneRecurrence) -> Bool
+    go previous [] = True
+    go previous ((next, _) :: remaining) = case (previous, next) of
+      (_, Nothing) => False
+      (Nothing, Just next) => go (Just next) remaining
+      (Just previous, Just next) =>
+        previous < next && go (Just next) remaining
+
+toRecurrenceEras : List (Maybe Instant, ZoneRecurrence) -> List RecurrenceEra
+toRecurrenceEras [] = []
+toRecurrenceEras ((start, recurrence) :: rest) =
+  MkRecurrenceEra start (eraInitial start recurrence) (Just recurrence) ::
+  toRecurrenceEras rest
+
+zoneEraSpecsValid : List (Maybe Instant, TransitionInfo, Maybe ZoneRecurrence) -> Bool
+zoneEraSpecsValid [] = False
+zoneEraSpecsValid ((start, _, _) :: rest) = go start rest
+  where
+    go : Maybe Instant ->
+         List (Maybe Instant, TransitionInfo, Maybe ZoneRecurrence) -> Bool
+    go previous [] = True
+    go previous ((next, _, _) :: remaining) = case (previous, next) of
+      (_, Nothing) => False
+      (Nothing, Just next) => go (Just next) remaining
+      (Just previous, Just next) =>
+        previous < next && go (Just next) remaining
+
+toZoneEras : List (Maybe Instant, TransitionInfo, Maybe ZoneRecurrence) ->
+             List RecurrenceEra
+toZoneEras [] = []
+toZoneEras ((start, initial, recurrence) :: rest) =
+  MkRecurrenceEra start computed recurrence :: toZoneEras rest
+  where
+    computed : TransitionInfo
+    computed = case recurrence of
+      Nothing => initial
+      Just value => case start of
+        Nothing => initial
+        Just boundary => recurringTransitionAt value Nothing initial boundary
+
+||| Validate ordered fixed or recurring eras for a platform adapter.
+export
+refineTimeZoneEras : String ->
+  List (Maybe Instant, TransitionInfo, Maybe ZoneRecurrence) ->
+  Either DateTimeZoneError TimeZone
+refineTimeZoneEras valueId specs =
+  if zoneEraSpecsValid specs
+    then case toZoneEras specs of
+      [] => Left MissingRecurrenceEra
+      first :: eras => Right (MkDateTimeZone valueId
+        first.eraInitialTransition [] (first :: eras))
+    else case specs of
+      [] => Left MissingRecurrenceEra
+      _ => Left RecurrenceErasNotStrictlyIncreasing
+
+||| Validate ordered recurrence eras. An initial `Nothing` boundary applies
+||| without a lower timeline bound; subsequent boundaries must increase.
+export
+refineRecurrenceErasDateTimeZone : String ->
+  List (Maybe Instant, ZoneRecurrence) -> Either DateTimeZoneError TimeZone
+refineRecurrenceErasDateTimeZone valueId specs =
+  if eraSpecsValid specs
+    then case toRecurrenceEras specs of
+      [] => Left MissingRecurrenceEra
+      first :: eras => Right (MkDateTimeZone valueId
+        first.eraInitialTransition [] (first :: eras))
+    else case specs of
+      [] => Left MissingRecurrenceEra
+      _ => Left RecurrenceErasNotStrictlyIncreasing
+
+activeRecurrenceEra : List RecurrenceEra -> TransitionInfo -> Instant ->
+                      TransitionInfo
+activeRecurrenceEra eras fallback query = case select Nothing eras of
+  Nothing => fallback
+  Just era => case era.eraRecurrence of
+    Nothing => era.eraInitialTransition
+    Just recurrence => recurringTransitionAt recurrence era.eraStart
+      era.eraInitialTransition query
+  where
+    startsBy : Maybe Instant -> Instant -> Bool
+    startsBy Nothing query = True
+    startsBy (Just start) query = start <= query
+
+    select : Maybe RecurrenceEra -> List RecurrenceEra -> Maybe RecurrenceEra
+    select selected [] = selected
+    select selected (era :: rest) =
+      if startsBy era.eraStart query
+        then select (Just era) rest
+        else selected
+
 public export
 activeTransitionAt : TimeZone -> Instant -> TransitionInfo
 activeTransitionAt valueZone valueInstant = go
-  valueZone.initialTransition Nothing valueZone.transitions
+  valueZone.initialTransition valueZone.transitions
   where
-    go : TransitionInfo -> Maybe Instant -> List ZoneTransition -> TransitionInfo
-    go current lastExplicit [] = case valueZone.futureRecurrence of
-      Nothing => current
-      Just recurrence => recurringTransitionAt recurrence lastExplicit current valueInstant
-    go current lastExplicit (transition :: rest) =
+    go : TransitionInfo -> List ZoneTransition -> TransitionInfo
+    go current [] = activeRecurrenceEra valueZone.recurrenceEras current valueInstant
+    go current (transition :: rest) =
       if valueInstant < transition.transitionInstant
         then current
-        else go transition.transitionInfo (Just transition.transitionInstant) rest
+        else go transition.transitionInfo rest
 
 public export
 zoneOffsetAt : TimeZone -> Instant -> Offset
@@ -324,21 +449,27 @@ addUnique value (current :: rest) =
 
 zoneOffsets : DateTimeZone -> List Offset
 zoneOffsets valueZone =
-  recurrenceOffsets valueZone.futureRecurrence valueZone.transitions
+  recurrenceOffsets valueZone.recurrenceEras valueZone.transitions
   where
     go : List Offset -> List ZoneTransition -> List Offset
     go values [] = values
     go values (transition :: rest) =
       go (addUnique (utcOffset transition.transitionInfo) values) rest
 
-    recurrenceOffsets : Maybe ZoneRecurrence -> List ZoneTransition -> List Offset
-    recurrenceOffsets Nothing transitions =
+    addEraOffsets : List Offset -> List RecurrenceEra -> List Offset
+    addEraOffsets offsets [] = offsets
+    addEraOffsets offsets (era :: eras) = case era.eraRecurrence of
+      Nothing => addEraOffsets
+        (addUnique (utcOffset era.eraInitialTransition) offsets) eras
+      Just recurrence => addEraOffsets
+        (addUnique (utcOffset recurrence.daylightTransition)
+          (addUnique (utcOffset recurrence.standardTransition) offsets)) eras
+
+    recurrenceOffsets : List RecurrenceEra -> List ZoneTransition -> List Offset
+    recurrenceOffsets [] transitions =
       go [utcOffset valueZone.initialTransition] transitions
-    recurrenceOffsets (Just recurrence) transitions =
-      let standardAndInitial = addUnique (utcOffset valueZone.initialTransition)
-            [utcOffset recurrence.standardTransition]
-       in go (addUnique (utcOffset recurrence.daylightTransition)
-            standardAndInitial) transitions
+    recurrenceOffsets eras transitions =
+      go (addEraOffsets [utcOffset valueZone.initialTransition] eras) transitions
 
 insertByInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
                   {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->

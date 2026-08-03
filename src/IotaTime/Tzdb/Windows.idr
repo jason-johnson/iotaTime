@@ -29,18 +29,114 @@ record WindowsZoneRule where
   daylightStart : WindowsTransitionDate
   standardStart : WindowsTransitionDate
 
+||| A Dynamic DST registry value effective from January 1 of its year.
+public export
+record WindowsDynamicRule where
+  constructor MkWindowsDynamicRule
+  effectiveYear : Integer
+  dynamicRule : WindowsZoneRule
+
 public export
 data WindowsZoneError
   = WindowsOffsetOutOfRange Integer
   | WindowsTimeOutOfRange Integer Integer Integer
+  | WindowsTransitionMillisecondsUnsupported Integer
   | WindowsAbsoluteTransitionUnsupported Integer
   | IncompleteWindowsDaylightRule
+  | WindowsTziLength Integer
   | WindowsRecurrenceError RecurrenceRuleError
 
 public export
 data WindowsTimeZoneError
   = InvalidWindowsRule WindowsZoneError
   | InvalidWindowsTransitions DateTimeZoneError
+  | DynamicYearsNotStrictlyIncreasing
+
+byteValue : Bits8 -> Integer
+byteValue = cast
+
+unsignedLittleEndian : List Bits8 -> Integer
+unsignedLittleEndian bytes = go 1 bytes
+  where
+    go : Integer -> List Bits8 -> Integer
+    go multiplier [] = 0
+    go multiplier (byte :: rest) =
+      byteValue byte * multiplier + go (multiplier * 256) rest
+
+signedLittleEndian32 : List Bits8 -> Integer
+signedLittleEndian32 bytes =
+  let unsigned = unsignedLittleEndian bytes
+   in if unsigned >= 2147483648 then unsigned - 4294967296 else unsigned
+
+takeBytes : Nat -> List Bits8 -> Maybe (List Bits8, List Bits8)
+takeBytes Z bytes = Just ([], bytes)
+takeBytes (S count) [] = Nothing
+takeBytes (S count) (byte :: rest) = do
+  (taken, remaining) <- takeBytes count rest
+  Just (byte :: taken, remaining)
+
+readLittleEndian : Nat -> List Bits8 -> Maybe (Integer, List Bits8)
+readLittleEndian width bytes = do
+  (value, remaining) <- takeBytes width bytes
+  Just (unsignedLittleEndian value, remaining)
+
+readSigned32 : List Bits8 -> Maybe (Integer, List Bits8)
+readSigned32 bytes = do
+  (value, remaining) <- takeBytes 4 bytes
+  Just (signedLittleEndian32 value, remaining)
+
+readTransitionDate : List Bits8 -> Maybe
+  (WindowsTransitionDate, Integer, List Bits8)
+readTransitionDate bytes = do
+  (year, afterYear) <- readLittleEndian 2 bytes
+  (month, afterMonth) <- readLittleEndian 2 afterYear
+  (weekday, afterWeekday) <- readLittleEndian 2 afterMonth
+  (week, afterWeek) <- readLittleEndian 2 afterWeekday
+  (hour, afterHour) <- readLittleEndian 2 afterWeek
+  (minute, afterMinute) <- readLittleEndian 2 afterHour
+  (second, afterSecond) <- readLittleEndian 2 afterMinute
+  (milliseconds, remaining) <- readLittleEndian 2 afterSecond
+  Just (MkWindowsTransitionDate year month week weekday hour minute second,
+    milliseconds, remaining)
+
+||| Decode a binary Windows REG_TZI_FORMAT value. Display names are stored in
+||| separate registry values and are supplied explicitly.
+public export
+parseWindowsTzi : String -> String -> List Bits8 ->
+                  Either WindowsZoneError WindowsZoneRule
+parseWindowsTzi standardName daylightName bytes =
+  if length bytes /= 44
+    then Left (WindowsTziLength (cast (length bytes)))
+    else case decode bytes of
+      Nothing => Left (WindowsTziLength (cast (length bytes)))
+      Just (bias, standardBias, daylightBias,
+            standardDate, standardMilliseconds,
+            daylightDate, daylightMilliseconds) =>
+        if standardMilliseconds /= 0
+          then Left (WindowsTransitionMillisecondsUnsupported
+            standardMilliseconds)
+        else if daylightMilliseconds /= 0
+          then Left (WindowsTransitionMillisecondsUnsupported
+            daylightMilliseconds)
+        else Right (MkWindowsZoneRule bias standardBias daylightBias
+          standardName daylightName daylightDate standardDate)
+  where
+    decode : List Bits8 -> Maybe
+      (Integer, Integer, Integer, WindowsTransitionDate, Integer,
+       WindowsTransitionDate, Integer)
+    decode source = do
+      (bias, afterBias) <- readSigned32 source
+      (standardBias, afterStandardBias) <- readSigned32 afterBias
+      (daylightBias, afterDaylightBias) <- readSigned32 afterStandardBias
+      (standardDate, standardMilliseconds, afterStandard) <-
+        readTransitionDate afterDaylightBias
+      (daylightDate, daylightMilliseconds, remaining) <-
+        readTransitionDate afterStandard
+      case remaining of
+        [] => Just (bias, standardBias, daylightBias,
+          standardDate, standardMilliseconds,
+          daylightDate, daylightMilliseconds)
+        _ => Nothing
 
 windowsOffset : Integer -> Either WindowsZoneError Offset
 windowsOffset bias =
@@ -107,22 +203,81 @@ incompleteDaylightTransitions : WindowsZoneRule -> Bool
 incompleteDaylightTransitions rule =
   (rule.daylightStart.month == 0) /= (rule.standardStart.month == 0)
 
+windowsZoneEra : WindowsZoneRule -> Either WindowsZoneError
+  (TransitionInfo, Maybe ZoneRecurrence)
+windowsZoneEra rule =
+  if incompleteDaylightTransitions rule
+    then Left IncompleteWindowsDaylightRule
+  else do
+    standardOffset <- windowsOffset
+      (rule.biasMinutes + rule.standardBiasMinutes)
+    let standardInfo = transitionInfo standardOffset False rule.standardName
+    if noDaylightTransitions rule
+      then Right (standardInfo, Nothing)
+      else map (\recurrence => (standardInfo, Just recurrence))
+        (windowsZoneRecurrence rule)
+
 ||| Validate a complete Windows TZI value. Month-zero transition dates describe
 ||| a fixed standard-offset zone; paired nonzero dates describe recurrence.
 public export
 windowsTimeZone : String -> WindowsZoneRule ->
                   Either WindowsTimeZoneError TimeZone
 windowsTimeZone valueId rule =
-  if incompleteDaylightTransitions rule
-    then Left (InvalidWindowsRule IncompleteWindowsDaylightRule)
-  else if noDaylightTransitions rule
-    then case windowsOffset (rule.biasMinutes + rule.standardBiasMinutes) of
-      Left error => Left (InvalidWindowsRule error)
-      Right offset => Right (fixedDateTimeZone valueId offset)
+  case windowsZoneEra rule of
+    Left error => Left (InvalidWindowsRule error)
+    Right (standardInfo, Nothing) =>
+      Right (fixedDateTimeZone valueId (utcOffset standardInfo))
+    Right (standardInfo, Just recurrence) =>
+      case refineRecurringDateTimeZone valueId standardInfo [] recurrence of
+        Left error => Left (InvalidWindowsTransitions error)
+        Right value => Right value
+
+dynamicYearsValid : List WindowsDynamicRule -> Bool
+dynamicYearsValid [] = True
+dynamicYearsValid (first :: rest) = go first.effectiveYear rest
+  where
+    go : Integer -> List WindowsDynamicRule -> Bool
+    go previous [] = True
+    go previous (next :: remaining) =
+      previous < next.effectiveYear && go next.effectiveYear remaining
+
+gregorianDays : Integer -> Integer -> Integer -> Integer
+gregorianDays year month day =
+  let shiftedYear = if month <= 2 then year - 1 else year
+   in let era = shiftedYear `div` 400
+     in let yearOfEra = shiftedYear - era * 400
+       in let shiftedMonth = month + if month > 2 then -3 else 9
+         in let dayOfYear = (153 * shiftedMonth + 2) `div` 5 + day - 1
+           in let dayOfEra = yearOfEra * 365 + yearOfEra `div` 4 -
+                yearOfEra `div` 100 + dayOfYear
+             in era * 146097 + dayOfEra - 730485
+
+yearStart : Integer -> Instant
+yearStart year = fromNanosecondsSinceEpoch
+  (gregorianDays year 1 1 * 86400 * 1000000000)
+
+dynamicEraSpecs : Bool -> List WindowsDynamicRule -> Either WindowsZoneError
+  (List (Maybe Instant, TransitionInfo, Maybe ZoneRecurrence))
+dynamicEraSpecs first [] = Right []
+dynamicEraSpecs first (entry :: rest) = do
+  (initial, recurrence) <- windowsZoneEra entry.dynamicRule
+  remaining <- dynamicEraSpecs False rest
+  let boundary = if first then Nothing else Just (yearStart entry.effectiveYear)
+  Right ((boundary, initial, recurrence) :: remaining)
+
+||| Construct a zone from Windows Dynamic DST values. When values are present,
+||| the first applies without a lower bound and the last remains in force.
+public export
+windowsDynamicTimeZone : String -> WindowsZoneRule -> List WindowsDynamicRule ->
+                         Either WindowsTimeZoneError TimeZone
+windowsDynamicTimeZone valueId defaultRule [] = windowsTimeZone valueId defaultRule
+windowsDynamicTimeZone valueId defaultRule dynamicRules =
+  if not (dynamicYearsValid dynamicRules)
+    then Left DynamicYearsNotStrictlyIncreasing
     else do
-      initialOffset <- case windowsOffset
-        (rule.biasMinutes + rule.standardBiasMinutes) of
-          Left error => Left (InvalidWindowsRule error)
-          Right value => Right value
-      windowsRecurringTimeZone valueId
-        (transitionInfo initialOffset False rule.standardName) [] rule
+      specs <- case dynamicEraSpecs True dynamicRules of
+        Left error => Left (InvalidWindowsRule error)
+        Right value => Right value
+      case refineTimeZoneEras valueId specs of
+        Left error => Left (InvalidWindowsTransitions error)
+        Right value => Right value

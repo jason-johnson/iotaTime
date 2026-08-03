@@ -18,6 +18,29 @@ word32 value =
   , cast (value `mod` 256)
   ]
 
+word16Little : Integer -> List Bits8
+word16Little value =
+  [ cast (value `mod` 256)
+  , cast ((value `div` 256) `mod` 256)
+  ]
+
+word32Little : Integer -> List Bits8
+word32Little value =
+  let unsigned = if value < 0 then value + 4294967296 else value
+   in word16Little unsigned ++ word16Little (unsigned `div` 65536)
+
+systemTimeBytes : Integer -> Integer -> Integer -> Integer -> Integer ->
+                  Integer -> Integer -> Integer -> List Bits8
+systemTimeBytes year month weekday week hour minute second milliseconds =
+  concatMap word16Little
+    [year, month, weekday, week, hour, minute, second, milliseconds]
+
+easternTziBytes : Integer -> List Bits8
+easternTziBytes standardMilliseconds =
+  word32Little 300 ++ word32Little 0 ++ word32Little (-60) ++
+  systemTimeBytes 0 11 0 1 2 0 0 standardMilliseconds ++
+  systemTimeBytes 0 3 0 2 2 0 0 0
+
 header : Bits8 -> Integer -> List Bits8
 header version transitionCount =
   [84, 90, 105, 102, version] ++ zeros 15 ++
@@ -59,6 +82,28 @@ windowsEastern = MkWindowsZoneRule 300 0 (-60) "EST" "EDT"
 windowsEasternZone : Either WindowsTimeZoneError TimeZone
 windowsEasternZone = windowsRecurringTimeZone "Eastern Standard Time"
   (transitionInfo (offsetFromHours (-5)) False "EST") [] windowsEastern
+
+windowsEasternBefore2007 : WindowsZoneRule
+windowsEasternBefore2007 = MkWindowsZoneRule 300 0 (-60) "EST" "EDT"
+  (MkWindowsTransitionDate 0 4 1 0 2 0 0)
+  (MkWindowsTransitionDate 0 10 5 0 2 0 0)
+
+windowsEasternDynamic : Either WindowsTimeZoneError TimeZone
+windowsEasternDynamic = windowsDynamicTimeZone "Eastern Standard Time"
+  windowsEastern
+  [ MkWindowsDynamicRule 2006 windowsEasternBefore2007
+  , MkWindowsDynamicRule 2007 windowsEastern
+  ]
+
+windowsSydney : WindowsZoneRule
+windowsSydney = MkWindowsZoneRule (-600) 0 (-60) "AEST" "AEDT"
+  (MkWindowsTransitionDate 0 10 1 0 2 0 0)
+  (MkWindowsTransitionDate 0 4 1 0 3 0 0)
+
+windowsFixedTwo : WindowsZoneRule
+windowsFixedTwo = MkWindowsZoneRule (-120) 0 0 "TWO" "TWO"
+  (MkWindowsTransitionDate 0 0 0 0 0 0 0)
+  (MkWindowsTransitionDate 0 0 0 0 0 0 0)
 
 tzifCases : List RuntimeCase
 tzifCases =
@@ -140,6 +185,24 @@ tzifCases =
           zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1730613600) ==
             offsetFromHours (-5)
         _ => False)
+    , MkRuntimeCase "binary Windows TZI values decode into zones"
+        (case parseWindowsTzi "EST" "EDT" (easternTziBytes 0) of
+          Right rule => case windowsTimeZone "Eastern Standard Time" rule of
+            Right zone =>
+              zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1710053999) ==
+                offsetFromHours (-5) &&
+              zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1710054000) ==
+                offsetFromHours (-4)
+            Left _ => False
+          Left _ => False)
+    , MkRuntimeCase "binary Windows TZI length is exact"
+        (case parseWindowsTzi "EST" "EDT" (zeros 43) of
+          Left (WindowsTziLength 43) => True
+          _ => False)
+    , MkRuntimeCase "binary Windows TZI does not truncate milliseconds"
+        (case parseWindowsTzi "EST" "EDT" (easternTziBytes 1) of
+          Left (WindowsTransitionMillisecondsUnsupported 1) => True
+          _ => False)
   , MkRuntimeCase "Windows transition clock fields are validated"
       (case windowsRecurringTimeZone "Invalid"
         (transitionInfo (offsetFromHours (-5)) False "EST") []
@@ -170,6 +233,50 @@ tzifCases =
         (MkWindowsTransitionDate 0 3 2 0 2 0 0)
         (MkWindowsTransitionDate 0 0 0 0 0 0 0)) of
           Left (InvalidWindowsRule IncompleteWindowsDaylightRule) => True
+          _ => False)
+  , MkRuntimeCase "Windows Dynamic DST uses the pre-2007 spring rule"
+      (case windowsEasternDynamic of
+        Right zone =>
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1143961199) ==
+            offsetFromHours (-5) &&
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1143961200) ==
+            offsetFromHours (-4)
+        Left _ => False)
+  , MkRuntimeCase "Windows Dynamic DST switches rules in 2007"
+      (case windowsEasternDynamic of
+        Right zone =>
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1173596399) ==
+            offsetFromHours (-5) &&
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1173596400) ==
+            offsetFromHours (-4) &&
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1194156000) ==
+            offsetFromHours (-5)
+        Left _ => False)
+  , MkRuntimeCase "southern recurrence remains daylight across New Year"
+      (case windowsTimeZone "AUS Eastern Standard Time" windowsSydney of
+        Right zone =>
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1704067200) ==
+            offsetFromHours 11 &&
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1718409600) ==
+            offsetFromHours 10
+        Left _ => False)
+  , MkRuntimeCase "Windows Dynamic DST supports fixed historical eras"
+      (case windowsDynamicTimeZone "Mixed" windowsEastern
+        [ MkWindowsDynamicRule 2000 windowsFixedTwo
+        , MkWindowsDynamicRule 2001 windowsEastern
+        ] of
+          Right zone =>
+            zoneOffsetAt zone (fromSecondsSinceUnixEpoch 962409600) ==
+              offsetFromHours 2 &&
+            zoneOffsetAt zone (fromSecondsSinceUnixEpoch 978307200) ==
+              offsetFromHours (-5)
+          Left _ => False)
+  , MkRuntimeCase "Windows Dynamic DST years must increase"
+      (case windowsDynamicTimeZone "Invalid" windowsEastern
+        [ MkWindowsDynamicRule 2007 windowsEastern
+        , MkWindowsDynamicRule 2006 windowsEasternBefore2007
+        ] of
+          Left DynamicYearsNotStrictlyIncreasing => True
           _ => False)
   ]
 

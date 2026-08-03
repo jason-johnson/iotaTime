@@ -3,6 +3,7 @@ module IotaTime.Pattern.CalendarDate
 import Data.String.Parser
 import Data.Vect
 import IotaTime.Pattern
+import IotaTime.Locale
 import IotaTime.Calendar
 import IotaTime.Calendar.Gregorian
 
@@ -221,6 +222,22 @@ pdddd = pDayName englishWeekdayNames
 public export
 pddd : Pattern DateFields (CalendarDate Gregorian)
 pddd = pDayName englishWeekdayAbbreviations
+
+public export
+pMMMM' : Locale -> Pattern DateFields (CalendarDate Gregorian)
+pMMMM' locale = pMonthName (monthNames locale)
+
+public export
+pMMM' : Locale -> Pattern DateFields (CalendarDate Gregorian)
+pMMM' locale = pMonthName (monthNamesShort locale)
+
+public export
+pdddd' : Locale -> Pattern DateFields (CalendarDate Gregorian)
+pdddd' locale = pDayName (dayNames locale)
+
+public export
+pddd' : Locale -> Pattern DateFields (CalendarDate Gregorian)
+pddd' locale = pDayName (dayNamesShort locale)
 
 public export
 pd : Pattern DateFields (CalendarDate Gregorian)

@@ -62,6 +62,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Calendar/Coptic.idr` — proof-carrying Coptic calendar
 - `src/IotaTime/Calendar/Islamic.idr` — indexed tabular Islamic calendars
 - `src/IotaTime/Calendar/Persian.idr` — bounded astronomical Persian calendar
+- `src/IotaTime/Locale.idr` — opaque locale data and pure built-in locales
 - `src/IotaTime/Pattern.idr` — composable typed parsing and formatting core
 - `src/IotaTime/Pattern/CalendarDate.idr` — Gregorian numeric date patterns
 - `test/iotaTime-test.ipkg` — test package
@@ -390,6 +391,22 @@ longText = format pD (calendarDate 3 March 2020)
 `pMonthName` and `pDayName` accept `Vect 12 String` and `Vect 7 String` respectively. Unlike Haskell's list-based API, incomplete name tables therefore fail to compile rather than failing during formatting.
 
 Field parsers accumulate raw components in `DateFields` and call `refineGregorianDate` only after consuming the complete input. Custom field order is therefore independent of temporary invalid dates, while a value such as `"2021-02-29"` still fails at the runtime trust boundary.
+
+## Locale API
+
+`Locale` stores Gregorian month and weekday names, AM/PM designators, and the operating system layout strings needed by later whole-layout pattern compilation. Its constructor is private. Month tables use `Vect 12 String` and weekday tables use `Vect 7 String`, so every locale is structurally complete.
+
+`enUS`, `deDE`, and `jaJP` provide pure built-ins. Read-only accessors include `localeId`, `monthNames`, `monthNamesShort`, `dayNames`, `dayNamesShort`, `amName`, and `pmName`. The locale-aware date fields `pMMMM'`, `pMMM'`, `pdddd'`, and `pddd'` select the corresponding names:
+
+```idris
+germanMonth : String
+germanMonth = format (pMMMM' deDE) (calendarDate 3 March 2020)
+
+japaneseMonth : String
+japaneseMonth = format (pMMMM' jaJP) (calendarDate 3 March 2020)
+```
+
+Named locale fields parse case-insensitively. As with the fixed English weekday fields, locale weekday names are consumed but not validated against the resolved date. Machine locale acquisition and compilation of locale layout strings are separate runtime-boundary features.
 
 ## Calendar conversion
 

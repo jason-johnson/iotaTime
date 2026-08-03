@@ -36,6 +36,16 @@ record WindowsDynamicRule where
   effectiveYear : Integer
   dynamicRule : WindowsZoneRule
 
+||| Platform-neutral data read from one Windows time-zone registry key.
+public export
+record WindowsRegistryZone where
+  constructor MkWindowsRegistryZone
+  registryZoneId : String
+  registryStandardName : String
+  registryDaylightName : String
+  registryDefaultTzi : List Bits8
+  registryDynamicTzi : List (Integer, List Bits8)
+
 public export
 data WindowsZoneError
   = WindowsOffsetOutOfRange Integer
@@ -51,6 +61,12 @@ data WindowsTimeZoneError
   = InvalidWindowsRule WindowsZoneError
   | InvalidWindowsTransitions DateTimeZoneError
   | DynamicYearsNotStrictlyIncreasing
+
+public export
+data WindowsRegistryError
+  = InvalidDefaultTzi WindowsZoneError
+  | InvalidDynamicTzi Integer WindowsZoneError
+  | InvalidRegistryTimeZone WindowsTimeZoneError
 
 byteValue : Bits8 -> Integer
 byteValue = cast
@@ -281,3 +297,28 @@ windowsDynamicTimeZone valueId defaultRule dynamicRules =
       case refineTimeZoneEras valueId specs of
         Left error => Left (InvalidWindowsTransitions error)
         Right value => Right value
+
+parseDynamicTzi : String -> String -> List (Integer, List Bits8) ->
+                  Either WindowsRegistryError (List WindowsDynamicRule)
+parseDynamicTzi standardName daylightName [] = Right []
+parseDynamicTzi standardName daylightName ((year, bytes) :: rest) = do
+  rule <- case parseWindowsTzi standardName daylightName bytes of
+    Left error => Left (InvalidDynamicTzi year error)
+    Right value => Right value
+  remaining <- parseDynamicTzi standardName daylightName rest
+  Right (MkWindowsDynamicRule year rule :: remaining)
+
+||| Convert registry bytes captured by a native adapter into a validated zone.
+public export
+windowsRegistryTimeZone : WindowsRegistryZone ->
+                          Either WindowsRegistryError TimeZone
+windowsRegistryTimeZone registry = do
+  defaultRule <- case parseWindowsTzi registry.registryStandardName
+    registry.registryDaylightName registry.registryDefaultTzi of
+      Left error => Left (InvalidDefaultTzi error)
+      Right value => Right value
+  dynamicRules <- parseDynamicTzi registry.registryStandardName
+    registry.registryDaylightName registry.registryDynamicTzi
+  case windowsDynamicTimeZone registry.registryZoneId defaultRule dynamicRules of
+    Left error => Left (InvalidRegistryTimeZone error)
+    Right value => Right value

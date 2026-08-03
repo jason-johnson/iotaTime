@@ -18,6 +18,9 @@ data TzdbError
   | TzdbParseError TzifError
   | TzdbPosixError PosixTzError
   | TzdbZoneError DateTimeZoneError
+  | TzdbWindowsError WindowsRegistryError
+  | WindowsRegistrySourceError String
+  | WindowsZoneNotFound String
   | InvalidZoneName String
   | UnsupportedPlatform String
 
@@ -30,6 +33,14 @@ record TimeZoneProvider where
   providerTimeZone : String -> IO (Either TzdbError TimeZone)
   providerLocalZone : IO (Either TzdbError TimeZone)
   providerAvailableZones : IO (Either TzdbError (List String))
+
+||| Native Windows adapters only need to enumerate registry snapshots and
+||| report the locally configured Windows zone identifier.
+public export
+record WindowsRegistrySource where
+  constructor MkWindowsRegistrySource
+  sourceRegistryZones : IO (Either String (List WindowsRegistryZone))
+  sourceLocalZoneId : IO (Either String String)
 
 mapLeft : (left -> mapped) -> Either left right -> Either mapped right
 mapLeft convert (Left error) = Left (convert error)
@@ -180,6 +191,52 @@ public export
 unixTimeZoneProvider : TimeZoneProvider
 unixTimeZoneProvider = MkTimeZoneProvider unixUtc unixTimeZone
   unixLocalZone unixAvailableZones
+
+windowsRegistryZones : WindowsRegistrySource ->
+                       IO (Either TzdbError (List WindowsRegistryZone))
+windowsRegistryZones source = do
+  loaded <- source.sourceRegistryZones
+  pure (mapLeft WindowsRegistrySourceError loaded)
+
+findWindowsZone : String -> List WindowsRegistryZone ->
+                  Maybe WindowsRegistryZone
+findWindowsZone name [] = Nothing
+findWindowsZone name (zone :: rest) =
+  if zone.registryZoneId == name then Just zone else findWindowsZone name rest
+
+windowsRegistryNamedZone : WindowsRegistrySource -> String ->
+                           IO (Either TzdbError TimeZone)
+windowsRegistryNamedZone source name = do
+  loaded <- windowsRegistryZones source
+  pure $ do
+    zones <- loaded
+    registry <- case findWindowsZone name zones of
+      Nothing => Left (WindowsZoneNotFound name)
+      Just value => Right value
+    mapLeft TzdbWindowsError (windowsRegistryTimeZone registry)
+
+windowsRegistryLocalZone : WindowsRegistrySource ->
+                           IO (Either TzdbError TimeZone)
+windowsRegistryLocalZone source = do
+  loadedId <- source.sourceLocalZoneId
+  case loadedId of
+    Left error => pure (Left (WindowsRegistrySourceError error))
+    Right zoneId => windowsRegistryNamedZone source zoneId
+
+windowsRegistryAvailableZones : WindowsRegistrySource ->
+                                IO (Either TzdbError (List String))
+windowsRegistryAvailableZones source = do
+  loaded <- windowsRegistryZones source
+  pure (map (sort . map registryZoneId) loaded)
+
+||| Build a provider around a native Windows registry reader.
+public export
+windowsRegistryTimeZoneProvider : WindowsRegistrySource -> TimeZoneProvider
+windowsRegistryTimeZoneProvider source = MkTimeZoneProvider
+  (pure (Right (fixedDateTimeZone "UTC" zeroOffset)))
+  (windowsRegistryNamedZone source)
+  (windowsRegistryLocalZone source)
+  (windowsRegistryAvailableZones source)
 
 unsupportedWindowsProvider : TimeZoneProvider
 unsupportedWindowsProvider = MkTimeZoneProvider unsupported

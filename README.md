@@ -152,7 +152,9 @@ availableZones : IO (Either TzdbError (List String))
 
 `TimeZoneProvider` isolates platform discovery. The `utcWith`, `timeZoneWith`, `localZoneWith`, and `availableZonesWith` variants accept an explicit provider; the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. `WindowsZoneRule` and `WindowsTransitionDate` model registry `REG_TZI_FORMAT` and `SYSTEMTIME` values. `parseWindowsTzi` decodes the exact 44-byte little-endian registry format, including signed bias fields, and rejects nonzero transition milliseconds rather than truncating them. `windowsTimeZone` validates Windows bias semantics, constructs fixed zones when both transition months are zero, and constructs recurring zones for paired transition dates. `WindowsDynamicRule` and `windowsDynamicTimeZone` convert strictly ordered Dynamic DST entries into year-bounded fixed or recurring eras, with the first entry unbounded to the past and the final entry remaining active indefinitely. A nonzero `SYSTEMTIME` year denotes an absolute one-time transition and is rejected explicitly rather than being misread as annual recurrence.
 
-On Windows, the default provider currently returns `UnsupportedPlatform` until a native registry/ICU provider supplies registry data to the pure conversion layer.
+`WindowsRegistryZone` is the platform-neutral snapshot of one registry key, including default and dated Dynamic DST byte values. `windowsRegistryTimeZone` converts that snapshot with errors attributed to the default value, a specific dynamic year, or final zone validation. `WindowsRegistrySource` is the minimal native I/O contract: enumerate snapshots and report the local Windows zone ID. `windowsRegistryTimeZoneProvider` turns any such source into a complete provider with typed source, malformed-data, and unknown-zone failures.
+
+On Windows, the default provider currently returns `UnsupportedPlatform` until a WinAPI registry adapter supplies `WindowsRegistrySource` data to the tested conversion and provider layers.
 
 ## Zoned date-times
 

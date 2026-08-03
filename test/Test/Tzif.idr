@@ -41,6 +41,17 @@ easternTziBytes standardMilliseconds =
   systemTimeBytes 0 11 0 1 2 0 0 standardMilliseconds ++
   systemTimeBytes 0 3 0 2 2 0 0 0
 
+easternBefore2007TziBytes : List Bits8
+easternBefore2007TziBytes =
+  word32Little 300 ++ word32Little 0 ++ word32Little (-60) ++
+  systemTimeBytes 0 10 0 5 2 0 0 0 ++
+  systemTimeBytes 0 4 0 1 2 0 0 0
+
+easternRegistryZone : WindowsRegistryZone
+easternRegistryZone = MkWindowsRegistryZone "Eastern Standard Time" "EST" "EDT"
+  (easternTziBytes 0)
+  [(2006, easternBefore2007TziBytes), (2007, easternTziBytes 0)]
+
 header : Bits8 -> Integer -> List Bits8
 header version transitionCount =
   [84, 90, 105, 102, version] ++ zeros 15 ++
@@ -203,6 +214,11 @@ tzifCases =
         (case parseWindowsTzi "EST" "EDT" (easternTziBytes 1) of
           Left (WindowsTransitionMillisecondsUnsupported 1) => True
           _ => False)
+    , MkRuntimeCase "Windows registry snapshots attribute default TZI errors"
+        (case windowsRegistryTimeZone
+          (MkWindowsRegistryZone "Broken" "STD" "DST" (zeros 43) []) of
+            Left (InvalidDefaultTzi (WindowsTziLength 43)) => True
+            _ => False)
   , MkRuntimeCase "Windows transition clock fields are validated"
       (case windowsRecurringTimeZone "Invalid"
         (transitionInfo (offsetFromHours (-5)) False "EST") []
@@ -290,7 +306,20 @@ run = do
         (\_ => pure (Right injectedZone))
         (pure (Right injectedZone))
         (pure (Right ["Injected/Zone"]))
+  let registrySource = MkWindowsRegistrySource
+        (pure (Right [easternRegistryZone]))
+        (pure (Right "Eastern Standard Time"))
+  let registryProvider = windowsRegistryTimeZoneProvider registrySource
+  let failingRegistryProvider = windowsRegistryTimeZoneProvider
+        (MkWindowsRegistrySource (pure (Left "registry unavailable"))
+          (pure (Right "Eastern Standard Time")))
   injected <- timeZoneWith injectedProvider "anything"
+  registryNamed <- timeZoneWith registryProvider "Eastern Standard Time"
+  registryLocal <- localZoneWith registryProvider
+  registryUtc <- utcWith registryProvider
+  registryZones <- availableZonesWith registryProvider
+  registryMissing <- timeZoneWith registryProvider "Missing"
+  registryFailure <- timeZoneWith failingRegistryProvider "Eastern Standard Time"
   systemUtc <- utc
   systemNewYork <- timeZone "America/New_York"
   rejectedPath <- timeZone "../etc/passwd"
@@ -301,6 +330,34 @@ run = do
         (case injected of
           Right value => zoneId value == "Injected/Zone"
           Left _ => False)
+    , MkRuntimeCase "Windows registry provider loads Dynamic DST zones"
+        (case registryNamed of
+          Right value =>
+            zoneOffsetAt value (fromSecondsSinceUnixEpoch 1142856000) ==
+              offsetFromHours (-5) &&
+            zoneOffsetAt value (fromSecondsSinceUnixEpoch 1174392000) ==
+              offsetFromHours (-4)
+          Left _ => False)
+    , MkRuntimeCase "Windows registry provider resolves the local ID"
+        (case registryLocal of
+          Right value => zoneId value == "Eastern Standard Time"
+          Left _ => False)
+    , MkRuntimeCase "Windows registry provider supplies UTC independently"
+        (case registryUtc of
+          Right value => zoneOffsetAt value epoch == zeroOffset
+          Left _ => False)
+    , MkRuntimeCase "Windows registry provider enumerates zone IDs"
+        (case registryZones of
+          Right ["Eastern Standard Time"] => True
+          _ => False)
+    , MkRuntimeCase "Windows registry provider reports unknown IDs"
+        (case registryMissing of
+          Left (WindowsZoneNotFound "Missing") => True
+          _ => False)
+    , MkRuntimeCase "Windows registry provider preserves source failures"
+        (case registryFailure of
+          Left (WindowsRegistrySourceError "registry unavailable") => True
+          _ => False)
     , MkRuntimeCase "system UTC zone is loaded"
         (case systemUtc of
           Right value => zoneOffsetAt value epoch == zeroOffset

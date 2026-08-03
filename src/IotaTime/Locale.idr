@@ -1,6 +1,9 @@
 module IotaTime.Locale
 
 import Data.Vect
+import IotaTime.Locale.Unix.Platform
+import System
+import System.Info
 
 %default total
 
@@ -57,6 +60,84 @@ rawTimeFormat = storedRawTimeFormat
 export
 rawDateTimeFormat : Locale -> String
 rawDateTimeFormat = storedRawDateTimeFormat
+
+public export
+data LocaleError
+  = LocaleNotFound String
+  | LocalePlatformError String
+
+public export
+Eq LocaleError where
+  LocaleNotFound left == LocaleNotFound right = left == right
+  LocalePlatformError left == LocalePlatformError right = left == right
+  _ == _ = False
+
+public export
+Show LocaleError where
+  show (LocaleNotFound name) = "locale is not installed: " ++ name
+  show (LocalePlatformError message) = message
+
+fromUnixData : String -> UnixLocaleData -> Locale
+fromUnixData valueId localeData = MkLocale
+  valueId
+  (localeMonthNames localeData)
+  (localeMonthNamesShort localeData)
+  (localeDayNames localeData)
+  (localeDayNamesShort localeData)
+  (localeAmName localeData)
+  (localePmName localeData)
+  (localeDateFormat localeData)
+  (localeTimeFormat localeData)
+  (localeDateTimeFormat localeData)
+
+unixLocaleByName : String -> IO (Either LocaleError Locale)
+unixLocaleByName name = do
+  loaded <- loadUnixLocaleData name
+  pure (case loaded of
+    Nothing => Left (LocaleNotFound name)
+    Just localeData => Right (fromUnixData name localeData))
+
+currentLocaleId : IO String
+currentLocaleId = do
+  all <- getEnv "LC_ALL"
+  time <- getEnv "LC_TIME"
+  language <- getEnv "LANG"
+  pure (firstPresent [all, time, language])
+  where
+    firstPresent : List (Maybe String) -> String
+    firstPresent [] = "C"
+    firstPresent (Nothing :: rest) = firstPresent rest
+    firstPresent (Just "" :: rest) = firstPresent rest
+    firstPresent (Just value :: rest) = value
+
+unixCurrentLocale : IO (Either LocaleError Locale)
+unixCurrentLocale = do
+  valueId <- currentLocaleId
+  loaded <- loadUnixLocaleData ""
+  case loaded of
+    Just localeData => pure (Right (fromUnixData valueId localeData))
+    Nothing => do
+      fallback <- loadUnixLocaleData "C"
+      pure (case fallback of
+        Just localeData => Right (fromUnixData "C" localeData)
+        Nothing => Left (LocalePlatformError
+          "native Unix locale access could not load the POSIX C locale"))
+
+||| Read a named locale from the operating system locale database.
+public export
+localeByName : String -> IO (Either LocaleError Locale)
+localeByName name = if isWindows
+  then pure (Left (LocalePlatformError
+    "native Windows locale access is not yet available"))
+  else unixLocaleByName name
+
+||| Read the locale selected by LC_ALL, LC_TIME, or LANG.
+public export
+currentLocale : IO (Either LocaleError Locale)
+currentLocale = if isWindows
+  then pure (Left (LocalePlatformError
+    "native Windows locale access is not yet available"))
+  else unixCurrentLocale
 
 public export
 enUS : Locale

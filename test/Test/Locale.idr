@@ -2,6 +2,7 @@ module Test.Locale
 
 import Data.Vect
 import IotaTime
+import System.Info
 import Test.Support
 
 parsesAs : Pattern DateFields (CalendarDate Gregorian) -> String ->
@@ -169,6 +170,41 @@ localeCases =
         (compileDateTimePattern enUS "%F %Q"))
   ]
 
+patternsCompile : Locale -> Bool
+patternsCompile locale =
+  case (localeDatePattern locale, localeTimePattern locale,
+        localeDateTimePattern locale) of
+    (Right _, Right _, Right _) => True
+    _ => False
+
+nativeLocaleCases : IO (List RuntimeCase)
+nativeLocaleCases = if isWindows
+  then pure []
+  else do
+    cLocale <- localeByName "C"
+    configured <- currentLocale
+    missing <- localeByName "iotatime_LOCALE_DOES_NOT_EXIST"
+    pure
+      [ MkRuntimeCase "native Unix C locale has complete English names"
+          (case cLocale of
+            Left _ => False
+            Right locale =>
+              index 0 (monthNames locale) == "January" &&
+              index 0 (dayNames locale) == "Sunday" &&
+              patternsCompile locale)
+      , MkRuntimeCase "native Unix current locale layouts compile"
+          (case configured of
+            Left _ => False
+            Right locale => localeId locale /= "" && patternsCompile locale)
+      , MkRuntimeCase "native Unix missing locale returns a typed failure"
+          (case missing of
+            Left (LocaleNotFound name) =>
+              name == "iotatime_LOCALE_DOES_NOT_EXIST"
+            _ => False)
+      ]
+
 export
 run : IO Bool
-run = runSuite "locale tests" localeCases
+run = do
+  nativeCases <- nativeLocaleCases
+  runSuite "locale tests" (localeCases ++ nativeCases)

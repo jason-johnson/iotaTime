@@ -125,4 +125,14 @@ jobs:
       - name: Run Windows registry smoke tests
         if: matrix.suite == 'windows-registry'
         shell: pwsh
-        run: .\test\build\exec\iotaTime-windows-smoke.exe
+        run: |
+          $binary = Get-ChildItem `
+            -Path @(".\test\build\exec", ".\build\exec") `
+            -Filter "iotaTime-windows-smoke*" `
+            -File `
+            -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+          if ($null -eq $binary) {
+            throw "Windows smoke-test executable not found in test/build/exec or build/exec"
+          }
+          & $binary.FullName

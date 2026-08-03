@@ -4,6 +4,10 @@ version = 0.1.0
 
 sourcedir = "src"
 
+prebuild = "make support"
+postinstall = "make install-support"
+postclean = "make clean-support"
+
 modules = IotaTime.Duration,
 		  IotaTime.Clock,
 		  IotaTime.DateTimeZone,

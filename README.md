@@ -34,6 +34,8 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 ## Project layout
 
 - `iotaTime.ipkg` — Idris 2 library package definition
+- `Makefile` — native support-library build and installation
+- `support/iotatime_windows.c` — Win32 registry FFI and non-Windows stub
 - `src/IotaTime.idr` — library entry module
 - `src/IotaTime/Instant.idr` — opaque points on the global nanosecond timeline
 - `src/IotaTime/Duration.idr` — opaque fixed elapsed-time amounts
@@ -48,7 +50,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Tzdb/Provider.idr` — shared typed provider contract
 - `src/IotaTime/Tzdb/Windows/Types.idr` — Windows registry models and errors
 - `src/IotaTime/Tzdb/Windows.idr` — pure Windows TZI and Dynamic DST conversion
-- `src/IotaTime/Tzdb/Windows/Platform.idr` — Windows registry and PowerShell provider
+- `src/IotaTime/Tzdb/Windows/Platform.idr` — native Windows registry provider
 - `src/IotaTime/Tzdb.idr` — TZif/Unix loading, public API, and platform dispatch
 - `src/IotaTime/Time/Component.idr` — opaque, range-checked clock components
 - `src/IotaTime/LocalTime.idr` — proof-carrying local time of day
@@ -65,6 +67,8 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `.github/workflows/ci.yml` — Linux full-suite and Windows registry CI matrix
 
 ## Build and test
+
+Building the package requires `make` and a C compiler. On Windows, use MinGW GCC so the support library can link against `advapi32`; the CI workflow installs this toolchain through MSYS2.
 
 ```bash
 idris2 --build iotaTime.ipkg
@@ -157,9 +161,9 @@ availableZones : IO (Either TzdbError (List String))
 
 `WindowsRegistryZone` is the platform-neutral snapshot of one registry key, including default and dated Dynamic DST byte values. `windowsRegistryTimeZone` converts that snapshot with errors attributed to the default value, a specific dynamic year, or final zone validation. `WindowsRegistrySnapshot` atomically carries the available zones and local Windows zone ID. `WindowsRegistrySource` is the minimal native I/O contract for acquiring that snapshot, and `windowsRegistryTimeZoneProvider` turns any such source into a complete provider with typed source, malformed-data, and unknown-zone failures.
 
-On Windows, `systemTimeZoneProvider` uses `windowsPowerShellRegistrySource`. It invokes built-in Windows PowerShell non-interactively, reads the registry through the PowerShell Registry provider, and emits a strict locale-independent protocol parsed by `parseWindowsRegistrySnapshot`. This avoids backend-specific native linking while retaining typed failures at the command, protocol, registry-value, and zone-validation boundaries.
+On Windows, `systemTimeZoneProvider` uses `windowsNativeRegistrySource`. A small C support library calls `RegOpenKeyExW`, `RegEnumKeyExW`, and `RegQueryValueExW` from the native Win32 API. It reads the local zone, installed zone definitions, and Dynamic DST history without launching another process. Idris owns parsing, validation, recurrence construction, and all timezone calculations; the C boundary only acquires registry values. Native buffers are copied immediately and freed explicitly.
 
-This is platform dispatch, not source-level conditional compilation. Idris 2.0.8 does not provide `%ifdef`-style directives: every module listed in `iotaTime.ipkg` is compiled. `System.Info.isWindows` derives from the backend-provided operating-system value and selects the Windows or Unix provider; only the selected provider performs platform I/O. All PowerShell, registry, protocol, and Windows-provider implementation code is owned by the `IotaTime.Tzdb.Windows` namespace. A build that must omit the unused platform module entirely would require separate platform package files/source sets.
+`iotaTime.ipkg` builds and installs `libiotatime_windows` through package hooks. Windows receives the Win32 implementation; other systems receive a small explicit unsupported-platform stub so the same package remains buildable everywhere. Idris copies the support library into downstream Chez executables through its normal C FFI packaging. This is platform dispatch, not source-level conditional compilation: `System.Info.isWindows` selects the Windows or Unix provider, and only the selected provider performs platform I/O.
 
 CI runs the complete runtime and compile-fail suites on Linux. A native `windows-latest` matrix entry bootstraps Idris 2 using its upstream MSYS2/Chez recipe and runs `test/windows-smoke.ipkg` against the live Windows registry. The smoke suite verifies UTC, registry enumeration, local-zone resolution, missing-zone errors, and the historical 2007 US Dynamic DST change.
 

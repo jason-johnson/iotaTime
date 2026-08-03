@@ -168,7 +168,7 @@ unixTimeZoneProvider = MkTimeZoneProvider unixUtc unixTimeZone
 public export
 systemTimeZoneProvider : TimeZoneProvider
 systemTimeZoneProvider = if isWindows
-  then windowsRegistryTimeZoneProvider windowsPowerShellRegistrySource
+  then windowsRegistryTimeZoneProvider windowsNativeRegistrySource
   else unixTimeZoneProvider
 
 ||| Load UTC through an explicit platform provider.

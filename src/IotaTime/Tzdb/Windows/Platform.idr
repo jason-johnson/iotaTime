@@ -3,10 +3,17 @@ module IotaTime.Tzdb.Windows.Platform
 import public IotaTime.Tzdb.Provider
 import public IotaTime.Tzdb.Windows
 import Data.List
-import System.File.Process
-import System.File.ReadWrite
 
 %default total
+
+%foreign "C:iotatime_windows_registry_snapshot, libiotatime_windows"
+prim__windowsRegistrySnapshot : PrimIO AnyPtr
+
+%foreign "C:iotatime_windows_snapshot_string, libiotatime_windows"
+prim__windowsSnapshotString : AnyPtr -> String
+
+%foreign "C:iotatime_windows_snapshot_free, libiotatime_windows"
+prim__windowsSnapshotFree : AnyPtr -> PrimIO ()
 
 mapLeft : (left -> mapped) -> Either left right -> Either mapped right
 mapLeft convert (Left error) = Left (convert error)
@@ -74,32 +81,6 @@ windowsRegistryTimeZoneProvider source = MkTimeZoneProvider
   (windowsRegistryLocalZone source)
   (windowsRegistryAvailableZones source)
 
-windowsRegistryScript : String
-windowsRegistryScript = concat
-  [ "$ErrorActionPreference='Stop';"
-  , "[Console]::OutputEncoding=New-Object System.Text.UTF8Encoding($false);"
-  , "$zones='Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Time Zones';"
-  , "$local=(Get-ItemProperty 'Registry::HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\TimeZoneInformation').TimeZoneKeyName;"
-  , "if([string]::IsNullOrEmpty($local)){throw 'TimeZoneKeyName is empty'};"
-  , "Write-Output (\"LOCAL`t\"+$local);"
-  , "Get-ChildItem $zones|Sort-Object PSChildName|ForEach-Object{"
-  , "$zone=Get-ItemProperty $_.PSPath;"
-  , "Write-Output 'ZONE';"
-  , "Write-Output (\"ID`t\"+$_.PSChildName);"
-  , "Write-Output (\"STD`t\"+$zone.Std);"
-  , "Write-Output (\"DST`t\"+$zone.Dlt);"
-  , "$hex=-join($zone.TZI|ForEach-Object{$_.ToString('X2')});"
-  , "Write-Output (\"TZI`t\"+$hex);"
-  , "$dynamic=Join-Path $_.PSPath 'Dynamic DST';"
-  , "if(Test-Path $dynamic){"
-  , "$values=Get-ItemProperty $dynamic;"
-  , "$values.PSObject.Properties|Where-Object{$_.Name -match '^\\d{4}$'}|"
-  , "Sort-Object {[int]$_.Name}|ForEach-Object{"
-  , "$dynamicHex=-join($_.Value|ForEach-Object{$_.ToString('X2')});"
-  , "Write-Output (\"DYNAMIC`t\"+$_.Name+\"`t\"+$dynamicHex)}};"
-  , "Write-Output 'END'}"
-  ]
-
 protocolErrorMessage : WindowsRegistryProtocolError -> String
 protocolErrorMessage MissingLocalZoneId = "missing local Windows zone identifier"
 protocolErrorMessage (UnexpectedRegistryLine line) =
@@ -110,28 +91,31 @@ protocolErrorMessage (InvalidDynamicRegistryLine line) =
   "invalid Windows Dynamic DST output: " ++ line
 protocolErrorMessage IncompleteRegistryZone = "incomplete Windows registry zone"
 
-runWindowsRegistryScript : IO (Either String WindowsRegistrySnapshot)
-runWindowsRegistryScript = do
-  opened <- System.File.Process.Escaped.popen
-    [ "powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive"
-    , "-ExecutionPolicy", "Bypass", "-Command", windowsRegistryScript
-    ] Read
-  case opened of
-    Left error => pure (Left (show error))
-    Right process => do
-      output <- assert_total (fRead process)
-      exitCode <- pclose process
-      case output of
-        Left error => pure (Left (show error))
-        Right value => if exitCode /= 0
-          then pure (Left ("PowerShell registry query exited with code " ++
-            show exitCode))
-          else pure (case parseWindowsRegistrySnapshot value of
-            Left error => Left (protocolErrorMessage error)
-            Right snapshot => Right snapshot)
+nativeError : String -> Maybe String
+nativeError source = map pack (strip (unpack "ERROR\t") (unpack source))
+  where
+    strip : List Char -> List Char -> Maybe (List Char)
+    strip [] remaining = Just remaining
+    strip (expected :: rest) (actual :: remaining) =
+      if expected == actual then strip rest remaining else Nothing
+    strip _ _ = Nothing
 
-||| Registry source using built-in Windows PowerShell and its Registry provider.
+runWindowsNativeRegistry : IO (Either String WindowsRegistrySnapshot)
+runWindowsNativeRegistry = do
+  pointer <- primIO prim__windowsRegistrySnapshot
+  if prim__nullAnyPtr pointer /= 0
+    then pure (Left "native Windows registry snapshot allocation failed")
+    else do
+      let output = prim__windowsSnapshotString pointer
+      primIO (prim__windowsSnapshotFree pointer)
+      pure $ case nativeError output of
+        Just error => Left error
+        Nothing => case parseWindowsRegistrySnapshot output of
+          Left error => Left (protocolErrorMessage error)
+          Right snapshot => Right snapshot
+
+||| Registry source backed by Win32 registry APIs through the native FFI.
 public export
-windowsPowerShellRegistrySource : WindowsRegistrySource
-windowsPowerShellRegistrySource = MkWindowsRegistrySource
-  runWindowsRegistryScript
+windowsNativeRegistrySource : WindowsRegistrySource
+windowsNativeRegistrySource = MkWindowsRegistrySource
+  runWindowsNativeRegistry

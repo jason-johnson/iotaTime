@@ -2,6 +2,8 @@
 *.ttc
 *.ttm
 build/
+*.so
+*.dll
 
 # Idris 1
 *.ibc

@@ -1,0 +1,370 @@
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#define IOTATIME_EXPORT __declspec(dllexport)
+
+typedef struct {
+    char *data;
+    size_t length;
+    size_t capacity;
+    int failed;
+} StringBuilder;
+
+static void builder_reserve(StringBuilder *builder, size_t extra) {
+    size_t required;
+    size_t capacity;
+    char *resized;
+
+    if (builder->failed) {
+        return;
+    }
+    required = builder->length + extra + 1;
+    if (required <= builder->capacity) {
+        return;
+    }
+    capacity = builder->capacity == 0 ? 4096 : builder->capacity;
+    while (capacity < required) {
+        capacity *= 2;
+    }
+    resized = (char *)realloc(builder->data, capacity);
+    if (resized == NULL) {
+        builder->failed = 1;
+        return;
+    }
+    builder->data = resized;
+    builder->capacity = capacity;
+}
+
+static void builder_append_bytes(StringBuilder *builder, const char *value,
+                                 size_t length) {
+    builder_reserve(builder, length);
+    if (builder->failed) {
+        return;
+    }
+    memcpy(builder->data + builder->length, value, length);
+    builder->length += length;
+    builder->data[builder->length] = '\0';
+}
+
+static void builder_append(StringBuilder *builder, const char *value) {
+    builder_append_bytes(builder, value, strlen(value));
+}
+
+static void builder_append_wide(StringBuilder *builder, const WCHAR *value) {
+    int required;
+
+    required = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, value, -1,
+                                   NULL, 0, NULL, NULL);
+    if (required <= 0) {
+        builder->failed = 1;
+        return;
+    }
+    builder_reserve(builder, (size_t)required - 1);
+    if (builder->failed) {
+        return;
+    }
+    if (WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, value, -1,
+                            builder->data + builder->length, required,
+                            NULL, NULL) <= 0) {
+        builder->failed = 1;
+        return;
+    }
+    builder->length += (size_t)required - 1;
+}
+
+static void builder_append_hex(StringBuilder *builder, const BYTE *value,
+                               DWORD length) {
+    static const char digits[] = "0123456789ABCDEF";
+    DWORD index;
+
+    builder_reserve(builder, (size_t)length * 2);
+    if (builder->failed) {
+        return;
+    }
+    for (index = 0; index < length; ++index) {
+        builder->data[builder->length++] = digits[value[index] >> 4];
+        builder->data[builder->length++] = digits[value[index] & 0x0f];
+    }
+    builder->data[builder->length] = '\0';
+}
+
+static LONG read_string(HKEY key, const WCHAR *name, WCHAR **value) {
+    DWORD type = 0;
+    DWORD size = 0;
+    LONG status;
+    WCHAR *buffer;
+
+    status = RegQueryValueExW(key, name, NULL, &type, NULL, &size);
+    if (status != ERROR_SUCCESS) {
+        return status;
+    }
+    if (type != REG_SZ && type != REG_EXPAND_SZ) {
+        return ERROR_INVALID_DATATYPE;
+    }
+    buffer = (WCHAR *)malloc((size_t)size + sizeof(WCHAR));
+    if (buffer == NULL) {
+        return ERROR_OUTOFMEMORY;
+    }
+    status = RegQueryValueExW(key, name, NULL, &type, (BYTE *)buffer, &size);
+    if (status != ERROR_SUCCESS) {
+        free(buffer);
+        return status;
+    }
+    buffer[size / sizeof(WCHAR)] = L'\0';
+    *value = buffer;
+    return ERROR_SUCCESS;
+}
+
+static LONG read_binary(HKEY key, const WCHAR *name, BYTE **value,
+                        DWORD *length) {
+    DWORD type = 0;
+    DWORD size = 0;
+    LONG status;
+    BYTE *buffer;
+
+    status = RegQueryValueExW(key, name, NULL, &type, NULL, &size);
+    if (status != ERROR_SUCCESS) {
+        return status;
+    }
+    if (type != REG_BINARY) {
+        return ERROR_INVALID_DATATYPE;
+    }
+    buffer = (BYTE *)malloc(size == 0 ? 1 : size);
+    if (buffer == NULL) {
+        return ERROR_OUTOFMEMORY;
+    }
+    status = RegQueryValueExW(key, name, NULL, &type, buffer, &size);
+    if (status != ERROR_SUCCESS) {
+        free(buffer);
+        return status;
+    }
+    *value = buffer;
+    *length = size;
+    return ERROR_SUCCESS;
+}
+
+static LONG read_dword(HKEY key, const WCHAR *name, DWORD *value) {
+    DWORD type = 0;
+    DWORD size = sizeof(*value);
+    LONG status = RegQueryValueExW(key, name, NULL, &type, (BYTE *)value, &size);
+
+    if (status == ERROR_SUCCESS && type != REG_DWORD) {
+        return ERROR_INVALID_DATATYPE;
+    }
+    return status;
+}
+
+static char *registry_error(const char *operation, LONG status) {
+    char buffer[256];
+    int length = snprintf(buffer, sizeof(buffer),
+                          "ERROR\t%s failed with Windows status %ld",
+                          operation, (long)status);
+    char *result;
+
+    if (length < 0) {
+        return NULL;
+    }
+    result = (char *)malloc((size_t)length + 1);
+    if (result != NULL) {
+        memcpy(result, buffer, (size_t)length + 1);
+    }
+    return result;
+}
+
+static LONG append_dynamic_rules(StringBuilder *builder, HKEY zone_key) {
+    HKEY dynamic_key;
+    LONG status;
+    DWORD first_year;
+    DWORD last_year;
+    DWORD year;
+
+    status = RegOpenKeyExW(zone_key, L"Dynamic DST", 0, KEY_READ, &dynamic_key);
+    if (status == ERROR_FILE_NOT_FOUND) {
+        return ERROR_SUCCESS;
+    }
+    if (status != ERROR_SUCCESS) {
+        return status;
+    }
+    status = read_dword(dynamic_key, L"FirstEntry", &first_year);
+    if (status == ERROR_SUCCESS) {
+        status = read_dword(dynamic_key, L"LastEntry", &last_year);
+    }
+    if (status != ERROR_SUCCESS || first_year > last_year) {
+        RegCloseKey(dynamic_key);
+        return status == ERROR_SUCCESS ? ERROR_INVALID_DATA : status;
+    }
+
+    for (year = first_year; year <= last_year; ++year) {
+        WCHAR name[16];
+        BYTE *tzi = NULL;
+        DWORD tzi_length = 0;
+
+        _snwprintf_s(name, 16, _TRUNCATE, L"%lu", (unsigned long)year);
+        status = read_binary(dynamic_key, name, &tzi, &tzi_length);
+        if (status != ERROR_SUCCESS) {
+            RegCloseKey(dynamic_key);
+            return status;
+        }
+        builder_append(builder, "DYNAMIC\t");
+        {
+            char year_buffer[16];
+            snprintf(year_buffer, sizeof(year_buffer), "%lu", (unsigned long)year);
+            builder_append(builder, year_buffer);
+        }
+        builder_append(builder, "\t");
+        builder_append_hex(builder, tzi, tzi_length);
+        builder_append(builder, "\n");
+        free(tzi);
+        if (builder->failed || year == UINT32_MAX) {
+            break;
+        }
+    }
+    RegCloseKey(dynamic_key);
+    return builder->failed ? ERROR_OUTOFMEMORY : ERROR_SUCCESS;
+}
+
+static LONG append_zone(StringBuilder *builder, HKEY zones_key,
+                        const WCHAR *zone_id) {
+    HKEY zone_key;
+    WCHAR *standard_name = NULL;
+    WCHAR *daylight_name = NULL;
+    BYTE *tzi = NULL;
+    DWORD tzi_length = 0;
+    LONG status;
+
+    status = RegOpenKeyExW(zones_key, zone_id, 0, KEY_READ, &zone_key);
+    if (status != ERROR_SUCCESS) {
+        return status;
+    }
+    status = read_string(zone_key, L"Std", &standard_name);
+    if (status == ERROR_SUCCESS) {
+        status = read_string(zone_key, L"Dlt", &daylight_name);
+    }
+    if (status == ERROR_SUCCESS) {
+        status = read_binary(zone_key, L"TZI", &tzi, &tzi_length);
+    }
+    if (status == ERROR_SUCCESS) {
+        builder_append(builder, "ZONE\nID\t");
+        builder_append_wide(builder, zone_id);
+        builder_append(builder, "\nSTD\t");
+        builder_append_wide(builder, standard_name);
+        builder_append(builder, "\nDST\t");
+        builder_append_wide(builder, daylight_name);
+        builder_append(builder, "\nTZI\t");
+        builder_append_hex(builder, tzi, tzi_length);
+        builder_append(builder, "\n");
+        status = builder->failed ? ERROR_OUTOFMEMORY
+                                 : append_dynamic_rules(builder, zone_key);
+    }
+    if (status == ERROR_SUCCESS) {
+        builder_append(builder, "END\n");
+        if (builder->failed) {
+            status = ERROR_OUTOFMEMORY;
+        }
+    }
+
+    free(standard_name);
+    free(daylight_name);
+    free(tzi);
+    RegCloseKey(zone_key);
+    return status;
+}
+
+IOTATIME_EXPORT void *iotatime_windows_registry_snapshot(void) {
+    static const WCHAR zones_path[] =
+        L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Time Zones";
+    static const WCHAR local_path[] =
+        L"SYSTEM\\CurrentControlSet\\Control\\TimeZoneInformation";
+    StringBuilder builder = {0};
+    HKEY zones_key = NULL;
+    HKEY local_key = NULL;
+    WCHAR *local_zone = NULL;
+    LONG status;
+    DWORD index = 0;
+
+    status = RegOpenKeyExW(HKEY_LOCAL_MACHINE, local_path, 0,
+                           KEY_READ | KEY_WOW64_64KEY, &local_key);
+    if (status == ERROR_SUCCESS) {
+        status = read_string(local_key, L"TimeZoneKeyName", &local_zone);
+        RegCloseKey(local_key);
+    }
+    if (status != ERROR_SUCCESS) {
+        return registry_error("reading the local time zone", status);
+    }
+
+    builder_append(&builder, "LOCAL\t");
+    builder_append_wide(&builder, local_zone);
+    builder_append(&builder, "\n");
+    free(local_zone);
+    if (builder.failed) {
+        free(builder.data);
+        return registry_error("allocating the registry snapshot", ERROR_OUTOFMEMORY);
+    }
+
+    status = RegOpenKeyExW(HKEY_LOCAL_MACHINE, zones_path, 0,
+                           KEY_READ | KEY_WOW64_64KEY, &zones_key);
+    if (status != ERROR_SUCCESS) {
+        free(builder.data);
+        return registry_error("opening Windows time zones", status);
+    }
+
+    for (;;) {
+        WCHAR zone_id[256];
+        DWORD zone_id_length = 256;
+        FILETIME last_write;
+
+        status = RegEnumKeyExW(zones_key, index, zone_id, &zone_id_length,
+                               NULL, NULL, NULL, &last_write);
+        if (status == ERROR_NO_MORE_ITEMS) {
+            status = ERROR_SUCCESS;
+            break;
+        }
+        if (status != ERROR_SUCCESS) {
+            break;
+        }
+        zone_id[zone_id_length] = L'\0';
+        status = append_zone(&builder, zones_key, zone_id);
+        if (status != ERROR_SUCCESS) {
+            break;
+        }
+        ++index;
+    }
+    RegCloseKey(zones_key);
+
+    if (status != ERROR_SUCCESS) {
+        free(builder.data);
+        return registry_error("enumerating Windows time zones", status);
+    }
+    return builder.data;
+}
+
+#else
+
+#define IOTATIME_EXPORT
+
+IOTATIME_EXPORT void *iotatime_windows_registry_snapshot(void) {
+    static const char message[] =
+        "ERROR\tnative Windows registry access is unavailable on this platform";
+    char *result = (char *)malloc(sizeof(message));
+    if (result != NULL) {
+        memcpy(result, message, sizeof(message));
+    }
+    return result;
+}
+
+#endif
+
+IOTATIME_EXPORT const char *iotatime_windows_snapshot_string(void *snapshot) {
+    return (const char *)snapshot;
+}
+
+IOTATIME_EXPORT void iotatime_windows_snapshot_free(void *snapshot) {
+    free(snapshot);
+}

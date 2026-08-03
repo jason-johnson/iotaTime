@@ -5,6 +5,7 @@ import IotaTime.Tzdb
 import IotaTime.Tzdb.Tzif
 import IotaTime.Tzdb.Windows
 import Data.String
+import System.Info
 import Test.Support
 
 zeros : Nat -> List Bits8
@@ -370,6 +371,7 @@ run = do
   registryZones <- availableZonesWith registryProvider
   registryMissing <- timeZoneWith registryProvider "Missing"
   registryFailure <- timeZoneWith failingRegistryProvider "Eastern Standard Time"
+  nativeRegistry <- windowsNativeRegistrySource.sourceRegistrySnapshot
   systemUtc <- utc
   systemNewYork <- timeZone "America/New_York"
   rejectedPath <- timeZone "../etc/passwd"
@@ -407,6 +409,11 @@ run = do
     , MkRuntimeCase "Windows registry provider preserves source failures"
         (case registryFailure of
           Left (WindowsRegistrySourceError "registry unavailable") => True
+          _ => False)
+    , MkRuntimeCase "native Windows registry boundary is platform explicit"
+        (case (isWindows, nativeRegistry) of
+          (True, Right snapshot) => not (null snapshot.snapshotZones)
+          (False, Left "native Windows registry access is unavailable on this platform") => True
           _ => False)
     , MkRuntimeCase "system UTC zone is loaded"
         (case systemUtc of

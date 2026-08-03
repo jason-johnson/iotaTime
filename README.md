@@ -65,6 +65,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Locale.idr` — opaque locale data and pure built-in locales
 - `src/IotaTime/Pattern.idr` — composable typed parsing and formatting core
 - `src/IotaTime/Pattern/CalendarDate.idr` — Gregorian numeric date patterns
+- `src/IotaTime/Pattern/LocalTime.idr` — local-time field and standard patterns
 - `src/IotaTime/Pattern/Locale.idr` — locale `strftime` layout compilation
 - `test/iotaTime-test.ipkg` — test package
 - `test/Main.idr` — test orchestrator
@@ -392,6 +393,14 @@ longText = format pD (calendarDate 3 March 2020)
 `pMonthName` and `pDayName` accept `Vect 12 String` and `Vect 7 String` respectively. Unlike Haskell's list-based API, incomplete name tables therefore fail to compile rather than failing during formatting.
 
 Field parsers accumulate raw components in `DateFields` and call `refineGregorianDate` only after consuming the complete input. Custom field order is therefore independent of temporary invalid dates, while a value such as `"2021-02-29"` still fails at the runtime trust boundary.
+
+## Local time patterns
+
+`phour`, `pminute`, and `psecond` provide configurable-width 24-hour fields; `pHH`, `pmm`, and `pss` are their two-digit forms. `pt` is `HH:mm`, `pT` is `HH:mm:ss`, and `pr` adds all nine nanosecond digits.
+
+`phh` and `phhSpace` use the 12-hour clock. `pp`, `ppp`, `pPeriod`, and locale-aware `ppp'` provide AM/PM designators. Parsing is field-order independent: both `03:04 PM` and `PM 03:04` resolve to 15:04 when composed in the corresponding order.
+
+`pfrac width` formats and parses fixed-width fractional seconds, scaling parsed digits to nanoseconds. Its erased `So (isValidFractionWidth width)` argument restricts widths to 1 through 9, so `pfrac 0` and `pfrac 10` fail at compile time.
 
 ## Locale API
 

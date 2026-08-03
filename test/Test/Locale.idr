@@ -47,6 +47,12 @@ sameDateTime left right =
   calendarDays (datePart left) == calendarDays (datePart right) &&
   localTimeOfDay left == localTimeOfDay right
 
+sameOffsetDateTime : OffsetDateTime Gregorian ->
+                     OffsetDateTime Gregorian -> Bool
+sameOffsetDateTime left right =
+  sameDateTime (localDateTime left) (localDateTime right) &&
+  offsetOf left == offsetOf right
+
 localeDateTimeFormatsAs : Locale -> CalendarDateTime Gregorian ->
                           String -> Bool
 localeDateTimeFormatsAs locale value expected =
@@ -169,6 +175,25 @@ localeCases =
   , MkRuntimeCase "date-time compiler rejects unsupported fields"
       (hasStrftimeError (UnsupportedSpecifier 'Q')
         (compileDateTimePattern enUS "%F %Q"))
+  , MkRuntimeCase "locale offset date-time compiler round-trips percent-z"
+      (case compileOffsetDateTimePattern enUS "%F %T %z end" of
+        Left _ => False
+        Right pattern =>
+          let expected = atOffset
+                (on (localTime 13 24 35 0) (calendarDate 15 March 2020))
+                (fromHours 2) in
+            IotaTime.Pattern.format pattern expected ==
+              "2020-03-15 13:24:35 +0200 end" &&
+            case IotaTime.Pattern.parse pattern
+              "2020-03-15 13:24:35 +0200 end" of
+                Left _ => False
+                Right actual => sameOffsetDateTime actual expected)
+  , MkRuntimeCase "locale offset date-time requires percent-z"
+      (hasStrftimeError MissingOffsetSpecifier
+        (localeOffsetDateTimePattern deDE))
+  , MkRuntimeCase "locale offset rejects fields following percent-z"
+      (hasStrftimeError (UnsupportedSpecifier 'Y')
+        (compileOffsetDateTimePattern enUS "%F %z %Y"))
   , MkRuntimeCase "Windows pictures translate field widths"
       (windowsPictureToStrftime "dddd, dd MMMM yyyy HH:mm:ss tt" ==
         "%A, %d %B %Y %H:%M:%S %p" &&

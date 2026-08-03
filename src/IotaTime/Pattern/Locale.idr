@@ -4,11 +4,15 @@ import Data.String.Parser
 import IotaTime.Locale
 import IotaTime.Pattern
 import IotaTime.Pattern.CalendarDate
+import IotaTime.Pattern.Offset
+import IotaTime.Pattern.OffsetDateTime
 import IotaTime.Pattern.LocalTime
 import IotaTime.Calendar
 import IotaTime.Calendar.Gregorian
 import IotaTime.CalendarDateTime
 import IotaTime.LocalTime
+import IotaTime.Offset
+import IotaTime.OffsetDateTime
 
 %default total
 
@@ -16,11 +20,13 @@ public export
 data StrftimeError
   = UnsupportedSpecifier Char
   | DanglingPercent
+  | MissingOffsetSpecifier
 
 public export
 Eq StrftimeError where
   UnsupportedSpecifier left == UnsupportedSpecifier right = left == right
   DanglingPercent == DanglingPercent = True
+  MissingOffsetSpecifier == MissingOffsetSpecifier = True
   _ == _ = False
 
 public export
@@ -28,6 +34,7 @@ Show StrftimeError where
   show (UnsupportedSpecifier value) =
     "unsupported strftime specifier: %" ++ pack [value]
   show DanglingPercent = "strftime layout ends with a bare %"
+  show MissingOffsetSpecifier = "strftime layout has no numeric %z offset"
 
 data LayoutToken = LiteralToken Char | ConversionToken Char
 
@@ -239,3 +246,38 @@ localeDateTimePattern : Locale ->
                             (CalendarDateTime Gregorian))
 localeDateTimePattern locale =
   compileDateTimePattern locale (rawDateTimeFormat locale)
+
+trailingLiterals : List LayoutFragment -> Either StrftimeError String
+trailingLiterals [] = Right ""
+trailingLiterals (LiteralRun text :: rest) =
+  map (text ++) (trailingLiterals rest)
+trailingLiterals (Conversion value :: rest) =
+  Left (UnsupportedSpecifier value)
+
+splitOffset : List LayoutFragment ->
+              Either StrftimeError (List LayoutFragment, String)
+splitOffset [] = Left MissingOffsetSpecifier
+splitOffset (Conversion 'z' :: rest) =
+  map (\trailing => ([], trailing)) (trailingLiterals rest)
+splitOffset (fragment :: rest) = do
+  (before, trailing) <- splitOffset rest
+  Right (fragment :: before, trailing)
+
+public export
+compileOffsetDateTimePattern : Locale -> String ->
+  Either StrftimeError
+    (Pattern (DateTimeFields, Offset) (OffsetDateTime Gregorian))
+compileOffsetDateTimePattern locale layout = do
+  tokens <- tokenize (unpack layout)
+  (before, trailing) <- splitOffset (toFragments tokens)
+  localPattern <- assemble (liftDatePattern pyyyy)
+    (dateTimeConversion locale) before
+  Right (offsetDateTimePattern localPattern
+    (pOffsetCompact <% string trailing))
+
+public export
+localeOffsetDateTimePattern : Locale ->
+  Either StrftimeError
+    (Pattern (DateTimeFields, Offset) (OffsetDateTime Gregorian))
+localeOffsetDateTimePattern locale =
+  compileOffsetDateTimePattern locale (rawDateTimeFormat locale)

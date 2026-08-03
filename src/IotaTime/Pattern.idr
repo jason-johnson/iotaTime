@@ -83,6 +83,31 @@ Semigroup (Pattern state value) where
           pure (map (\updateRight => updateRight . updateLeft) resultRight))
     (\value => left.formatPart value ++ right.formatPart value)
 
+pairUpdate : (leftState -> leftState) -> (rightState -> rightState) ->
+             (leftState, rightState) -> (leftState, rightState)
+pairUpdate updateLeft updateRight (leftState, rightState) =
+  (updateLeft leftState, updateRight rightState)
+
+public export
+pairPattern : (combined -> left) -> (combined -> right) ->
+              (left -> right -> combined) ->
+              Pattern leftState left -> Pattern rightState right ->
+              Pattern (leftState, rightState) combined
+pairPattern leftOf rightOf combine left right = MkPattern
+  (left.initialState, right.initialState)
+  (\(leftState, rightState) => do
+    leftValue <- left.finish leftState
+    rightValue <- right.finish rightState
+    Right (combine leftValue rightValue))
+  (do
+    parsedLeft <- left.parsePart
+    case parsedLeft of
+      Left error => pure (Left error)
+      Right updateLeft => do
+        parsedRight <- right.parsePart
+        pure (map (pairUpdate updateLeft) parsedRight))
+  (\value => left.formatPart (leftOf value) ++ right.formatPart (rightOf value))
+
 public export
 format : Pattern state value -> value -> String
 format pattern = pattern.formatPart

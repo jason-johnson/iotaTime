@@ -21,5 +21,8 @@ import public IotaTime.Locale
 import public IotaTime.Pattern
 import public IotaTime.Pattern.CalendarDate
 import public IotaTime.Pattern.LocalTime
+import public IotaTime.Pattern.Offset
+import public IotaTime.Pattern.CalendarDateTime
+import public IotaTime.Pattern.OffsetDateTime
 import public IotaTime.Pattern.Locale
 import public IotaTime.CalendarDateTime

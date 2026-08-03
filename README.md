@@ -69,6 +69,9 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Pattern.idr` — composable typed parsing and formatting core
 - `src/IotaTime/Pattern/CalendarDate.idr` — Gregorian numeric date patterns
 - `src/IotaTime/Pattern/LocalTime.idr` — local-time field and standard patterns
+- `src/IotaTime/Pattern/Offset.idr` — signed UTC-offset patterns
+- `src/IotaTime/Pattern/CalendarDateTime.idr` — combined Gregorian date-time patterns
+- `src/IotaTime/Pattern/OffsetDateTime.idr` — fixed-offset date-time patterns
 - `src/IotaTime/Pattern/Locale.idr` — locale `strftime` layout compilation
 - `test/iotaTime-test.ipkg` — test package
 - `test/Main.idr` — test orchestrator
@@ -405,6 +408,12 @@ Field parsers accumulate raw components in `DateFields` and call `refineGregoria
 
 `pfrac width` formats and parses fixed-width fractional seconds, scaling parsed digits to nanoseconds. Its erased `So (isValidFractionWidth width)` argument restricts widths to 1 through 9, so `pfrac 0` and `pfrac 10` fail at compile time.
 
+## Offset and date-time patterns
+
+`pOffset` formats signed hours and minutes as `+02:00`; `pOffsetFull` includes seconds, `pOffsetZ` writes `Z` for UTC, and `pOffsetCompact` implements the `strftime` `%z` form such as `+0200`. Parsing reads the sign and all components as one quantity, then calls `refineOffsetSeconds`, so malformed components and values outside the supported plus-or-minus 18-hour range remain typed runtime failures.
+
+`pairPattern` combines two independently refined patterns through projections and a constructor. `calendarDateTimePattern` uses it for a Gregorian date and local time; the standard `ps`, `po`, `pf`, `pF`, `pg`, and `pG` layouts mirror HodaTime. `offsetDateTimePattern` then combines any such local pattern with an offset pattern. `pOffsetDateTime` is the ISO layout `yyyy-MM-ddTHH:mm:ss(+/-)HH:mm`.
+
 ## Locale API
 
 `Locale` stores Gregorian month and weekday names, AM/PM designators, and the operating system layout strings needed by later whole-layout pattern compilation. Its constructor is private. Month tables use `Vect 12 String` and weekday tables use `Vect 7 String`, so every locale is structurally complete.
@@ -432,6 +441,8 @@ Both platforms return `IO (Either LocaleError Locale)`, keeping unknown names an
 `localeTimePattern` similarly compiles a locale's time layout into a bidirectional `LocalTime` pattern, while `compileTimePattern` accepts an explicit layout. Time conversions include `%H`, `%I`, `%l`, `%M`, `%S`, and `%p`; the tokenizer also expands the composite `%T`, `%R`, and `%r` layouts.
 
 `localeDateTimePattern` compiles the combined locale layout into a Gregorian `CalendarDateTime` pattern, and `compileDateTimePattern` accepts an explicit combined layout. Date and time fields share a `DateTimeFields` accumulator, so their order is independent. Because `CalendarDateTime` represents civil time without a zone, `%Z` and `%z` fields and their preceding layout spaces are deliberately omitted.
+
+`compileOffsetDateTimePattern` compiles a combined layout containing `%z` into a pure bidirectional `OffsetDateTime` pattern, and `localeOffsetDateTimePattern` applies it to a locale's combined layout. A missing `%z` returns `MissingOffsetSpecifier`; `%Z` is a zone abbreviation rather than a numeric offset and is reserved for provider-backed zoned parsing.
 
 Machine locale acquisition and locale-driven date, time, and combined date-time patterns are available on Unix and Windows.
 

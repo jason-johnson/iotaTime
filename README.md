@@ -37,6 +37,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime.idr` — library entry module
 - `src/IotaTime/Instant.idr` — opaque points on the global nanosecond timeline
 - `src/IotaTime/Duration.idr` — opaque fixed elapsed-time amounts
+- `src/IotaTime/DateTimeZone.idr` — validated fixed and transition-based zones
 - `src/IotaTime/Interval.idr` — proof-carrying half-open timeline intervals
 - `src/IotaTime/Offset.idr` — bounded signed UTC offsets
 - `src/IotaTime/OffsetDateTime.idr` — calendar-local date-times resolved by UTC offset
@@ -120,6 +121,14 @@ minimumOffset = offsetFromHours (-18)
 `toInstant` subtracts the offset from the local date-time to resolve one unique global instant. `fromInstant` performs the inverse operation for a requested calendar and offset, returning `Left (TargetCalendarOutOfRange ...)` only when the resulting local day falls outside that calendar's supported historical range.
 
 `withOffset` preserves the instant and shifts the local date and time, including across midnight. `OffsetDateTime.withCalendar` preserves the instant, local time, and offset while changing only the calendar representation of the date; it retains the same target-range validation as other calendar conversion APIs.
+
+## Date-time zones
+
+`DateTimeZone` is an opaque in-memory zone model. `fixedDateTimeZone` creates a zone with one permanent offset. `dateTimeZone` creates a transition-based zone from an initial offset and a statically known list of `(nanosecondsSinceEpoch, Offset)` changes; an erased proof requires transition instants to be strictly increasing. `refineDateTimeZone` validates arbitrary `Instant` transition data at runtime and rejects duplicate or reversed transitions.
+
+`zoneOffsetAt` selects the offset effective at an instant, with a transition's new offset taking effect exactly at its instant. `mapLocal` maps a `CalendarDateTime` explicitly to `Skipped`, `Unambiguous`, or `Ambiguous`. Ambiguous results are ordered by instant and retain every candidate, even for synthetic transition data that creates more than the usual two mappings.
+
+This module deliberately models validated zone behavior without parsing an external time-zone database. TZDB loading remains a separate trust boundary that will construct `DateTimeZone` values through `refineDateTimeZone`.
 
 ## Gregorian calendar API
 

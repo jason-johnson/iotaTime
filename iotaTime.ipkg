@@ -4,9 +4,9 @@ version = 0.1.0
 
 sourcedir = "src"
 
-modules = IotaTime,
-		  IotaTime.Duration,
+modules = IotaTime.Duration,
 		  IotaTime.Clock,
+		  IotaTime.DateTimeZone,
 		  IotaTime.Instant,
 		  IotaTime.Interval,
 		  IotaTime.Offset,
@@ -19,4 +19,5 @@ modules = IotaTime,
 		  IotaTime.Calendar.Gregorian,
 		  IotaTime.Calendar.Julian,
 		  IotaTime.Calendar.Hebrew,
-		  IotaTime.CalendarDateTime
+		  IotaTime.CalendarDateTime,
+		  IotaTime

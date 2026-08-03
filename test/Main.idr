@@ -20,6 +20,7 @@ import Test.Islamic
 import Test.Persian
 import Test.Hebrew
 import Test.WithCalendar
+import Test.Pattern
 import Test.Support
 
 proofsChecked : ()
@@ -56,6 +57,7 @@ main = do
   persianPassed <- Test.Persian.run
   hebrewPassed <- Test.Hebrew.run
   withCalendarPassed <- Test.WithCalendar.run
+  patternPassed <- Test.Pattern.run
   finalizeResults
     [ ("proof tests (compile-time)", True)
     , ("runtime behavior tests", runtimePassed)
@@ -77,4 +79,5 @@ main = do
     , ("Persian calendar tests", persianPassed)
     , ("Hebrew calendar tests", hebrewPassed)
     , ("withCalendar conversion tests", withCalendarPassed)
+    , ("calendar date pattern tests", patternPassed)
     ]

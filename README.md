@@ -62,6 +62,8 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Calendar/Coptic.idr` — proof-carrying Coptic calendar
 - `src/IotaTime/Calendar/Islamic.idr` — indexed tabular Islamic calendars
 - `src/IotaTime/Calendar/Persian.idr` — bounded astronomical Persian calendar
+- `src/IotaTime/Pattern.idr` — composable typed parsing and formatting core
+- `src/IotaTime/Pattern/CalendarDate.idr` — Gregorian numeric date patterns
 - `test/iotaTime-test.ipkg` — test package
 - `test/Main.idr` — test orchestrator
 - `test/Test/Proof.idr` — compile-time proof tests
@@ -364,6 +366,25 @@ The calendar implements the 19-year leap cycle, the Rosh Hashanah postponement r
 - `isHebrewLeapYear`, `daysInHebrewYear`, `maxHebrewDaysInMonth`, and the `isValidHebrew...` predicates expose Hebrew decision procedures.
 - Month periods skip absent Adar I in common years. Year periods map leap-year Adar I into common-year Adar and clamp the day when necessary.
 - Hebrew dates support weekday navigation, mixed `CalendarDateTime` periods, and the same capability constraints as Gregorian and Julian dates.
+
+## Calendar date patterns
+
+`Pattern state value` combines formatting with full-input parsing. Fields compose with `<+>`, and `<%` appends a literal produced by `char` or `string`. The parsing engine uses `Data.String.Parser` from Idris 2's `contrib` package, while the public boundary returns `Either PatternError value`; malformed fields, values outside their field ranges, invalid final dates, and trailing input remain distinct typed failures. Formatting is specialized to `value -> String`, which provides the pattern-specific composition supplied by Haskell's `Formatting` and `HoleyMonoid` machinery without introducing a general variadic formatting layer.
+
+The initial calendar-date layer provides the HodaTime-compatible Gregorian numeric fields `pyear`, `pyyyy`, `pyy`, `pmonthNum`, `pMM`, `pday`, and `pdd`. `pd` is the slash-separated standard date and `pR` is the ISO round-trip pattern:
+
+```idris
+isoText : String
+isoText = format pR (calendarDate 3 March 2020)
+
+parsed : Either PatternError (CalendarDate Gregorian)
+parsed = parse pR "2020-03-03"
+
+unpadded : Pattern DateFields (CalendarDate Gregorian)
+unpadded = ((pyear 1 <% char '-') <+> (pmonthNum 1 <% char '-')) <+> pday 1
+```
+
+Field parsers accumulate raw components in `DateFields` and call `refineGregorianDate` only after consuming the complete input. Custom field order is therefore independent of temporary invalid dates, while a value such as `"2021-02-29"` still fails at the runtime trust boundary.
 
 ## Calendar conversion
 

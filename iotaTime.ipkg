@@ -2,6 +2,8 @@ package iotaTime
 
 version = 0.1.0
 
+depends = contrib
+
 sourcedir = "src"
 
 prebuild = "make support"
@@ -35,5 +37,7 @@ modules = IotaTime.Duration,
 		  IotaTime.Calendar.Persian,
 		  IotaTime.Calendar.Julian,
 		  IotaTime.Calendar.Hebrew,
+		  IotaTime.Pattern,
+		  IotaTime.Pattern.CalendarDate,
 		  IotaTime.CalendarDateTime,
 		  IotaTime

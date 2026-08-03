@@ -1,0 +1,8 @@
+module IslamicCommonYearLeapDay
+-- EXPECT: Can't find an implementation for So (
+
+import IotaTime
+import IotaTime.Calendar.Islamic
+
+invalid : CalendarDate IslamicBcl
+invalid = islamicDate 30 IslamicMonths.DhulHijjah 15

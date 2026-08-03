@@ -60,6 +60,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Calendar/Iso.idr` — ISO-8601 week-date construction
 - `src/IotaTime/Calendar/Julian.idr` — proof-carrying Julian calendar
 - `src/IotaTime/Calendar/Coptic.idr` — proof-carrying Coptic calendar
+- `src/IotaTime/Calendar/Islamic.idr` — indexed tabular Islamic calendars
 - `test/iotaTime-test.ipkg` — test package
 - `test/Main.idr` — test orchestrator
 - `test/Test/Proof.idr` — compile-time proof tests
@@ -305,6 +306,23 @@ leapDay = copticDate 6 CopticMonths.PiKogiEnavot 1731
 ```
 
 `copticDate`, `copticFromDays`, `copticFromNthDay`, and `copticFromWeekDate` reject invalid static values through erased proofs. Their `refineCoptic...` counterparts return `Either CopticDateError` for runtime input. Date periods clamp at the year-1 boundary and at the shorter epagomenal month.
+
+## Islamic calendar API
+
+`CalendarDate (Islamic pattern)` implements the tabular Islamic calendar with the astronomical epoch, 1 Muharram 1 = July 18, 622 proleptic Gregorian. Odd months have 30 days, even months have 29, and Dhul Hijjah gains day 30 in a leap year.
+
+The leap pattern is part of the calendar type. `IslamicBcl` and `IslamicBase16` use the Base16 pattern compatible with .NET and NodaTime; `IslamicBase15`, `IslamicIndian`, and `IslamicHabashAlHasib` select the other common 30-year patterns. Values from different patterns have different types and cannot be mixed.
+
+```idris
+defaultLeapDay : CalendarDate IslamicBcl
+defaultLeapDay = islamicDate 30 IslamicMonths.DhulHijjah 16
+
+base15LeapDay : CalendarDate IslamicBase15
+base15LeapDay = islamicDate' {pattern = Base15}
+	30 IslamicMonths.DhulHijjah 15
+```
+
+The unprimed constructors and refinements use `IslamicBcl`. Primed forms such as `islamicDate'`, `islamicFromNthDay'`, and `refineIslamicDate'` select a pattern through the expected type or an explicit `{pattern = ...}` argument. Static invalid dates require impossible erased proofs; runtime inputs return `Either IslamicDateError`.
 
 ## Hebrew calendar API
 

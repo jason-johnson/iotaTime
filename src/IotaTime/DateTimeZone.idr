@@ -37,12 +37,78 @@ record ZoneTransition where
   transitionInstant : Instant
   transitionInfo : TransitionInfo
 
+public export
+data TransitionTimeMode = WallTime | StandardTime | UniversalTime
+
+export
+data RecurrenceDay
+  = JulianWithoutLeap Integer
+  | JulianWithLeap Integer
+  | MonthWeekDay Integer Integer Integer
+
+public export
+data RecurrenceRuleError
+  = JulianDayOutOfRange Integer
+  | MonthOutOfRange Integer
+  | WeekOutOfRange Integer
+  | WeekdayOutOfRange Integer
+
+export
+record RecurrenceRule where
+  constructor MkRecurrenceRule
+  recurrenceDay : RecurrenceDay
+  recurrenceSeconds : Integer
+  recurrenceMode : TransitionTimeMode
+
+||| Validate a one-based Julian day that omits February 29.
+public export
+julianWithoutLeapRule : Integer -> Integer -> TransitionTimeMode ->
+                         Either RecurrenceRuleError RecurrenceRule
+julianWithoutLeapRule day seconds mode =
+  if day >= 1 && day <= 365
+    then Right (MkRecurrenceRule (JulianWithoutLeap day) seconds mode)
+    else Left (JulianDayOutOfRange day)
+
+||| Validate a zero-based Julian day that includes February 29.
+public export
+julianWithLeapRule : Integer -> Integer -> TransitionTimeMode ->
+                      Either RecurrenceRuleError RecurrenceRule
+julianWithLeapRule day seconds mode =
+  if day >= 0 && day <= 365
+    then Right (MkRecurrenceRule (JulianWithLeap day) seconds mode)
+    else Left (JulianDayOutOfRange day)
+
+||| Validate an Mm.w.d POSIX transition day.
+public export
+monthWeekDayRule : Integer -> Integer -> Integer -> Integer ->
+                   TransitionTimeMode -> Either RecurrenceRuleError RecurrenceRule
+monthWeekDayRule month week weekday seconds mode =
+  if month < 1 || month > 12 then Left (MonthOutOfRange month)
+  else if week < 1 || week > 5 then Left (WeekOutOfRange week)
+  else if weekday < 0 || weekday > 6 then Left (WeekdayOutOfRange weekday)
+  else Right (MkRecurrenceRule (MonthWeekDay month week weekday) seconds mode)
+
+export
+record ZoneRecurrence where
+  constructor MkZoneRecurrence
+  standardTransition : TransitionInfo
+  daylightTransition : TransitionInfo
+  daylightStart : RecurrenceRule
+  standardStart : RecurrenceRule
+
+||| Construct recurring standard/daylight rules from validated transition days.
+public export
+zoneRecurrence : TransitionInfo -> TransitionInfo -> RecurrenceRule ->
+                 RecurrenceRule -> ZoneRecurrence
+zoneRecurrence = MkZoneRecurrence
+
 export
 record DateTimeZoneRep where
   constructor MkDateTimeZone
   storedZoneId : String
   initialTransition : TransitionInfo
   transitions : List ZoneTransition
+  futureRecurrence : Maybe ZoneRecurrence
 
 public export
 DateTimeZone : Type
@@ -76,7 +142,7 @@ toTransitions ((instant, valueInfo) :: rest) =
 public export
 fixedDateTimeZone : String -> Offset -> DateTimeZone
 fixedDateTimeZone valueId valueOffset =
-  MkDateTimeZone valueId (transitionInfo valueOffset False valueId) []
+  MkDateTimeZone valueId (transitionInfo valueOffset False valueId) [] Nothing
 
 ||| Construct a transition zone from statically known, strictly increasing
 ||| nanosecond instants and the offsets effective from those instants onward.
@@ -86,7 +152,7 @@ dateTimeZone : (valueId : String) -> (valueInitialInfo : TransitionInfo) ->
                {auto 0 valid : So (isValidZoneTransitions valueTransitions)} ->
                DateTimeZone
 dateTimeZone valueId valueInitialInfo valueTransitions =
-  MkDateTimeZone valueId valueInitialInfo (toTransitions valueTransitions)
+  MkDateTimeZone valueId valueInitialInfo (toTransitions valueTransitions) Nothing
 
 public export
 data DateTimeZoneError = TransitionsNotStrictlyIncreasing
@@ -112,24 +178,139 @@ refineDateTimeZone : String -> TransitionInfo -> List (Instant, TransitionInfo) 
 refineDateTimeZone valueId valueInitialInfo valueTransitions =
   if runtimeTransitionsValid valueTransitions
     then Right (MkDateTimeZone valueId valueInitialInfo
-      (toRuntimeTransitions valueTransitions))
+      (toRuntimeTransitions valueTransitions) Nothing)
+    else Left TransitionsNotStrictlyIncreasing
+
+||| Validate explicit transitions and attach recurring rules used after them.
+public export
+refineRecurringDateTimeZone : String -> TransitionInfo ->
+                              List (Instant, TransitionInfo) -> ZoneRecurrence ->
+                              Either DateTimeZoneError DateTimeZone
+refineRecurringDateTimeZone valueId valueInitialInfo valueTransitions recurrence =
+  if runtimeTransitionsValid valueTransitions
+    then Right (MkDateTimeZone valueId valueInitialInfo
+      (toRuntimeTransitions valueTransitions) (Just recurrence))
     else Left TransitionsNotStrictlyIncreasing
 
 public export
 zoneId : DateTimeZone -> String
 zoneId = storedZoneId
 
+recurrenceNanosecondsPerSecond : Integer
+recurrenceNanosecondsPerSecond = 1000000000
+
+recurrenceSecondsPerDay : Integer
+recurrenceSecondsPerDay = 86400
+
+isGregorianLeapYear : Integer -> Bool
+isGregorianLeapYear year =
+  year `mod` 400 == 0 || (year `mod` 4 == 0 && year `mod` 100 /= 0)
+
+daysFromGregorianCivil : Integer -> Integer -> Integer -> Integer
+daysFromGregorianCivil year month day =
+  let shiftedYear = if month <= 2 then year - 1 else year
+   in let era = shiftedYear `div` 400
+     in let yearOfEra = shiftedYear - era * 400
+       in let shiftedMonth = month + if month > 2 then -3 else 9
+         in let dayOfYear = (153 * shiftedMonth + 2) `div` 5 + day - 1
+           in let dayOfEra = yearOfEra * 365 + yearOfEra `div` 4 -
+                yearOfEra `div` 100 + dayOfYear
+             in era * 146097 + dayOfEra - 730485
+
+gregorianYearFromDays : Integer -> Integer
+gregorianYearFromDays days =
+  let shifted = days + 730485
+   in let era = shifted `div` 146097
+     in let dayOfEra = shifted - era * 146097
+       in let yearOfEra = (dayOfEra - dayOfEra `div` 1460 +
+            dayOfEra `div` 36524 - dayOfEra `div` 146096) `div` 365
+         in let partialYear = yearOfEra + era * 400
+           in let dayOfYear = dayOfEra - (365 * yearOfEra +
+                yearOfEra `div` 4 - yearOfEra `div` 100)
+             in let shiftedMonth = (5 * dayOfYear + 2) `div` 153
+               in let month = shiftedMonth + if shiftedMonth < 10 then 3 else -9
+                 in partialYear + if month <= 2 then 1 else 0
+
+daysInGregorianMonth : Integer -> Integer -> Integer
+daysInGregorianMonth year 2 = if isGregorianLeapYear year then 29 else 28
+daysInGregorianMonth year month =
+  if month == 4 || month == 6 || month == 9 || month == 11 then 30 else 31
+
+recurrenceDayInYear : Integer -> RecurrenceDay -> Integer
+recurrenceDayInYear year (JulianWithoutLeap day) =
+  daysFromGregorianCivil year 1 1 + day - 1 +
+    if isGregorianLeapYear year && day >= 60 then 1 else 0
+recurrenceDayInYear year (JulianWithLeap day) =
+  daysFromGregorianCivil year 1 1 + day
+recurrenceDayInYear year (MonthWeekDay month week weekday) =
+  let first = daysFromGregorianCivil year month 1
+   in let firstWeekday = (first + 3) `mod` 7
+     in let candidate = first + (weekday - firstWeekday) `mod` 7 + 7 * (week - 1)
+       in if candidate >= first + daysInGregorianMonth year month
+            then candidate - 7
+            else candidate
+
+transitionAdjustment : ZoneRecurrence -> TransitionInfo ->
+                       TransitionTimeMode -> Integer
+transitionAdjustment recurrence before UniversalTime = 0
+transitionAdjustment recurrence before StandardTime =
+  totalOffsetSeconds (utcOffset recurrence.standardTransition)
+transitionAdjustment recurrence before WallTime =
+  totalOffsetSeconds (utcOffset before)
+
+ruleInstant : ZoneRecurrence -> Integer -> TransitionInfo -> RecurrenceRule -> Instant
+ruleInstant recurrence year before rule =
+  let day = recurrenceDayInYear year rule.recurrenceDay
+   in let adjustment = transitionAdjustment recurrence before rule.recurrenceMode
+     in fromNanosecondsSinceEpoch
+          ((day * recurrenceSecondsPerDay + rule.recurrenceSeconds - adjustment) *
+            recurrenceNanosecondsPerSecond)
+
+recurrenceEvents : ZoneRecurrence -> Integer -> List (Instant, TransitionInfo)
+recurrenceEvents recurrence year =
+  [ (ruleInstant recurrence year recurrence.standardTransition
+      recurrence.daylightStart, recurrence.daylightTransition)
+  , (ruleInstant recurrence year recurrence.daylightTransition
+      recurrence.standardStart, recurrence.standardTransition)
+  ]
+
+recurringTransitionAt : ZoneRecurrence -> Maybe Instant -> TransitionInfo ->
+                        Instant -> TransitionInfo
+recurringTransitionAt recurrence cutoff initial query =
+  chooseLatest cutoff initial events
+  where
+    queryDay = toNanosecondsSinceEpoch query `div`
+      (recurrenceSecondsPerDay * recurrenceNanosecondsPerSecond)
+    queryYear = gregorianYearFromDays queryDay
+    events = recurrenceEvents recurrence (queryYear - 1) ++
+      recurrenceEvents recurrence queryYear ++
+      recurrenceEvents recurrence (queryYear + 1)
+
+    afterCutoff : Maybe Instant -> Instant -> Bool
+    afterCutoff Nothing event = True
+    afterCutoff (Just boundary) event = event > boundary
+
+    chooseLatest : Maybe Instant -> TransitionInfo ->
+                   List (Instant, TransitionInfo) -> TransitionInfo
+    chooseLatest boundary current [] = current
+    chooseLatest boundary current ((event, info) :: rest) =
+      if afterCutoff boundary event && event <= query
+        then chooseLatest (Just event) info rest
+        else chooseLatest boundary current rest
+
 public export
 activeTransitionAt : TimeZone -> Instant -> TransitionInfo
 activeTransitionAt valueZone valueInstant = go
-  valueZone.initialTransition valueZone.transitions
+  valueZone.initialTransition Nothing valueZone.transitions
   where
-    go : TransitionInfo -> List ZoneTransition -> TransitionInfo
-    go current [] = current
-    go current (transition :: rest) =
+    go : TransitionInfo -> Maybe Instant -> List ZoneTransition -> TransitionInfo
+    go current lastExplicit [] = case valueZone.futureRecurrence of
+      Nothing => current
+      Just recurrence => recurringTransitionAt recurrence lastExplicit current valueInstant
+    go current lastExplicit (transition :: rest) =
       if valueInstant < transition.transitionInstant
         then current
-        else go transition.transitionInfo rest
+        else go transition.transitionInfo (Just transition.transitionInstant) rest
 
 public export
 zoneOffsetAt : TimeZone -> Instant -> Offset
@@ -142,13 +323,22 @@ addUnique value (current :: rest) =
   else current :: addUnique value rest
 
 zoneOffsets : DateTimeZone -> List Offset
-zoneOffsets valueZone = go
-  [utcOffset valueZone.initialTransition] valueZone.transitions
+zoneOffsets valueZone =
+  recurrenceOffsets valueZone.futureRecurrence valueZone.transitions
   where
     go : List Offset -> List ZoneTransition -> List Offset
     go values [] = values
     go values (transition :: rest) =
       go (addUnique (utcOffset transition.transitionInfo) values) rest
+
+    recurrenceOffsets : Maybe ZoneRecurrence -> List ZoneTransition -> List Offset
+    recurrenceOffsets Nothing transitions =
+      go [utcOffset valueZone.initialTransition] transitions
+    recurrenceOffsets (Just recurrence) transitions =
+      let standardAndInitial = addUnique (utcOffset valueZone.initialTransition)
+            [utcOffset recurrence.standardTransition]
+       in go (addUnique (utcOffset recurrence.daylightTransition)
+            standardAndInitial) transitions
 
 insertByInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
                   {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
@@ -206,6 +396,20 @@ findLenientGapMapping local current (transition :: rest) =
     shifted = IotaTime.OffsetDateTime.fromInstant
       (utcOffset transition.transitionInfo) (toInstant (atOffset local (utcOffset current)))
 
+findLenientGapByOffsets : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                          {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                          TimeZone -> CalendarDateTime calendar @{cal} -> List Offset ->
+                          Either CalendarConversionError
+                            (Maybe (OffsetDateTime calendar @{cal}))
+findLenientGapByOffsets valueZone local [] = Right Nothing
+findLenientGapByOffsets valueZone local (before :: rest) =
+  let candidate = atOffset local before
+      candidateInstant = toInstant candidate
+      after = zoneOffsetAt valueZone candidateInstant
+   in if totalOffsetSeconds after > totalOffsetSeconds before
+        then map Just (IotaTime.OffsetDateTime.fromInstant after candidateInstant)
+        else findLenientGapByOffsets valueZone local rest
+
 export
 lenientLocalMapping : {calendar : Type} -> {auto cal : Calendar calendar} ->
                       {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
@@ -213,8 +417,12 @@ lenientLocalMapping : {calendar : Type} -> {auto cal : Calendar calendar} ->
                       Either CalendarConversionError
                         (Maybe (OffsetDateTime calendar @{cal}))
 lenientLocalMapping valueZone local = case mappingCandidates valueZone local of
-  [] => findLenientGapMapping local valueZone.initialTransition
-    valueZone.transitions
+  [] => do
+    explicit <- findLenientGapMapping local valueZone.initialTransition
+      valueZone.transitions
+    case explicit of
+      Just value => Right (Just value)
+      Nothing => findLenientGapByOffsets valueZone local (zoneOffsets valueZone)
   first :: _ => Right (Just first)
 
 ||| The complete result of mapping one local date-time into a zone. The

@@ -1,8 +1,12 @@
 module IotaTime.Tzdb
 
 import public IotaTime.Tzdb.Tzif
+import public IotaTime.Tzdb.Posix
 import public Data.Buffer
 import public System.File.Buffer
+import public System
+import public System.Directory
+import Data.List
 
 %default total
 
@@ -10,6 +14,33 @@ public export
 data TzdbError
   = TzdbFileError String
   | TzdbParseError TzifError
+  | TzdbPosixError PosixTzError
+  | TzdbZoneError DateTimeZoneError
+  | InvalidZoneName String
+
+mapLeft : (left -> mapped) -> Either left right -> Either mapped right
+mapLeft convert (Left error) = Left (convert error)
+mapLeft convert (Right value) = Right value
+
+||| Convert decoded TZif data into an invariant-preserving zone. A recurring
+||| footer controls instants after the final explicit transition; absent and
+||| fixed footers preserve the final explicit state indefinitely.
+public export
+timeZoneFromTzif : String -> TzifData -> Either TzdbError TimeZone
+timeZoneFromTzif valueId decoded = case decoded.posixFooter of
+  Nothing => finiteZone
+  Just "" => finiteZone
+  Just footer => do
+    parsed <- mapLeft TzdbPosixError (parsePosixZone footer)
+    case parsed of
+      PosixFixed _ => finiteZone
+      PosixRecurring recurrence => mapLeft TzdbZoneError
+        (refineRecurringDateTimeZone valueId decoded.initialTransition
+          decoded.transitions recurrence)
+  where
+    finiteZone : Either TzdbError TimeZone
+    finiteZone = mapLeft TzdbZoneError
+      (refineDateTimeZone valueId decoded.initialTransition decoded.transitions)
 
 bufferBytes : Buffer -> IO (List Bits8)
 bufferBytes buffer = do
@@ -33,8 +64,109 @@ loadTzifFile path = do
     Left error => pure (Left (TzdbFileError (show error)))
     Right buffer => do
       bytes <- bufferBytes buffer
-      pure (mapFst TzdbParseError (parseTzif bytes))
+      pure (mapLeft TzdbParseError (parseTzif bytes))
+
+||| Read, decode, and validate one TZif file as a time zone.
+public export
+loadTimeZoneFile : String -> String -> IO (Either TzdbError TimeZone)
+loadTimeZoneFile valueId path = do
+  decoded <- loadTzifFile path
+  pure (decoded >>= timeZoneFromTzif valueId)
+
+zoneInfoRoot : IO String
+zoneInfoRoot = do
+  configured <- getEnv "TZDIR"
+  pure (case configured of
+    Just value => if value == "" then "/usr/share/zoneinfo" else value
+    Nothing => "/usr/share/zoneinfo")
+
+pathComponents : List Char -> List (List Char)
+pathComponents source = go [] source
   where
-    mapFst : (left -> mapped) -> Either left right -> Either mapped right
-    mapFst convert (Left error) = Left (convert error)
-    mapFst convert (Right value) = Right value
+    go : List Char -> List Char -> List (List Char)
+    go current [] = [reverse current]
+    go current ('/' :: rest) = reverse current :: go [] rest
+    go current (value :: rest) = go (value :: current) rest
+
+validZoneName : String -> Bool
+validZoneName source =
+  let characters = unpack source
+   in not (null characters) && headIsRelative characters &&
+      all validComponent (pathComponents characters)
+  where
+    headIsRelative : List Char -> Bool
+    headIsRelative ('/' :: _) = False
+    headIsRelative _ = True
+
+    validComponent : List Char -> Bool
+    validComponent [] = False
+    validComponent ['.'] = False
+    validComponent ['.', '.'] = False
+    validComponent values = all (/= '\0') values
+
+zonePath : String -> String -> String
+zonePath root name = root ++ "/" ++ name
+
+||| Load a named IANA zone from `TZDIR` or `/usr/share/zoneinfo`.
+public export
+timeZone : String -> IO (Either TzdbError TimeZone)
+timeZone name = if validZoneName name
+  then do
+    root <- zoneInfoRoot
+    loadTimeZoneFile name (zonePath root name)
+  else pure (Left (InvalidZoneName name))
+
+||| Load UTC from the platform TZDB.
+public export
+utc : IO (Either TzdbError TimeZone)
+utc = timeZone "UTC"
+
+stripLeadingColon : String -> String
+stripLeadingColon source = case unpack source of
+  ':' :: rest => pack rest
+  _ => source
+
+||| Load the locally configured zone. `TZ` takes precedence; otherwise the
+||| platform `/etc/localtime` file is decoded directly.
+public export
+localZone : IO (Either TzdbError TimeZone)
+localZone = do
+  configured <- getEnv "TZ"
+  case configured of
+    Nothing => loadTimeZoneFile "local" "/etc/localtime"
+    Just "" => utc
+    Just source =>
+      let value = stripLeadingColon source
+       in case unpack value of
+            '/' :: _ => loadTimeZoneFile value value
+            _ => timeZone value
+
+collectZonePath : String -> String -> IO (List String)
+collectZonePath root relative = do
+  let path = if relative == "" then root else zonePath root relative
+  listed <- listDir path
+  case listed of
+    Right entries => assert_total (collectEntries entries)
+    Left _ => do
+      decoded <- loadTzifFile path
+      pure (case decoded of
+        Right _ => [relative]
+        Left _ => [])
+  where
+    collectEntries : List String -> IO (List String)
+    collectEntries [] = pure []
+    collectEntries (entry :: rest) = do
+      let child = if relative == "" then entry else relative ++ "/" ++ entry
+      found <- collectZonePath root child
+      remaining <- collectEntries rest
+      pure (found ++ remaining)
+
+||| List every parseable TZif zone beneath `TZDIR` or `/usr/share/zoneinfo`.
+public export
+availableZones : IO (Either TzdbError (List String))
+availableZones = do
+  root <- zoneInfoRoot
+  listed <- listDir root
+  case listed of
+    Left error => pure (Left (TzdbFileError (show error)))
+    Right _ => map (Right . sort) (collectZonePath root "")

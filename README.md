@@ -43,6 +43,9 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/OffsetDateTime.idr` — calendar-local date-times resolved by UTC offset
 - `src/IotaTime/Period.idr` — target-indexed calendar-relative periods
 - `src/IotaTime/ZonedDateTime.idr` — instant, zone, offset, and calendar kept consistent
+- `src/IotaTime/Tzdb/Tzif.idr` — bounds-checked TZif v1-v4 decoder
+- `src/IotaTime/Tzdb/Posix.idr` — validated POSIX future-rule parser
+- `src/IotaTime/Tzdb.idr` — typed TZDB loading and platform discovery
 - `src/IotaTime/Time/Component.idr` — opaque, range-checked clock components
 - `src/IotaTime/LocalTime.idr` — proof-carrying local time of day
 - `src/IotaTime/CalendarDateTime.idr` — calendar date paired with local time
@@ -131,9 +134,20 @@ The HodaTime names `empty`, `fromSeconds`, `fromMinutes`, `fromHours`, `seconds`
 
 `TimeZone` is the HodaTime-compatible name for the opaque in-memory zone model; `DateTimeZone` remains an alias. Each `TransitionInfo` carries its UTC offset, DST status, and abbreviation. `fixedDateTimeZone` creates one permanent transition state. `dateTimeZone` creates a zone from an initial state and a statically known list of `(nanosecondsSinceEpoch, TransitionInfo)` changes; an erased proof requires transition instants to be strictly increasing. `refineDateTimeZone` validates arbitrary `Instant` transition data at runtime and rejects duplicate or reversed transitions.
 
-`zoneOffsetAt` selects the offset effective at an instant, with a transition's new offset taking effect exactly at its instant. `mapLocal` maps a `CalendarDateTime` explicitly to `Skipped`, `Unambiguous`, or `Ambiguous`. Ambiguous results are ordered by instant and retain every candidate, even for synthetic transition data that creates more than the usual two mappings.
+`zoneOffsetAt` selects the offset effective at an instant, with a transition's new offset taking effect exactly at its instant. Finite zones retain their final transition state indefinitely. TZDB zones can additionally carry validated POSIX recurrence rules, which calculate future standard and daylight transitions after the final explicit TZif entry. `mapLocal` maps a `CalendarDateTime` explicitly to `Skipped`, `Unambiguous`, or `Ambiguous`. Ambiguous results are ordered by instant and retain every candidate, even for synthetic transition data that creates more than the usual two mappings.
 
-This module deliberately models validated zone behavior without parsing an external time-zone database. TZDB loading remains a separate trust boundary that will construct `TimeZone` values through `refineDateTimeZone`.
+`parseTzif` is a pure, bounds-checked TZif v1-v4 decoder. It validates transition type and abbreviation indexes, offset bounds, section lengths, and footer framing. `parsePosixZone` validates fixed and recurring POSIX footer forms, including `Jn`, `n`, and `Mm.w.d` days and wall, standard, or UTC transition clocks. `timeZoneFromTzif` joins both trust boundaries and constructs a validated `TimeZone`.
+
+On Unix-like systems, the HodaTime-compatible names have typed effect signatures:
+
+```idris
+utc : IO (Either TzdbError TimeZone)
+timeZone : String -> IO (Either TzdbError TimeZone)
+localZone : IO (Either TzdbError TimeZone)
+availableZones : IO (Either TzdbError (List String))
+```
+
+`TZDIR` overrides `/usr/share/zoneinfo`; `TZ` overrides `/etc/localtime` for the local zone. Named zones cannot escape the TZDB root. `availableZones` reports files that successfully decode as TZif rather than relying on filename conventions. Native Windows registry and ICU discovery remains a platform adapter to be implemented; the TZif and POSIX parsers themselves are backend-independent.
 
 ## Zoned date-times
 

@@ -39,6 +39,17 @@ version4Fixed = header 52 0 ++ fixedPayload ++ header 52 0 ++
 invalidTypeIndex : List Bits8
 invalidTypeIndex = header 0 1 ++ word32 0 ++ [1] ++ fixedPayload
 
+easternTzif : TzifData
+easternTzif = MkTzifData Version4
+  (transitionInfo (offsetFromHours (-5)) False "EST") []
+  (Just "EST5EDT,M3.2.0/2,M11.1.0/2")
+
+springGapLocal : CalendarDateTime Gregorian
+springGapLocal = on (localTime 2 30 0 0) (calendarDate 10 March 2024)
+
+autumnOverlapLocal : CalendarDateTime Gregorian
+autumnOverlapLocal = on (localTime 1 30 0 0) (calendarDate 3 November 2024)
+
 tzifCases : List RuntimeCase
 tzifCases =
   [ MkRuntimeCase "TZif v1 fixed zone is decoded"
@@ -56,16 +67,90 @@ tzifCases =
       (case parseTzif invalidTypeIndex of
         Left (InvalidTransitionTypeIndex 1) => True
         _ => False)
+  , MkRuntimeCase "POSIX fixed offsets use the reversed sign convention"
+      (case parsePosixZone "<+03>-3" of
+        Right (PosixFixed info) => totalOffsetSeconds (utcOffset info) == 10800
+        _ => False)
+  , MkRuntimeCase "POSIX transition rule ranges are validated"
+      (case parsePosixZone "EST5EDT,M13.2.0,M11.1.0" of
+        Left (PosixRuleOutOfRange (MonthOutOfRange 13)) => True
+        _ => False)
+  , MkRuntimeCase "recurring footer enters daylight time in future years"
+      (case timeZoneFromTzif "America/New_York" easternTzif of
+        Right zone =>
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1710053999) ==
+            offsetFromHours (-5) &&
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1710054000) ==
+            offsetFromHours (-4)
+        Left _ => False)
+  , MkRuntimeCase "recurring footer returns to standard time"
+      (case timeZoneFromTzif "America/New_York" easternTzif of
+        Right zone =>
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1730613599) ==
+            offsetFromHours (-4) &&
+          zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1730613600) ==
+            offsetFromHours (-5)
+        Left _ => False)
+  , MkRuntimeCase "recurring spring local time is skipped"
+      (case timeZoneFromTzif "America/New_York" easternTzif of
+        Right zone => case mapLocal zone springGapLocal of
+            Skipped => True
+            _ => False
+        Left _ => False)
+  , MkRuntimeCase "recurring spring gap shifts leniently"
+      (case timeZoneFromTzif "America/New_York" easternTzif of
+        Right zone => case fromCalendarDateTimeLeniently
+          springGapLocal zone of
+            Right value => IotaTime.ZonedDateTime.hour value == 3 &&
+              IotaTime.ZonedDateTime.minute value == 30 &&
+              zonedOffset value == offsetFromHours (-4)
+            Left _ => False
+        Left _ => False)
+  , MkRuntimeCase "recurring autumn local time is ambiguous"
+      (case timeZoneFromTzif "America/New_York" easternTzif of
+        Right zone => case mapLocal zone autumnOverlapLocal of
+            Ambiguous first second [] =>
+              offsetOf first == offsetFromHours (-4) &&
+              offsetOf second == offsetFromHours (-5)
+            _ => False
+        Left _ => False)
   ]
 
 export
 run : IO Bool
 run = do
   purePassed <- runSuite "TZif tests" tzifCases
-  systemUtc <- loadTzifFile "/usr/share/zoneinfo/UTC"
-  let systemPassed = case systemUtc of
-        Right value => abbreviation value.initialTransition == "UTC"
-        Left _ => False
-  putStrLn ("  [" ++ (if systemPassed then "PASS" else "FAIL") ++
-    "] system UTC TZif file is decoded")
-  pure (purePassed && systemPassed)
+  systemUtc <- utc
+  systemNewYork <- timeZone "America/New_York"
+  rejectedPath <- timeZone "../etc/passwd"
+  systemLocal <- localZone
+  listedZones <- availableZones
+  discoveryPassed <- runSuite "TZDB discovery tests"
+    [ MkRuntimeCase "system UTC zone is loaded"
+        (case systemUtc of
+          Right value => zoneOffsetAt value epoch == zeroOffset
+          Left _ => False)
+    , MkRuntimeCase "real TZif footer supplies standard time in 2100"
+        (case systemNewYork of
+          Right value => zoneOffsetAt value
+            (fromSecondsSinceUnixEpoch 4103697600) == offsetFromHours (-5)
+          Left _ => False)
+    , MkRuntimeCase "real TZif footer supplies daylight time in 2100"
+        (case systemNewYork of
+          Right value => zoneOffsetAt value
+            (fromSecondsSinceUnixEpoch 4119336000) == offsetFromHours (-4)
+          Left _ => False)
+    , MkRuntimeCase "zone names cannot escape the TZDB root"
+        (case rejectedPath of
+          Left (InvalidZoneName "../etc/passwd") => True
+          _ => False)
+    , MkRuntimeCase "local platform zone is decoded"
+        (case systemLocal of
+          Right _ => True
+          Left _ => False)
+    , MkRuntimeCase "available zones include UTC"
+        (case listedZones of
+          Right values => elem "UTC" values
+          Left _ => False)
+    ]
+  pure (purePassed && discoveryPassed)

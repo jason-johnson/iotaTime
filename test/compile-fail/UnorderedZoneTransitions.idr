@@ -5,5 +5,6 @@ module UnorderedZoneTransitions
 import IotaTime
 
 invalid : DateTimeZone
-invalid = dateTimeZone "Invalid" zeroOffset
-  [(1, offsetFromHours 1), (0, zeroOffset)]
+invalid = dateTimeZone "Invalid" (transitionInfo zeroOffset False "STD")
+  [(1, transitionInfo (offsetFromHours 1) True "DST"),
+   (0, transitionInfo zeroOffset False "STD")]

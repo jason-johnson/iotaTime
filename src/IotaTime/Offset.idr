@@ -48,14 +48,29 @@ offsetFromSeconds : (value : Integer) ->
 offsetFromSeconds value = MkOffset value
 
 public export
+fromSeconds : (value : Integer) ->
+              {auto 0 valid : So (isValidOffsetSeconds value)} -> Offset
+fromSeconds = offsetFromSeconds
+
+public export
 offsetFromMinutes : (value : Integer) ->
                     {auto 0 valid : So (isValidOffsetMinutes value)} -> Offset
 offsetFromMinutes value = MkOffset (value * secondsPerMinute)
 
 public export
+fromMinutes : (value : Integer) ->
+              {auto 0 valid : So (isValidOffsetMinutes value)} -> Offset
+fromMinutes = offsetFromMinutes
+
+public export
 offsetFromHours : (value : Integer) ->
                   {auto 0 valid : So (isValidOffsetHours value)} -> Offset
 offsetFromHours value = MkOffset (value * secondsPerHour)
+
+public export
+fromHours : (value : Integer) ->
+            {auto 0 valid : So (isValidOffsetHours value)} -> Offset
+fromHours = offsetFromHours
 
 public export
 data OffsetError = OffsetOutOfRange Integer
@@ -82,6 +97,10 @@ offsetHours value =
   where
     seconds = totalOffsetSeconds value
 
+public export
+hours : Offset -> Integer
+hours = offsetHours
+
 ||| The signed minute-within-hour component of an offset.
 public export
 offsetMinutes : Offset -> Integer
@@ -90,6 +109,10 @@ offsetMinutes value =
     ((abs seconds `mod` secondsPerHour) `div` secondsPerMinute)
   where
     seconds = totalOffsetSeconds value
+
+public export
+minutes : Offset -> Integer
+minutes = offsetMinutes
 
 ||| The signed second-within-minute component of an offset.
 public export
@@ -100,8 +123,16 @@ offsetSeconds value =
     seconds = totalOffsetSeconds value
 
 public export
+seconds : Offset -> Integer
+seconds = offsetSeconds
+
+public export
 zeroOffset : Offset
 zeroOffset = MkOffset 0
+
+public export
+empty : Offset
+empty = zeroOffset
 
 clampOffsetSeconds : Integer -> Integer
 clampOffsetSeconds value = max (-64800) (min 64800 value)
@@ -112,11 +143,19 @@ addOffsetClamped : Offset -> Offset -> Offset
 addOffsetClamped left right = MkOffset (clampOffsetSeconds
   (totalOffsetSeconds left + totalOffsetSeconds right))
 
+public export
+addClamped : Offset -> Offset -> Offset
+addClamped = addOffsetClamped
+
 ||| Subtract the second offset, clamping the result to the supported bounds.
 public export
 subtractOffsetClamped : Offset -> Offset -> Offset
 subtractOffsetClamped left right = MkOffset (clampOffsetSeconds
   (totalOffsetSeconds left - totalOffsetSeconds right))
+
+public export
+minusClamped : Offset -> Offset -> Offset
+minusClamped = subtractOffsetClamped
 
 ||| Reverse an offset's direction. Both bounds are symmetric, so no clamping
 ||| is needed.

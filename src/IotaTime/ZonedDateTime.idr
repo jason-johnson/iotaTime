@@ -3,7 +3,6 @@ module IotaTime.ZonedDateTime
 import public IotaTime.DateTimeZone
 import public IotaTime.Duration
 import public IotaTime.OffsetDateTime
-import public IotaTime.Period
 
 %default total
 
@@ -30,6 +29,14 @@ inZone valueZone valueInstant =
       Left error => Left error
       Right value => Right (MkZonedDateTime value valueZone)
 
+||| HodaTime-compatible instant-first constructor.
+public export
+fromInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
+              {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+              Instant -> TimeZone ->
+              Either CalendarConversionError (ZonedDateTime calendar @{cal})
+fromInstant valueInstant valueZone = inZone valueZone valueInstant
+
 public export
 zonedOffsetDateTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
                       ZonedDateTime calendar @{cal} ->
@@ -43,6 +50,58 @@ zonedLocalDateTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
 zonedLocalDateTime = localDateTime . zonedValue
 
 public export
+toCalendarDateTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                     ZonedDateTime calendar @{cal} ->
+                     CalendarDateTime calendar @{cal}
+toCalendarDateTime = zonedLocalDateTime
+
+public export
+toCalendarDate : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                 ZonedDateTime calendar @{cal} -> CalendarDate calendar @{cal}
+toCalendarDate = datePart . zonedLocalDateTime
+
+public export
+toLocalTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
+              ZonedDateTime calendar @{cal} -> LocalTime
+toLocalTime = localTimeOfDay . zonedLocalDateTime
+
+public export
+year : {calendar : Type} -> {auto cal : Calendar calendar} ->
+  ZonedDateTime calendar @{cal} -> Year
+year = IotaTime.Calendar.year . toCalendarDate
+
+public export
+month : {calendar : Type} -> {auto cal : Calendar calendar} ->
+   (value : ZonedDateTime calendar @{cal}) ->
+   MonthRep @{cal} (IotaTime.ZonedDateTime.year value)
+month value = IotaTime.Calendar.month (toCalendarDate value)
+
+public export
+day : {calendar : Type} -> {auto cal : Calendar calendar} ->
+      ZonedDateTime calendar @{cal} -> DayOfMonth
+day = IotaTime.Calendar.day . toCalendarDate
+
+public export
+hour : {calendar : Type} -> {auto cal : Calendar calendar} ->
+  ZonedDateTime calendar @{cal} -> Hour
+hour = IotaTime.LocalTime.hour . toLocalTime
+
+public export
+minute : {calendar : Type} -> {auto cal : Calendar calendar} ->
+    ZonedDateTime calendar @{cal} -> Minute
+minute = IotaTime.LocalTime.minute . toLocalTime
+
+public export
+second : {calendar : Type} -> {auto cal : Calendar calendar} ->
+    ZonedDateTime calendar @{cal} -> Second
+second = IotaTime.LocalTime.second . toLocalTime
+
+public export
+nanosecond : {calendar : Type} -> {auto cal : Calendar calendar} ->
+        ZonedDateTime calendar @{cal} -> Nanosecond
+nanosecond = IotaTime.LocalTime.nanosecond . toLocalTime
+
+public export
 zonedOffset : {calendar : Type} -> {auto cal : Calendar calendar} ->
               ZonedDateTime calendar @{cal} -> Offset
 zonedOffset = offsetOf . zonedValue
@@ -51,12 +110,37 @@ public export
 zonedInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
                {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
                ZonedDateTime calendar @{cal} -> Instant
-zonedInstant = toInstant . zonedValue
+zonedInstant = IotaTime.OffsetDateTime.toInstant . zonedValue
+
+public export
+toInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
+            {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+            ZonedDateTime calendar @{cal} -> Instant
+toInstant = zonedInstant
 
 public export
 zoneOf : {calendar : Type} -> {auto cal : Calendar calendar} ->
          ZonedDateTime calendar @{cal} -> DateTimeZone
 zoneOf = zonedZone
+
+public export
+zoneId : {calendar : Type} -> {auto cal : Calendar calendar} ->
+         ZonedDateTime calendar @{cal} -> String
+zoneId = IotaTime.DateTimeZone.zoneId . zonedZone
+
+public export
+inDst : {calendar : Type} -> {auto cal : Calendar calendar} ->
+        {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+        ZonedDateTime calendar @{cal} -> Bool
+inDst value = isDaylightSavingTime
+  (activeTransitionAt value.zonedZone (zonedInstant value))
+
+public export
+zoneAbbreviation : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                   {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                   ZonedDateTime calendar @{cal} -> String
+zoneAbbreviation value = abbreviation
+  (activeTransitionAt value.zonedZone (zonedInstant value))
 
 ||| The complete result of resolving a local date-time into a zone.
 public export
@@ -96,6 +180,54 @@ resolveLocal valueZone local = case mapLocal valueZone local of
     (attachZone valueZone second)
     (attachAll valueZone rest)
 
+||| Return every valid mapping of a local calendar date-time, in instant order.
+public export
+fromCalendarDateTimeAll : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                          {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                          CalendarDateTime calendar @{cal} -> TimeZone ->
+                          List (ZonedDateTime calendar @{cal})
+fromCalendarDateTimeAll local valueZone = case resolveLocal valueZone local of
+  ZonedSkipped => []
+  ZonedUnambiguous value => [value]
+  ZonedAmbiguous first second rest => first :: second :: rest
+
+public export
+data ZonedDateTimeError
+  = DateTimeDoesNotExist
+  | DateTimeAmbiguous
+  | LenientResolutionFailed
+  | ZonedCalendarOutOfRange CalendarConversionError
+
+||| Resolve only a unique local mapping. Skipped and ambiguous values are
+||| returned as typed errors rather than exceptions.
+public export
+fromCalendarDateTimeStrictly : {calendar : Type} ->
+                               {auto cal : Calendar calendar} ->
+                               {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                               CalendarDateTime calendar @{cal} -> TimeZone ->
+                               Either ZonedDateTimeError
+                                 (ZonedDateTime calendar @{cal})
+fromCalendarDateTimeStrictly local valueZone =
+  case resolveLocal valueZone local of
+    ZonedSkipped => Left DateTimeDoesNotExist
+    ZonedUnambiguous value => Right value
+    ZonedAmbiguous _ _ _ => Left DateTimeAmbiguous
+
+||| Apply HodaTime's lenient rules: choose the earliest ambiguous mapping and
+||| shift skipped values forward by the transition gap.
+public export
+fromCalendarDateTimeLeniently : {calendar : Type} ->
+                                {auto cal : Calendar calendar} ->
+                                {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                                CalendarDateTime calendar @{cal} -> TimeZone ->
+                                Either ZonedDateTimeError
+                                  (ZonedDateTime calendar @{cal})
+fromCalendarDateTimeLeniently local valueZone =
+  case lenientLocalMapping valueZone local of
+    Left error => Left (ZonedCalendarOutOfRange error)
+    Right Nothing => Left LenientResolutionFailed
+    Right (Just value) => Right (attachZone valueZone value)
+
 ||| Change zones while preserving the represented instant.
 public export
 withZone : {calendar : Type} -> {auto cal : Calendar calendar} ->
@@ -126,6 +258,14 @@ addZonedDuration : {calendar : Type} -> {auto cal : Calendar calendar} ->
 addZonedDuration amount value =
   inZone value.zonedZone (addDuration (zonedInstant value) amount)
 
+||| Add fixed elapsed time, following HodaTime's value-first argument order.
+public export
+add : {calendar : Type} -> {auto cal : Calendar calendar} ->
+  {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+  ZonedDateTime calendar @{cal} -> Duration ->
+  Either CalendarConversionError (ZonedDateTime calendar @{cal})
+add value amount = addZonedDuration amount value
+
 ||| Subtract elapsed time on the global timeline, then re-evaluate the zone offset.
 public export
 subtractZonedDuration : {calendar : Type} -> {auto cal : Calendar calendar} ->
@@ -135,12 +275,10 @@ subtractZonedDuration : {calendar : Type} -> {auto cal : Calendar calendar} ->
 subtractZonedDuration amount value =
   inZone value.zonedZone (subtractDuration (zonedInstant value) amount)
 
-||| Apply calendar-relative fields to local time, then explicitly resolve the
-||| result through the zone. This may be skipped or ambiguous at a transition.
+||| Subtract fixed elapsed time, following HodaTime's value-first argument order.
 public export
-applyZonedPeriod : {calendar : Type} -> {auto cal : Calendar calendar} ->
-                   {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
-                   Period (CalendarDateTime calendar @{cal}) ->
-                   ZonedDateTime calendar @{cal} -> ZonedMapping calendar cal
-applyZonedPeriod period value = resolveLocal value.zonedZone
-  (applyPeriod period (zonedLocalDateTime value))
+minus : {calendar : Type} -> {auto cal : Calendar calendar} ->
+        {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+        ZonedDateTime calendar @{cal} -> Duration ->
+        Either CalendarConversionError (ZonedDateTime calendar @{cal})
+minus value amount = subtractZonedDuration amount value

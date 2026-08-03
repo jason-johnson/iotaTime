@@ -12,16 +12,20 @@ localAt valueHour valueMinute = on
   (calendarDate 1 March 2000)
 
 springZone : DateTimeZone
-springZone = dateTimeZone "Test/Spring" zeroOffset
-  [(0, offsetFromHours 1)]
+springZone = dateTimeZone "Test/Spring"
+  (transitionInfo zeroOffset False "STD")
+  [(0, transitionInfo (offsetFromHours 1) True "DST")]
 
 fallZone : DateTimeZone
-fallZone = dateTimeZone "Test/Fall" (offsetFromHours 1)
-  [(0, zeroOffset)]
+fallZone = dateTimeZone "Test/Fall"
+  (transitionInfo (offsetFromHours 1) True "DST")
+  [(0, transitionInfo zeroOffset False "STD")]
 
 threeWayZone : DateTimeZone
-threeWayZone = dateTimeZone "Test/ThreeWay" (offsetFromHours 2)
-  [(0, offsetFromHours 1), (nanosecondsPerHour, zeroOffset)]
+threeWayZone = dateTimeZone "Test/ThreeWay"
+  (transitionInfo (offsetFromHours 2) True "TWO")
+  [(0, transitionInfo (offsetFromHours 1) True "ONE"),
+   (nanosecondsPerHour, transitionInfo zeroOffset False "ZERO")]
 
 dateTimeZoneCases : List RuntimeCase
 dateTimeZoneCases =
@@ -34,6 +38,9 @@ dateTimeZoneCases =
       (zoneOffsetAt springZone (fromNanosecondsSinceEpoch (-1)) == zeroOffset)
   , MkRuntimeCase "transition uses the new offset at its instant"
       (zoneOffsetAt springZone epoch == offsetFromHours 1)
+  , MkRuntimeCase "active transition carries DST metadata"
+      (let info = activeTransitionAt springZone epoch in
+        isDaylightSavingTime info && abbreviation info == "DST")
   , MkRuntimeCase "later transition offset replaces the earlier offset"
       (zoneOffsetAt threeWayZone
         (fromNanosecondsSinceEpoch nanosecondsPerHour) == zeroOffset)
@@ -65,19 +72,27 @@ dateTimeZoneCases =
             toInstant second < toInstant third
           _ => False)
   , MkRuntimeCase "runtime ordered transitions are accepted"
-      (case refineDateTimeZone "Runtime" zeroOffset
-        [(fromNanosecondsSinceEpoch 0, offsetFromHours 1),
-         (fromNanosecondsSinceEpoch nanosecondsPerHour, zeroOffset)] of
+      (case refineDateTimeZone "Runtime"
+        (transitionInfo zeroOffset False "STD")
+        [(fromNanosecondsSinceEpoch 0,
+          transitionInfo (offsetFromHours 1) True "DST"),
+         (fromNanosecondsSinceEpoch nanosecondsPerHour,
+          transitionInfo zeroOffset False "STD")] of
           Right value => zoneOffsetAt value epoch == offsetFromHours 1
           Left _ => False)
   , MkRuntimeCase "runtime duplicate transitions are rejected"
-      (case refineDateTimeZone "Runtime" zeroOffset
-        [(epoch, offsetFromHours 1), (epoch, zeroOffset)] of
+      (case refineDateTimeZone "Runtime"
+        (transitionInfo zeroOffset False "STD")
+        [(epoch, transitionInfo (offsetFromHours 1) True "DST"),
+         (epoch, transitionInfo zeroOffset False "STD")] of
           Left TransitionsNotStrictlyIncreasing => True
           Right _ => False)
   , MkRuntimeCase "runtime reversed transitions are rejected"
-      (case refineDateTimeZone "Runtime" zeroOffset
-        [(fromNanosecondsSinceEpoch 1, offsetFromHours 1), (epoch, zeroOffset)] of
+      (case refineDateTimeZone "Runtime"
+        (transitionInfo zeroOffset False "STD")
+        [(fromNanosecondsSinceEpoch 1,
+          transitionInfo (offsetFromHours 1) True "DST"),
+         (epoch, transitionInfo zeroOffset False "STD")] of
           Left TransitionsNotStrictlyIncreasing => True
           Right _ => False)
   ]

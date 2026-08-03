@@ -47,6 +47,14 @@ atOffset : {calendar : Type} -> {auto cal : Calendar calendar} ->
            OffsetDateTime calendar @{cal}
 atOffset = MkOffsetDateTime
 
+||| HodaTime-compatible constructor from a local calendar date-time and offset.
+public export
+fromCalendarDateTimeWithOffset : {calendar : Type} ->
+                                 {auto cal : Calendar calendar} ->
+                                 CalendarDateTime calendar @{cal} -> Offset ->
+                                 OffsetDateTime calendar @{cal}
+fromCalendarDateTimeWithOffset = atOffset
+
 public export
 localDateTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
                 OffsetDateTime calendar @{cal} ->
@@ -54,9 +62,20 @@ localDateTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
 localDateTime = localValue
 
 public export
+toCalendarDateTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                     OffsetDateTime calendar @{cal} ->
+                     CalendarDateTime calendar @{cal}
+toCalendarDateTime = localDateTime
+
+public export
 offsetOf : {calendar : Type} -> {auto cal : Calendar calendar} ->
            OffsetDateTime calendar @{cal} -> Offset
 offsetOf = offsetValue
+
+public export
+offset : {calendar : Type} -> {auto cal : Calendar calendar} ->
+         OffsetDateTime calendar @{cal} -> Offset
+offset = offsetOf
 
 localNanoseconds : LocalTime -> Integer
 localNanoseconds value =
@@ -100,6 +119,16 @@ fromInstant @{cal} @{rep} valueOffset valueInstant =
           valueOffset)
         Right _ => Left
           (TargetCalendarOutOfRange (dateTypeName @{rep}) valueDays)
+
+||| HodaTime-compatible constructor with instant-first argument order.
+public export
+fromInstantWithOffset : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                        {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                        Instant -> Offset ->
+                        Either CalendarConversionError
+                          (OffsetDateTime calendar @{cal})
+fromInstantWithOffset valueInstant valueOffset =
+  fromInstant valueOffset valueInstant
 
 ||| Change the displayed offset while preserving the represented instant.
 public export

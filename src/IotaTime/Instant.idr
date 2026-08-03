@@ -95,12 +95,20 @@ addDuration instant duration = MkInstant
   (instant.storedNanoseconds +
     toDurationNanoseconds duration)
 
+public export
+add : Instant -> Duration -> Instant
+add = addDuration
+
 ||| Subtract a fixed duration from an instant.
 public export
 subtractDuration : Instant -> Duration -> Instant
 subtractDuration instant duration = MkInstant
   (instant.storedNanoseconds -
     toDurationNanoseconds duration)
+
+public export
+minus : Instant -> Duration -> Instant
+minus = subtractDuration
 
 ||| Compute the signed fixed duration from the second instant to the first.
 public export

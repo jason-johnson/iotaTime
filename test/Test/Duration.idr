@@ -11,7 +11,19 @@ fiftyNanoseconds = durationFromNanoseconds 50
 
 durationCases : List RuntimeCase
 durationCases =
-  [ MkRuntimeCase "duration units convert exactly"
+  [ MkRuntimeCase "HodaTime duration constructors retain module-qualified names"
+      (IotaTime.Duration.fromHours 2 == durationFromMinutes 120)
+  , MkRuntimeCase "HodaTime duration arithmetic names remain available"
+      (IotaTime.Duration.minus
+        (IotaTime.Duration.add (IotaTime.Duration.fromSeconds 2)
+          (IotaTime.Duration.fromMilliseconds 500))
+        (IotaTime.Duration.fromMilliseconds 500) ==
+        IotaTime.Duration.fromSeconds 2)
+  , MkRuntimeCase "HodaTime instant arithmetic names remain available"
+      (IotaTime.Instant.minus
+        (IotaTime.Instant.add baseInstant fiftyNanoseconds)
+        fiftyNanoseconds == baseInstant)
+  , MkRuntimeCase "duration units convert exactly"
       (toDurationNanoseconds (durationFromStandardWeeks 1) ==
         7 * 24 * 60 * 60 * 1000000000)
   , MkRuntimeCase "negative duration values are preserved"

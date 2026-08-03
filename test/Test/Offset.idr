@@ -11,7 +11,18 @@ negativeOffset = offsetFromSeconds (-5445)
 
 offsetCases : List RuntimeCase
 offsetCases =
-  [ MkRuntimeCase "zero offset has no displacement"
+    [ MkRuntimeCase "HodaTime offset constructors retain module-qualified names"
+            (IotaTime.Offset.fromHours (-1) == IotaTime.Offset.fromMinutes (-60))
+    , MkRuntimeCase "HodaTime offset accessors are sign-consistent"
+            ((IotaTime.Offset.hours negativeOffset,
+                IotaTime.Offset.minutes negativeOffset,
+                IotaTime.Offset.seconds negativeOffset) == (-1, -30, -45))
+    , MkRuntimeCase "HodaTime clamped arithmetic names remain available"
+            (IotaTime.Offset.addClamped (IotaTime.Offset.fromHours 17)
+                (IotaTime.Offset.fromHours 2) == IotaTime.Offset.fromHours 18 &&
+             IotaTime.Offset.minusClamped IotaTime.Offset.empty
+                (IotaTime.Offset.fromHours 2) == IotaTime.Offset.fromHours (-2))
+    , MkRuntimeCase "zero offset has no displacement"
       (totalOffsetSeconds zeroOffset == 0)
   , MkRuntimeCase "offset seconds preserve the exact value"
       (totalOffsetSeconds positiveOffset == 5445)

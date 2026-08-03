@@ -30,32 +30,64 @@ durationFromNanoseconds : Integer -> Duration
 durationFromNanoseconds = MkDuration
 
 public export
+fromNanoseconds : Integer -> Duration
+fromNanoseconds = durationFromNanoseconds
+
+public export
 durationFromMicroseconds : Integer -> Duration
 durationFromMicroseconds value = MkDuration (value * 1000)
+
+public export
+fromMicroseconds : Integer -> Duration
+fromMicroseconds = durationFromMicroseconds
 
 public export
 durationFromMilliseconds : Integer -> Duration
 durationFromMilliseconds value = MkDuration (value * 1000000)
 
 public export
+fromMilliseconds : Integer -> Duration
+fromMilliseconds = durationFromMilliseconds
+
+public export
 durationFromSeconds : Integer -> Duration
 durationFromSeconds value = MkDuration (value * 1000000000)
+
+public export
+fromSeconds : Integer -> Duration
+fromSeconds = durationFromSeconds
 
 public export
 durationFromMinutes : Integer -> Duration
 durationFromMinutes value = durationFromSeconds (value * 60)
 
 public export
+fromMinutes : Integer -> Duration
+fromMinutes = durationFromMinutes
+
+public export
 durationFromHours : Integer -> Duration
 durationFromHours value = durationFromMinutes (value * 60)
+
+public export
+fromHours : Integer -> Duration
+fromHours = durationFromHours
 
 public export
 durationFromStandardDays : Integer -> Duration
 durationFromStandardDays value = durationFromHours (value * 24)
 
 public export
+fromStandardDays : Integer -> Duration
+fromStandardDays = durationFromStandardDays
+
+public export
 durationFromStandardWeeks : Integer -> Duration
 durationFromStandardWeeks value = durationFromStandardDays (value * 7)
+
+public export
+fromStandardWeeks : Integer -> Duration
+fromStandardWeeks = durationFromStandardWeeks
 
 public export
 toDurationNanoseconds : Duration -> Integer
@@ -71,9 +103,17 @@ addDurations left right =
   MkDuration (left.storedNanoseconds + right.storedNanoseconds)
 
 public export
+add : Duration -> Duration -> Duration
+add = addDurations
+
+public export
 subtractDurations : Duration -> Duration -> Duration
 subtractDurations left right =
   MkDuration (left.storedNanoseconds - right.storedNanoseconds)
+
+public export
+minus : Duration -> Duration -> Duration
+minus = subtractDurations
 
 public export
 negateDuration : Duration -> Duration

@@ -76,13 +76,15 @@ start : Instant
 start = fromSecondsSinceUnixEpoch 0
 
 finish : Instant
-finish = addDuration start (durationFromMinutes 90)
+finish = IotaTime.Instant.add start (IotaTime.Duration.fromMinutes 90)
 
 elapsed : Duration
 elapsed = difference finish start
 ```
 
-`durationFromStandardDays` and `durationFromStandardWeeks` mean exact 24-hour and seven-day amounts. Calendar-relative `days`, `weeks`, `months`, and `years` continue to construct target-indexed `Period` values instead. `now` reads the mandatory UTC system clock, and Unix conversion is available at whole-second and nanosecond precision.
+The HodaTime names `fromNanoseconds` through `fromStandardWeeks`, plus `add` and `minus`, are canonical within `IotaTime.Duration`; `IotaTime.Instant.add` and `IotaTime.Instant.minus` perform fixed timeline arithmetic. The earlier descriptive names remain compatibility aliases. Module qualification disambiguates names such as `Duration.fromHours` and `Offset.fromHours` when using the umbrella import.
+
+`fromStandardDays` and `fromStandardWeeks` mean exact 24-hour and seven-day amounts. Calendar-relative `days`, `weeks`, `months`, and `years` continue to construct target-indexed `Period` values instead. `now` reads the mandatory UTC system clock, and Unix conversion is available at whole-second and nanosecond precision.
 
 The scalar representation is intentionally simple. A proof-oriented representation using an `Integer` day, `Fin 86400` second-of-day, and `Fin 1000000000` nanosecond remains a future benchmarking candidate if profiling shows a material benefit.
 
@@ -111,33 +113,35 @@ minimumOffset : Offset
 minimumOffset = offsetFromHours (-18)
 ```
 
-`refineOffsetSeconds` validates an arbitrary runtime total and returns `Either OffsetError Offset`. `totalOffsetSeconds` exposes the scalar value. `offsetHours`, `offsetMinutes`, and `offsetSeconds` are sign-consistent components, so `-01:30:45` yields `(-1, -30, -45)` and the components always reconstruct the total.
+The HodaTime names `empty`, `fromSeconds`, `fromMinutes`, `fromHours`, `seconds`, `minutes`, `hours`, `addClamped`, and `minusClamped` are available from `IotaTime.Offset`. Proof-carrying constructors reject statically known out-of-range values rather than reproducing HodaTime's constructor clamping. The earlier descriptive names remain compatibility aliases.
+
+`refineOffsetSeconds` validates an arbitrary runtime total and returns `Either OffsetError Offset`. `totalOffsetSeconds` exposes the scalar value. The component accessors are sign-consistent, so `-01:30:45` yields `(-1, -30, -45)` and the components always reconstruct the total.
 
 `addOffsetClamped` and `subtractOffsetClamped` preserve the bounded invariant by clamping at either 18-hour limit. `negateOffset` is exact because the bounds are symmetric. Offset arithmetic is separate from both fixed `Duration` arithmetic and calendar-relative `Period` application.
 
 ## Offset date-times
 
-`OffsetDateTime calendar` associates a valid `CalendarDateTime calendar` with a valid `Offset`. The constructor remains private; `atOffset` is the public construction boundary. Because both components already carry their invariants, association cannot fail.
+`OffsetDateTime calendar` associates a valid `CalendarDateTime calendar` with a valid `Offset`. The constructor remains private. HodaTime-compatible construction uses `fromCalendarDateTimeWithOffset` or `fromInstantWithOffset`; the latter returns `Either` when the requested calendar cannot represent the local result. `atOffset` remains a compatibility alias for local construction.
 
-`toInstant` subtracts the offset from the local date-time to resolve one unique global instant. `fromInstant` performs the inverse operation for a requested calendar and offset, returning `Left (TargetCalendarOutOfRange ...)` only when the resulting local day falls outside that calendar's supported historical range.
+`toInstant` subtracts the offset from the local date-time to resolve one unique global instant. `toCalendarDateTime` and `offset` expose the HodaTime-compatible accessors.
 
 `withOffset` preserves the instant and shifts the local date and time, including across midnight. `OffsetDateTime.withCalendar` preserves the instant, local time, and offset while changing only the calendar representation of the date; it retains the same target-range validation as other calendar conversion APIs.
 
 ## Date-time zones
 
-`DateTimeZone` is an opaque in-memory zone model. `fixedDateTimeZone` creates a zone with one permanent offset. `dateTimeZone` creates a transition-based zone from an initial offset and a statically known list of `(nanosecondsSinceEpoch, Offset)` changes; an erased proof requires transition instants to be strictly increasing. `refineDateTimeZone` validates arbitrary `Instant` transition data at runtime and rejects duplicate or reversed transitions.
+`TimeZone` is the HodaTime-compatible name for the opaque in-memory zone model; `DateTimeZone` remains an alias. Each `TransitionInfo` carries its UTC offset, DST status, and abbreviation. `fixedDateTimeZone` creates one permanent transition state. `dateTimeZone` creates a zone from an initial state and a statically known list of `(nanosecondsSinceEpoch, TransitionInfo)` changes; an erased proof requires transition instants to be strictly increasing. `refineDateTimeZone` validates arbitrary `Instant` transition data at runtime and rejects duplicate or reversed transitions.
 
 `zoneOffsetAt` selects the offset effective at an instant, with a transition's new offset taking effect exactly at its instant. `mapLocal` maps a `CalendarDateTime` explicitly to `Skipped`, `Unambiguous`, or `Ambiguous`. Ambiguous results are ordered by instant and retain every candidate, even for synthetic transition data that creates more than the usual two mappings.
 
-This module deliberately models validated zone behavior without parsing an external time-zone database. TZDB loading remains a separate trust boundary that will construct `DateTimeZone` values through `refineDateTimeZone`.
+This module deliberately models validated zone behavior without parsing an external time-zone database. TZDB loading remains a separate trust boundary that will construct `TimeZone` values through `refineDateTimeZone`.
 
 ## Zoned date-times
 
-`ZonedDateTime calendar` stores a zone together with an `OffsetDateTime` whose offset is guaranteed by construction to equal `zoneOffsetAt zone instant`. Its constructor is private. `inZone` is the instant-based construction boundary; `resolveLocal` is the local-time boundary and returns `ZonedSkipped`, `ZonedUnambiguous`, or `ZonedAmbiguous` without silently resolving transition gaps or overlaps.
+`ZonedDateTime calendar` stores a zone together with an `OffsetDateTime` whose offset is guaranteed by construction to equal `zoneOffsetAt zone instant`. Its constructor is private. `fromInstant` uses HodaTime's instant-first argument order. `fromCalendarDateTimeAll`, `fromCalendarDateTimeStrictly`, and `fromCalendarDateTimeLeniently` retain the recognizable HodaTime construction policies, with typed `Either` errors replacing exceptions or hidden partiality. `resolveLocal` remains the fully explicit Idris mapping API.
 
-`withZone` preserves the instant while deriving the new zone's effective offset and local fields. `ZonedDateTime.withCalendar` preserves the instant and zone while changing the calendar representation, returning `Either` when the target calendar cannot represent the resulting local day.
+`toCalendarDateTime`, `toCalendarDate`, `toLocalTime`, `toInstant`, `inDst`, `zoneAbbreviation`, `zoneId`, and the direct date/time component functions match HodaTime's accessor vocabulary. `withZone` preserves the instant while deriving the new zone's effective offset and local fields. `ZonedDateTime.withCalendar` preserves the instant and zone while changing the calendar representation, returning `Either` when the target calendar cannot represent the resulting local day.
 
-Elapsed and calendar-relative arithmetic remain intentionally distinct. `addZonedDuration` and `subtractZonedDuration` move on the global timeline and re-evaluate the zone offset afterward. `applyZonedPeriod` changes the local date-time first and returns a `ZonedMapping`, because its result can land in a skipped or ambiguous local time. For that reason `ZonedDateTime` does not implement the total `ApplyPeriod` interface.
+`ZonedDateTime.add` and `ZonedDateTime.minus` apply fixed `Duration` values on the global timeline and re-evaluate the zone offset afterward, matching Noda Time semantics. Calendar-relative period arithmetic is intentionally absent: callers convert with `toCalendarDateTime`, apply the `Period`, then explicitly choose a local mapping policy. `ZonedDateTime` therefore does not implement `ApplyPeriod`.
 
 ## Gregorian calendar API
 

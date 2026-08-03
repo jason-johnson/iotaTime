@@ -32,7 +32,20 @@ gregorianBoundaryAtMaxOffset = atOffset
 
 offsetDateTimeCases : List RuntimeCase
 offsetDateTimeCases =
-  [ MkRuntimeCase "UTC calendar epoch resolves to the instant epoch"
+  [ MkRuntimeCase "HodaTime local constructor and accessors remain available"
+      (let value = the (OffsetDateTime Gregorian)
+            (fromCalendarDateTimeWithOffset
+              (on (localTime 1 0 0 0) (calendarDate 1 March 2000))
+              (offsetFromHours 1)) in
+        gregorianComponents value == gregorianComponents epochAtPlusOne &&
+        IotaTime.OffsetDateTime.offset value == offsetFromHours 1)
+  , MkRuntimeCase "HodaTime instant-first offset constructor remains available"
+      (case the (Either CalendarConversionError (OffsetDateTime Gregorian))
+        (fromInstantWithOffset epoch (offsetFromHours 1)) of
+          Right value => gregorianComponents value ==
+            ((2000, March, 1), (1, 0, 0, 0), 3600)
+          Left _ => False)
+  , MkRuntimeCase "UTC calendar epoch resolves to the instant epoch"
       (toInstant epochAtUtc == epoch)
   , MkRuntimeCase "local time minus offset resolves to the instant epoch"
       (toInstant epochAtPlusOne == epoch)

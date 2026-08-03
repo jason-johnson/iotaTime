@@ -57,6 +57,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/CalendarDateTime.idr` — calendar date paired with local time
 - `src/IotaTime/Calendar/Component.idr` — opaque and refined calendar component types
 - `src/IotaTime/Calendar/Gregorian.idr` — proof-carrying Gregorian calendar
+- `src/IotaTime/Calendar/Iso.idr` — ISO-8601 week-date construction
 - `src/IotaTime/Calendar/Julian.idr` — proof-carrying Julian calendar
 - `test/iotaTime-test.ipkg` — test package
 - `test/Main.idr` — test orchestrator
@@ -256,6 +257,18 @@ The public Gregorian operations are:
 `gregorianFromDays` and `toDays` convert relative to the March 1, 2000 epoch. Flat days before the public Gregorian boundary cannot be constructed without an impossible proof. The generic `fromDays` method carries the same calendar-specific proof requirement.
 
 The negative compiler fixtures under `test/compile-fail/` verify that invalid component literals, forged component/date/period representations, invalid leap days, pre-changeover dates, absent fifth weekdays, pre-changeover flat days, and periods with unsupported target capabilities remain compile errors. Each fixture declares an expected diagnostic fragment so unrelated import or harness failures cannot produce false positives.
+
+## ISO week-date API
+
+ISO week dates reuse `CalendarDate Gregorian`; they differ only in week numbering. ISO weeks start on Monday, and week 1 is the week containing January 4. Import `IotaTime.Calendar.Iso` explicitly and qualify `fromWeekDate` to distinguish it from the Gregorian Sunday-based constructor:
+
+```idris
+isoNewYear : CalendarDate Gregorian
+isoNewYear = IotaTime.Calendar.Iso.fromWeekDate 1 Monday 2020
+-- December 30, 2019
+```
+
+`fromWeekDate` requires erased evidence of `isValidIsoWeekDate`. `refineIsoWeekDate` validates runtime values and returns `Either IsoWeekDateError (CalendarDate Gregorian)`. Arithmetic week zero and negative week numbers remain supported when their resulting dates are within the Gregorian range.
 
 ## Julian calendar API
 

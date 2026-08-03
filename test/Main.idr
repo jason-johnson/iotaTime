@@ -11,6 +11,7 @@ import Test.DateTimeZone
 import Test.Tzif
 import Test.ZonedDateTime
 import Test.Gregorian
+import Test.Iso
 import Test.LocalTime
 import Test.CalendarDateTime
 import Test.Julian
@@ -43,6 +44,7 @@ main = do
   tzifPassed <- Test.Tzif.run
   zonedDateTimePassed <- Test.ZonedDateTime.run
   gregorianPassed <- Test.Gregorian.run
+  isoPassed <- Test.Iso.run
   localTimePassed <- Test.LocalTime.run
   calendarDateTimePassed <- Test.CalendarDateTime.run
   julianPassed <- Test.Julian.run
@@ -60,6 +62,7 @@ main = do
     , ("TZif tests", tzifPassed)
     , ("zoned date-time tests", zonedDateTimePassed)
     , ("Gregorian calendar tests", gregorianPassed)
+    , ("ISO week-date tests", isoPassed)
     , ("local time tests", localTimePassed)
     , ("calendar date-time tests", calendarDateTimePassed)
     , ("Julian calendar tests", julianPassed)

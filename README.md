@@ -45,8 +45,11 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/ZonedDateTime.idr` — instant, zone, offset, and calendar kept consistent
 - `src/IotaTime/Tzdb/Tzif.idr` — bounds-checked TZif v1-v4 decoder
 - `src/IotaTime/Tzdb/Posix.idr` — validated POSIX future-rule parser
-- `src/IotaTime/Tzdb/Windows.idr` — validated Windows TZI rule conversion
-- `src/IotaTime/Tzdb.idr` — typed TZDB loading and platform discovery
+- `src/IotaTime/Tzdb/Provider.idr` — shared typed provider contract
+- `src/IotaTime/Tzdb/Windows/Types.idr` — Windows registry models and errors
+- `src/IotaTime/Tzdb/Windows.idr` — pure Windows TZI and Dynamic DST conversion
+- `src/IotaTime/Tzdb/Windows/Platform.idr` — Windows registry and PowerShell provider
+- `src/IotaTime/Tzdb.idr` — TZif/Unix loading, public API, and platform dispatch
 - `src/IotaTime/Time/Component.idr` — opaque, range-checked clock components
 - `src/IotaTime/LocalTime.idr` — proof-carrying local time of day
 - `src/IotaTime/CalendarDateTime.idr` — calendar date paired with local time
@@ -155,6 +158,8 @@ availableZones : IO (Either TzdbError (List String))
 `WindowsRegistryZone` is the platform-neutral snapshot of one registry key, including default and dated Dynamic DST byte values. `windowsRegistryTimeZone` converts that snapshot with errors attributed to the default value, a specific dynamic year, or final zone validation. `WindowsRegistrySnapshot` atomically carries the available zones and local Windows zone ID. `WindowsRegistrySource` is the minimal native I/O contract for acquiring that snapshot, and `windowsRegistryTimeZoneProvider` turns any such source into a complete provider with typed source, malformed-data, and unknown-zone failures.
 
 On Windows, `systemTimeZoneProvider` uses `windowsPowerShellRegistrySource`. It invokes built-in Windows PowerShell non-interactively, reads the registry through the PowerShell Registry provider, and emits a strict locale-independent protocol parsed by `parseWindowsRegistrySnapshot`. This avoids backend-specific native linking while retaining typed failures at the command, protocol, registry-value, and zone-validation boundaries.
+
+This is platform dispatch, not source-level conditional compilation. Idris 2.0.8 does not provide `%ifdef`-style directives: every module listed in `iotaTime.ipkg` is compiled. `System.Info.isWindows` derives from the backend-provided operating-system value and selects the Windows or Unix provider; only the selected provider performs platform I/O. All PowerShell, registry, protocol, and Windows-provider implementation code is owned by the `IotaTime.Tzdb.Windows` namespace. A build that must omit the unused platform module entirely would require separate platform package files/source sets.
 
 ## Zoned date-times
 

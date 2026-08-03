@@ -61,6 +61,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Calendar/Julian.idr` — proof-carrying Julian calendar
 - `src/IotaTime/Calendar/Coptic.idr` — proof-carrying Coptic calendar
 - `src/IotaTime/Calendar/Islamic.idr` — indexed tabular Islamic calendars
+- `src/IotaTime/Calendar/Persian.idr` — bounded astronomical Persian calendar
 - `test/iotaTime-test.ipkg` — test package
 - `test/Main.idr` — test orchestrator
 - `test/Test/Proof.idr` — compile-time proof tests
@@ -323,6 +324,22 @@ base15LeapDay = islamicDate' {pattern = Base15}
 ```
 
 The unprimed constructors and refinements use `IslamicBcl`. Primed forms such as `islamicDate'`, `islamicFromNthDay'`, and `refineIslamicDate'` select a pattern through the expected type or an explicit `{pattern = ...}` argument. Static invalid dates require impossible erased proofs; runtime inputs return `Either IslamicDateError`.
+
+## Persian calendar API
+
+`CalendarDate Persian` implements the official astronomical Solar Hijri calendar over Persian years 1 through 1500. The first six months have 31 days, the next five have 30, and Esfand has 29 or 30 according to the astronomical leap assignment.
+
+```idris
+nowruz : CalendarDate Persian
+nowruz = persianDate 1 PersianMonths.Farvardin 1404
+
+leapDay : CalendarDate Persian
+leapDay = persianDate 30 PersianMonths.Esfand 1403
+```
+
+The leap-year table is generated from HodaTime's Meeus equinox, equation-of-time, and Espenak-Meeus delta-T calculation for its vouched range. Embedding those results makes behavior deterministic across backends and keeps static proofs reducible without running floating-point astronomy during compilation or at runtime. In particular, astronomical Nowruz 1404 is March 21, 2025, unlike the arithmetic calendar's March 20 result.
+
+`persianDate`, `persianFromDays`, `persianFromNthDay`, and `persianFromWeekDate` require erased validity proofs. Their `refinePersian...` counterparts return `Either PersianDateError` for runtime values. Period arithmetic clamps at both supported-year boundaries.
 
 ## Hebrew calendar API
 

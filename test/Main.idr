@@ -17,6 +17,7 @@ import Test.CalendarDateTime
 import Test.Julian
 import Test.Coptic
 import Test.Islamic
+import Test.Persian
 import Test.Hebrew
 import Test.WithCalendar
 import Test.Support
@@ -52,6 +53,7 @@ main = do
   julianPassed <- Test.Julian.run
   copticPassed <- Test.Coptic.run
   islamicPassed <- Test.Islamic.run
+  persianPassed <- Test.Persian.run
   hebrewPassed <- Test.Hebrew.run
   withCalendarPassed <- Test.WithCalendar.run
   finalizeResults
@@ -72,6 +74,7 @@ main = do
     , ("Julian calendar tests", julianPassed)
     , ("Coptic calendar tests", copticPassed)
     , ("Islamic calendar tests", islamicPassed)
+    , ("Persian calendar tests", persianPassed)
     , ("Hebrew calendar tests", hebrewPassed)
     , ("withCalendar conversion tests", withCalendarPassed)
     ]

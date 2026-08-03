@@ -15,5 +15,6 @@ import public IotaTime.Calendar.Gregorian
 import public IotaTime.Calendar.Julian
 import public IotaTime.Calendar.Coptic
 import public IotaTime.Calendar.Islamic
+import public IotaTime.Calendar.Persian
 import public IotaTime.Calendar.Hebrew
 import public IotaTime.CalendarDateTime

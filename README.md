@@ -59,6 +59,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Calendar/Gregorian.idr` — proof-carrying Gregorian calendar
 - `src/IotaTime/Calendar/Iso.idr` — ISO-8601 week-date construction
 - `src/IotaTime/Calendar/Julian.idr` — proof-carrying Julian calendar
+- `src/IotaTime/Calendar/Coptic.idr` — proof-carrying Coptic calendar
 - `test/iotaTime-test.ipkg` — test package
 - `test/Main.idr` — test orchestrator
 - `test/Test/Proof.idr` — compile-time proof tests
@@ -290,6 +291,20 @@ The public Julian operations mirror the proof-carrying Gregorian boundary:
 - `refineJulianDate`, `refineJulianDays`, `refineJulianNthDay`, and `refineJulianWeekDate` validate values learned at runtime.
 - `isJulianLeapYear`, `maxJulianDaysInMonth`, and the `isValidJulian...` predicates expose Julian rules.
 - Calendar periods and mixed `CalendarDateTime Julian` periods use the same target-indexed period API as Gregorian values.
+
+## Coptic calendar API
+
+`CalendarDate Coptic` supports the 13-month Coptic calendar from 1 Thout 1. Years whose number is congruent to 3 modulo 4 are leap years. The first 12 months have 30 days; `CopticMonths.PiKogiEnavot` has five days in common years and six in leap years.
+
+```idris
+nayrouz : CalendarDate Coptic
+nayrouz = copticDate 1 CopticMonths.Thout 1738
+
+leapDay : CalendarDate Coptic
+leapDay = copticDate 6 CopticMonths.PiKogiEnavot 1731
+```
+
+`copticDate`, `copticFromDays`, `copticFromNthDay`, and `copticFromWeekDate` reject invalid static values through erased proofs. Their `refineCoptic...` counterparts return `Either CopticDateError` for runtime input. Date periods clamp at the year-1 boundary and at the shorter epagomenal month.
 
 ## Hebrew calendar API
 

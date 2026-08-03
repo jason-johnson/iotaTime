@@ -1,0 +1,8 @@
+package iotaTime-windows-smoke
+
+depends = iotaTime
+
+sourcedir = "."
+
+main = WindowsSmoke
+executable = iotaTime-windows-smoke

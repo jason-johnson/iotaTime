@@ -62,7 +62,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `test/Test/Runtime.idr` — runtime behavior tests
 - `test/Test/Regression.idr` — regression tests
 - `test/Test/Support.idr` — runtime assertions and suite reporting
-- `.github/workflows/ci.yml` — CI build+test workflow for push and pull requests
+- `.github/workflows/ci.yml` — Linux full-suite and Windows registry CI matrix
 
 ## Build and test
 
@@ -160,6 +160,8 @@ availableZones : IO (Either TzdbError (List String))
 On Windows, `systemTimeZoneProvider` uses `windowsPowerShellRegistrySource`. It invokes built-in Windows PowerShell non-interactively, reads the registry through the PowerShell Registry provider, and emits a strict locale-independent protocol parsed by `parseWindowsRegistrySnapshot`. This avoids backend-specific native linking while retaining typed failures at the command, protocol, registry-value, and zone-validation boundaries.
 
 This is platform dispatch, not source-level conditional compilation. Idris 2.0.8 does not provide `%ifdef`-style directives: every module listed in `iotaTime.ipkg` is compiled. `System.Info.isWindows` derives from the backend-provided operating-system value and selects the Windows or Unix provider; only the selected provider performs platform I/O. All PowerShell, registry, protocol, and Windows-provider implementation code is owned by the `IotaTime.Tzdb.Windows` namespace. A build that must omit the unused platform module entirely would require separate platform package files/source sets.
+
+CI runs the complete runtime and compile-fail suites on Linux. A native `windows-latest` matrix entry bootstraps Idris 2 using its upstream MSYS2/Chez recipe and runs `test/windows-smoke.ipkg` against the live Windows registry. The smoke suite verifies UTC, registry enumeration, local-zone resolution, missing-zone errors, and the historical 2007 US Dynamic DST change.
 
 ## Zoned date-times
 

@@ -9,12 +9,27 @@ permissions:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    name: test / ${{ matrix.os }} / ${{ matrix.suite }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, suite: full }
+          - { os: windows-latest, suite: windows-registry }
     steps:
+      - name: Configure Windows Git
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: git config --global core.autocrlf false
+
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install Idris 2 build dependencies
+        if: runner.os == 'Linux'
+        shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -30,12 +45,51 @@ jobs:
             pkg-config
 
       - name: Install Idris 2
+        if: runner.os == 'Linux'
+        shell: bash
         run: |
           git clone --depth 1 --branch v0.8.0 https://github.com/idris-lang/Idris2.git /tmp/Idris2
           make -C /tmp/Idris2 bootstrap SCHEME=chezscheme
           make -C /tmp/Idris2 install
           echo "$HOME/.idris2/bin" >> "$GITHUB_PATH"
           rm -rf /tmp/Idris2
+
+      - name: Install Windows build dependencies
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          git clone --depth 1 --branch v9.5.8a https://github.com/cisco/ChezScheme "$env:RUNNER_TEMP\ChezScheme"
+          git clone --depth 1 --branch v0.8.0 https://github.com/idris-lang/Idris2.git "$env:RUNNER_TEMP\Idris2"
+          c:\msys64\usr\bin\bash -l -c "pacman -S --noconfirm tar make mingw-w64-x86_64-gcc"
+
+      - name: Build Chez Scheme on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $chez = c:\msys64\usr\bin\cygpath -u "$env:RUNNER_TEMP\ChezScheme"
+          c:\msys64\usr\bin\bash -l -c "cd '$chez' && ./configure --threads && make"
+
+      - name: Configure Windows Idris paths
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $chezBin = "$env:RUNNER_TEMP\ChezScheme\ta6nt\bin\ta6nt"
+          $idrisPrefix = "$env:RUNNER_TEMP\.idris2"
+          $unixPrefix = c:\msys64\usr\bin\cygpath -u "$idrisPrefix"
+          echo "$chezBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "$idrisPrefix\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "MSYSTEM=MINGW64" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "MSYS2_PATH_TYPE=inherit" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "SCHEME=scheme" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "CC=gcc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "PREFIX=$unixPrefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install Idris 2 on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $idrisSource = c:\msys64\usr\bin\cygpath -u "$env:RUNNER_TEMP\Idris2"
+          c:\msys64\usr\bin\bash -l -c "cd '$idrisSource' && make bootstrap && make install"
 
       - name: Verify Idris 2
         run: idris2 --version
@@ -47,10 +101,24 @@ jobs:
         run: idris2 --install iotaTime.ipkg
 
       - name: Build tests
+        if: matrix.suite == 'full'
         run: idris2 --build test/iotaTime-test.ipkg
 
       - name: Run tests
+        if: matrix.suite == 'full'
+        shell: bash
         run: ./test/build/exec/iotaTime-test
 
       - name: Run compile-fail tests
+        if: matrix.suite == 'full'
+        shell: bash
         run: sh test/run-compile-fail-tests.sh
+
+      - name: Build Windows registry smoke tests
+        if: matrix.suite == 'windows-registry'
+        run: idris2 --build test/windows-smoke.ipkg
+
+      - name: Run Windows registry smoke tests
+        if: matrix.suite == 'windows-registry'
+        shell: pwsh
+        run: .\test\build\exec\iotaTime-windows-smoke.exe

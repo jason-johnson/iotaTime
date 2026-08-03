@@ -442,7 +442,9 @@ Both platforms return `IO (Either LocaleError Locale)`, keeping unknown names an
 
 `localeDateTimePattern` compiles the combined locale layout into a Gregorian `CalendarDateTime` pattern, and `compileDateTimePattern` accepts an explicit combined layout. Date and time fields share a `DateTimeFields` accumulator, so their order is independent. Because `CalendarDateTime` represents civil time without a zone, `%Z` and `%z` fields and their preceding layout spaces are deliberately omitted.
 
-`compileOffsetDateTimePattern` compiles a combined layout containing `%z` into a pure bidirectional `OffsetDateTime` pattern, and `localeOffsetDateTimePattern` applies it to a locale's combined layout. A missing `%z` returns `MissingOffsetSpecifier`; `%Z` is a zone abbreviation rather than a numeric offset and is reserved for provider-backed zoned parsing.
+`compileOffsetDateTimePattern` compiles a combined layout containing `%z` into a pure bidirectional `OffsetDateTime` pattern, and `localeOffsetDateTimePattern` applies it to a locale's combined layout. A missing `%z` returns `MissingOffsetSpecifier`.
+
+`parseZonedDateTime` handles locale layouts containing `%Z`. It parses the local fields and one non-whitespace zone token, asks a caller-supplied provider to load that abbreviation, then applies a caller-supplied resolver such as `fromCalendarDateTimeStrictly` or `fromCalendarDateTimeLeniently`. `ZonedPatternError` keeps layout, structural parse, provider, and resolver failures distinct and preserves the caller's error types. A layout without `%Z` returns `MissingZoneSpecifier`.
 
 Machine locale acquisition and locale-driven date, time, and combined date-time patterns are available on Unix and Windows.
 

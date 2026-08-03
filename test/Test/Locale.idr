@@ -239,8 +239,59 @@ nativeLocaleCases = if isWindows
             _ => False)
       ]
 
+utcProvider : String -> IO (Either String TimeZone)
+utcProvider "UTC" = pure (Right (fixedDateTimeZone "UTC" zeroOffset))
+utcProvider name = pure (Left ("unknown zone: " ++ name))
+
+strictResolver : CalendarDateTime Gregorian -> TimeZone ->
+                 Either ZonedDateTimeError (ZonedDateTime Gregorian)
+strictResolver = fromCalendarDateTimeStrictly
+
+rejectingResolver : CalendarDateTime Gregorian -> TimeZone ->
+                    Either String (ZonedDateTime Gregorian)
+rejectingResolver local zone = Left "resolution rejected"
+
+zonedLocaleCases : IO (List RuntimeCase)
+zonedLocaleCases = do
+  resolved <- parseZonedDateTime utcProvider strictResolver enUS
+    "Sun 15 Mar 2020 01:24:35 PM UTC"
+  zoneless <- parseZonedDateTime utcProvider strictResolver jaJP
+    "2020年03月15日 13時24分35秒"
+  unknown <- parseZonedDateTime utcProvider strictResolver enUS
+    "Sun 15 Mar 2020 01:24:35 PM EDT"
+  rejected <- parseZonedDateTime utcProvider rejectingResolver enUS
+    "Sun 15 Mar 2020 01:24:35 PM UTC"
+  malformed <- parseZonedDateTime utcProvider strictResolver enUS
+    "Sun 15 Mar 2020 01:24:35 PM UTC extra"
+  pure
+    [ MkRuntimeCase "locale percent-Z resolves through provider and resolver"
+        (case resolved of
+          Left _ => False
+          Right value =>
+            zoneId value == "UTC" &&
+            sameDateTime (toCalendarDateTime value)
+              (on (localTime 13 24 35 0) (calendarDate 15 March 2020)))
+    , MkRuntimeCase "locale zoned parser rejects a zoneless layout"
+        (case zoneless of
+          Left (ZonedLayoutError MissingZoneSpecifier) => True
+          _ => False)
+    , MkRuntimeCase "locale zoned parser preserves provider failures"
+        (case unknown of
+          Left (ZonedProviderError "unknown zone: EDT") => True
+          _ => False)
+    , MkRuntimeCase "locale zoned parser preserves resolver failures"
+        (case rejected of
+          Left (ZonedResolutionError "resolution rejected") => True
+          _ => False)
+    , MkRuntimeCase "locale zoned parser rejects whitespace in zone tokens"
+        (case malformed of
+          Left (ZonedParseError _) => True
+          _ => False)
+    ]
+
 export
 run : IO Bool
 run = do
   nativeCases <- nativeLocaleCases
-  runSuite "locale tests" (localeCases ++ nativeCases)
+  zonedCases <- zonedLocaleCases
+  runSuite "locale tests" (localeCases ++ nativeCases ++ zonedCases)

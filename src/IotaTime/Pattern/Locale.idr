@@ -1,5 +1,6 @@
 module IotaTime.Pattern.Locale
 
+import Data.String
 import Data.String.Parser
 import IotaTime.Locale
 import IotaTime.Pattern
@@ -13,6 +14,8 @@ import IotaTime.CalendarDateTime
 import IotaTime.LocalTime
 import IotaTime.Offset
 import IotaTime.OffsetDateTime
+import IotaTime.Period
+import IotaTime.ZonedDateTime
 
 %default total
 
@@ -21,12 +24,14 @@ data StrftimeError
   = UnsupportedSpecifier Char
   | DanglingPercent
   | MissingOffsetSpecifier
+  | MissingZoneSpecifier
 
 public export
 Eq StrftimeError where
   UnsupportedSpecifier left == UnsupportedSpecifier right = left == right
   DanglingPercent == DanglingPercent = True
   MissingOffsetSpecifier == MissingOffsetSpecifier = True
+  MissingZoneSpecifier == MissingZoneSpecifier = True
   _ == _ = False
 
 public export
@@ -35,6 +40,7 @@ Show StrftimeError where
     "unsupported strftime specifier: %" ++ pack [value]
   show DanglingPercent = "strftime layout ends with a bare %"
   show MissingOffsetSpecifier = "strftime layout has no numeric %z offset"
+  show MissingZoneSpecifier = "strftime layout has no %Z zone abbreviation"
 
 data LayoutToken = LiteralToken Char | ConversionToken Char
 
@@ -281,3 +287,81 @@ localeOffsetDateTimePattern : Locale ->
     (Pattern (DateTimeFields, Offset) (OffsetDateTime Gregorian))
 localeOffsetDateTimePattern locale =
   compileOffsetDateTimePattern locale (rawDateTimeFormat locale)
+
+public export
+data ZonedPatternError providerError resolverError
+  = ZonedLayoutError StrftimeError
+  | ZonedParseError PatternError
+  | ZonedProviderError providerError
+  | ZonedResolutionError resolverError
+
+stripPrefix : List Char -> List Char -> Maybe (List Char)
+stripPrefix [] values = Just values
+stripPrefix (expected :: expectedRest) (actual :: values) =
+  if expected == actual then stripPrefix expectedRest values else Nothing
+stripPrefix _ _ = Nothing
+
+removeSuffix : List Char -> List Char -> Maybe (List Char)
+removeSuffix values suffix =
+  map reverse (stripPrefix (reverse suffix) (reverse values))
+
+isZoneCharacter : Char -> Bool
+isZoneCharacter value =
+  value /= ' ' && value /= '\t' && value /= '\n' && value /= '\r'
+
+zoneTokenPattern : String -> Pattern String String
+zoneTokenPattern trailing = MkPattern
+  ""
+  Right
+  (Parser.P (\state =>
+    let remaining = strSubstr state.pos (state.maxPos - state.pos) state.input in
+    case removeSuffix (unpack remaining) (unpack trailing) of
+      Nothing => pure (Parser.Fail state.pos "zone abbreviation")
+      Just [] => pure (Parser.Fail state.pos "zone abbreviation")
+      Just token => if all isZoneCharacter token
+        then pure (Parser.OK (Right (const (pack token)))
+          ({ pos := state.maxPos } state))
+        else pure (Parser.Fail state.pos "zone abbreviation")))
+  id
+
+splitZone : List LayoutFragment ->
+            Either StrftimeError (List LayoutFragment, String)
+splitZone [] = Left MissingZoneSpecifier
+splitZone (Conversion 'Z' :: rest) =
+  map (\trailing => ([], trailing)) (trailingLiterals rest)
+splitZone (fragment :: rest) = do
+  (before, trailing) <- splitZone rest
+  Right (fragment :: before, trailing)
+
+zoneInfoPattern : Locale -> String ->
+  Either StrftimeError
+    (Pattern (DateTimeFields, String) (CalendarDateTime Gregorian, String))
+zoneInfoPattern locale layout = do
+  tokens <- tokenize (unpack layout)
+  (before, trailing) <- splitZone (toFragments tokens)
+  localPattern <- assemble (liftDatePattern pyyyy)
+    (dateTimeConversion locale) before
+  Right (pairPattern fst snd (\local, zone => (local, zone))
+    localPattern (zoneTokenPattern trailing))
+
+||| Parse a locale %Z layout, load the captured zone, and resolve local time.
+public export
+parseZonedDateTime :
+  (String -> IO (Either providerError TimeZone)) ->
+  (CalendarDateTime Gregorian -> TimeZone ->
+    Either resolverError (ZonedDateTime Gregorian)) ->
+  Locale -> String ->
+  IO (Either (ZonedPatternError providerError resolverError)
+    (ZonedDateTime Gregorian))
+parseZonedDateTime provider resolver locale source =
+  case zoneInfoPattern locale (rawDateTimeFormat locale) of
+    Left error => pure (Left (ZonedLayoutError error))
+    Right pattern => case IotaTime.Pattern.parse pattern source of
+      Left error => pure (Left (ZonedParseError error))
+      Right (local, zoneToken) => do
+        loaded <- provider zoneToken
+        pure $ case loaded of
+          Left error => Left (ZonedProviderError error)
+          Right zone => case resolver local zone of
+            Left error => Left (ZonedResolutionError error)
+            Right value => Right value

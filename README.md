@@ -42,6 +42,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Offset.idr` — bounded signed UTC offsets
 - `src/IotaTime/OffsetDateTime.idr` — calendar-local date-times resolved by UTC offset
 - `src/IotaTime/Period.idr` — target-indexed calendar-relative periods
+- `src/IotaTime/ZonedDateTime.idr` — instant, zone, offset, and calendar kept consistent
 - `src/IotaTime/Time/Component.idr` — opaque, range-checked clock components
 - `src/IotaTime/LocalTime.idr` — proof-carrying local time of day
 - `src/IotaTime/CalendarDateTime.idr` — calendar date paired with local time
@@ -129,6 +130,14 @@ minimumOffset = offsetFromHours (-18)
 `zoneOffsetAt` selects the offset effective at an instant, with a transition's new offset taking effect exactly at its instant. `mapLocal` maps a `CalendarDateTime` explicitly to `Skipped`, `Unambiguous`, or `Ambiguous`. Ambiguous results are ordered by instant and retain every candidate, even for synthetic transition data that creates more than the usual two mappings.
 
 This module deliberately models validated zone behavior without parsing an external time-zone database. TZDB loading remains a separate trust boundary that will construct `DateTimeZone` values through `refineDateTimeZone`.
+
+## Zoned date-times
+
+`ZonedDateTime calendar` stores a zone together with an `OffsetDateTime` whose offset is guaranteed by construction to equal `zoneOffsetAt zone instant`. Its constructor is private. `inZone` is the instant-based construction boundary; `resolveLocal` is the local-time boundary and returns `ZonedSkipped`, `ZonedUnambiguous`, or `ZonedAmbiguous` without silently resolving transition gaps or overlaps.
+
+`withZone` preserves the instant while deriving the new zone's effective offset and local fields. `ZonedDateTime.withCalendar` preserves the instant and zone while changing the calendar representation, returning `Either` when the target calendar cannot represent the resulting local day.
+
+Elapsed and calendar-relative arithmetic remain intentionally distinct. `addZonedDuration` and `subtractZonedDuration` move on the global timeline and re-evaluate the zone offset afterward. `applyZonedPeriod` changes the local date-time first and returns a `ZonedMapping`, because its result can land in a skipped or ambiguous local time. For that reason `ZonedDateTime` does not implement the total `ApplyPeriod` interface.
 
 ## Gregorian calendar API
 

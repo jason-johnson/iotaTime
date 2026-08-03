@@ -1,5 +1,6 @@
 module Test.Pattern
 
+import Data.Vect
 import IotaTime
 import Test.Support
 
@@ -40,6 +41,26 @@ reordered = ((pday 1 <% char '/') <+> (pmonthNum 1 <% char '/')) <+> pyear 1
 twoDigitYear : Pattern DateFields (CalendarDate Gregorian)
 twoDigitYear = ((pyy <% char '-') <+> (pMM <% char '-')) <+> pdd
 
+namedDate : Pattern DateFields (CalendarDate Gregorian)
+namedDate = ((pdd <% char ' ') <+> (pMMM <% char ' ')) <+> pyyyy
+
+weekdayDate : Pattern DateFields (CalendarDate Gregorian)
+weekdayDate = (((pdddd <% string ", ") <+> (pdd <% char ' ')) <+>
+    (pMMMM <% char ' ')) <+> pyyyy
+
+spaceDate : Pattern DateFields (CalendarDate Gregorian)
+spaceDate = ((pdaySpace <% char '.') <+> (pMM <% char '.')) <+> pyyyy
+
+customMonthNames : Vect 12 String
+customMonthNames =
+    [ "JanX", "FebX", "MarX", "AprX", "MayX", "JunX"
+    , "JulX", "AugX", "SepX", "OctX", "NovX", "DecX"
+    ]
+
+customWeekdayNames : Vect 7 String
+customWeekdayNames =
+    [ "SunX", "MonX", "TueX", "WedX", "ThuX", "FriX", "SatX" ]
+
 patternCases : List RuntimeCase
 patternCases =
   [ MkRuntimeCase "pR formats an ISO Gregorian date"
@@ -57,6 +78,35 @@ patternCases =
        parsesAs twoDigitYear "99-03-03" (calendarDate 3 March 1999))
   , MkRuntimeCase "field order is independent of date validation"
       (parsesAs reordered "3/3/2020" (calendarDate 3 March 2020))
+    , MkRuntimeCase "English month names parse case-insensitively"
+            (IotaTime.Pattern.format pMMM (calendarDate 3 March 2020) == "Mar" &&
+             IotaTime.Pattern.format pMMMM (calendarDate 3 March 2020) == "March" &&
+             parsesAs namedDate "03 mAr 2020" (calendarDate 3 March 2020))
+    , MkRuntimeCase "weekday names format and consume without validation"
+            (IotaTime.Pattern.format pddd (calendarDate 3 March 2020) == "Tue" &&
+             IotaTime.Pattern.format pdddd (calendarDate 3 March 2020) == "Tuesday" &&
+             parsesAs weekdayDate "Monday, 03 March 2020"
+                 (calendarDate 3 March 2020))
+    , MkRuntimeCase "pD formats the English long date"
+            (IotaTime.Pattern.format pD (calendarDate 3 March 2020) ==
+                "Tuesday, 03 March 2020")
+    , MkRuntimeCase "partial named date patterns use default fields"
+            (IotaTime.Pattern.format pmonthDay (calendarDate 3 March 2020) ==
+                "March 03" &&
+             parsesAs pmonthDay "March 03" (calendarDate 3 March 2000) &&
+             IotaTime.Pattern.format pyearMonth (calendarDate 3 March 2020) ==
+                "2020 March" &&
+             parsesAs pyearMonth "2020 March" (calendarDate 1 March 2020))
+    , MkRuntimeCase "pdaySpace formats padding and accepts common forms"
+            (IotaTime.Pattern.format pdaySpace (calendarDate 3 March 2020) == " 3" &&
+             parsesAs spaceDate " 3.03.2020" (calendarDate 3 March 2020) &&
+             parsesAs spaceDate "3.03.2020" (calendarDate 3 March 2020) &&
+             parsesAs spaceDate "03.03.2020" (calendarDate 3 March 2020))
+    , MkRuntimeCase "custom name tables are bidirectional"
+            (IotaTime.Pattern.format (pMonthName customMonthNames)
+                (calendarDate 3 March 2020) == "MarX" &&
+             IotaTime.Pattern.format (pDayName customWeekdayNames)
+                (calendarDate 3 March 2020) == "TueX")
   , MkRuntimeCase "patterns reject trailing input"
       (isTrailingInputAt 10 (IotaTime.Pattern.parse pR "2020-03-03Z"))
   , MkRuntimeCase "patterns report an incomplete field position"

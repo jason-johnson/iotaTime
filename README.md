@@ -371,7 +371,7 @@ The calendar implements the 19-year leap cycle, the Rosh Hashanah postponement r
 
 `Pattern state value` combines formatting with full-input parsing. Fields compose with `<+>`, and `<%` appends a literal produced by `char` or `string`. The parsing engine uses `Data.String.Parser` from Idris 2's `contrib` package, while the public boundary returns `Either PatternError value`; malformed fields, values outside their field ranges, invalid final dates, and trailing input remain distinct typed failures. Formatting is specialized to `value -> String`, which provides the pattern-specific composition supplied by Haskell's `Formatting` and `HoleyMonoid` machinery without introducing a general variadic formatting layer.
 
-The initial calendar-date layer provides the HodaTime-compatible Gregorian numeric fields `pyear`, `pyyyy`, `pyy`, `pmonthNum`, `pMM`, `pday`, and `pdd`. `pd` is the slash-separated standard date and `pR` is the ISO round-trip pattern:
+The calendar-date layer provides the HodaTime-compatible Gregorian numeric fields `pyear`, `pyyyy`, `pyy`, `pmonthNum`, `pMM`, `pday`, `pdd`, and `pdaySpace`. English names are available through `pMMM`, `pMMMM`, `pddd`, and `pdddd`; parsing is case-insensitive, and weekday fields are consumed without redundantly validating the date. `pd` is the slash-separated short date, `pD` is the English long date, `pR` is the ISO round-trip pattern, and `pmonthDay` and `pyearMonth` provide partial layouts:
 
 ```idris
 isoText : String
@@ -382,7 +382,12 @@ parsed = parse pR "2020-03-03"
 
 unpadded : Pattern DateFields (CalendarDate Gregorian)
 unpadded = ((pyear 1 <% char '-') <+> (pmonthNum 1 <% char '-')) <+> pday 1
+
+longText : String
+longText = format pD (calendarDate 3 March 2020)
 ```
+
+`pMonthName` and `pDayName` accept `Vect 12 String` and `Vect 7 String` respectively. Unlike Haskell's list-based API, incomplete name tables therefore fail to compile rather than failing during formatting.
 
 Field parsers accumulate raw components in `DateFields` and call `refineGregorianDate` only after consuming the complete input. Custom field order is therefore independent of temporary invalid dates, while a value such as `"2021-02-29"` still fails at the runtime trust boundary.
 

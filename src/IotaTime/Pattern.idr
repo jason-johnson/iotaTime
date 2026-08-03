@@ -148,3 +148,38 @@ numberUpdatePart : (Integer -> state -> state) ->
                    PatternParser (Either PatternError (state -> state))
 numberUpdatePart setter width maximumWidth minimum maximum =
   map (map setter) (numberPart width maximumWidth minimum maximum)
+
+caseInsensitive : String -> PatternParser ()
+caseInsensitive value = consume (unpack value)
+  where
+    consume : List Char -> PatternParser ()
+    consume [] = pure ()
+    consume (expected :: rest) = do
+      ignore (Parser.satisfy
+        (\actual => Prelude.toLower actual == Prelude.toLower expected))
+      consume rest
+
+namedChoice : List (String, field) -> PatternParser field
+namedChoice [] = Parser.fail "named field"
+namedChoice ((name, value) :: rest) =
+  (caseInsensitive name *> pure value) <|> namedChoice rest
+
+public export
+namedUpdatePart : List (String, field) -> (field -> state -> state) ->
+                  PatternParser (Either PatternError (state -> state))
+namedUpdatePart choices setter = map (Right . setter) (namedChoice choices)
+
+public export
+namedConsumePart : List String ->
+                   PatternParser (Either PatternError (state -> state))
+namedConsumePart names = map (const (Right id))
+  (namedChoice (map (\name => (name, ())) names))
+
+public export
+spaceNumberUpdatePart : (Integer -> state -> state) ->
+                        (maximumWidth : Nat) ->
+                        (minimum : Integer) -> (maximum : Integer) ->
+                        PatternParser (Either PatternError (state -> state))
+spaceNumberUpdatePart setter maximumWidth minimum maximum = do
+  ignore (Parser.optional (Parser.char ' '))
+  map (map setter) (numberPart 1 maximumWidth minimum maximum)

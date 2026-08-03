@@ -106,6 +106,9 @@ jobs:
       - name: Install library package
         run: idris2 --install iotaTime.ipkg
 
+      - name: Clean library workspace artifacts
+        run: idris2 --clean iotaTime.ipkg
+
       - name: Build tests
         if: matrix.suite == 'full'
         run: idris2 --build test/iotaTime-test.ipkg
@@ -119,6 +122,17 @@ jobs:
         if: matrix.suite == 'full'
         shell: bash
         run: sh test/run-compile-fail-tests.sh
+
+      - name: Build end-to-end example
+        if: matrix.suite == 'full'
+        run: idris2 --build examples/iotaTime-examples.ipkg
+
+      - name: Run end-to-end example
+        if: matrix.suite == 'full'
+        shell: bash
+        run: |
+          output=$(./examples/build/exec/iotaTime-zoned-meeting)
+          test "$output" = "2024-04-23T09:00:00 Europe/Zurich"
 
       - name: Build Windows registry smoke tests
         if: matrix.suite == 'windows-registry'

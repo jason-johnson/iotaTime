@@ -21,6 +21,18 @@ on : {calendar : Type} -> {auto cal : Calendar calendar} ->
      LocalTime -> CalendarDate calendar @{cal} -> CalendarDateTime calendar @{cal}
 on valueTime valueDate = MkCalendarDateTime valueDate valueTime
 
+||| Associate a date with a local time, using date-first argument order.
+public export
+at : {calendar : Type} -> {auto cal : Calendar calendar} ->
+  CalendarDate calendar @{cal} -> LocalTime -> CalendarDateTime calendar @{cal}
+at valueDate valueTime = on valueTime valueDate
+
+||| Associate a date with midnight at the start of that day.
+public export
+atStartOfDay : {calendar : Type} -> {auto cal : Calendar calendar} ->
+      CalendarDate calendar @{cal} -> CalendarDateTime calendar @{cal}
+atStartOfDay valueDate = at valueDate (localTime 0 0 0 0)
+
 public export
 datePart : {calendar : Type} -> {auto cal : Calendar calendar} ->
            CalendarDateTime calendar @{cal} -> CalendarDate calendar @{cal}

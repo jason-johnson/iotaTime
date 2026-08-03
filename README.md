@@ -76,6 +76,8 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Pattern/OffsetDateTime.idr` — fixed-offset date-time patterns
 - `src/IotaTime/Pattern/ZonedDateTime.idr` — format-only zoned patterns and effectful parsing
 - `src/IotaTime/Pattern/Locale.idr` — locale `strftime` layout compilation
+- `examples/ZonedMeeting.idr` — installed-package zoned parsing example
+- `RELEASE.md` — release validation and versioning checklist
 - `test/iotaTime-test.ipkg` — test package
 - `test/Main.idr` — test orchestrator
 - `test/Test/Proof.idr` — compile-time proof tests
@@ -94,7 +96,11 @@ idris2 --install iotaTime.ipkg
 idris2 --build test/iotaTime-test.ipkg
 ./test/build/exec/iotaTime-test
 sh test/run-compile-fail-tests.sh
+idris2 --build examples/iotaTime-examples.ipkg
+./examples/build/exec/iotaTime-zoned-meeting
 ```
+
+The example loads `Europe/Zurich` through the system provider, parses `2024-04-23T09:00:00 Europe/Zurich` with strict local-time resolution, and formats the resolved value back through `pZonedDateTime`.
 
 ## Instants and fixed durations
 
@@ -253,6 +259,8 @@ advanced = applyPeriod (months 1 <+> hours 2) lateDateTime
 ```
 
 Time-only periods wrap a `LocalTime` within its 24-hour day. On `CalendarDateTime`, date fields apply first from largest to smallest, then time fields apply and any positive or negative day carry adjusts the resulting date. `CalendarDate` supports only calendar units, `LocalTime` only time units, and `CalendarDateTime` both.
+
+`on time date` constructs a calendar date-time with time-first argument order. The HodaTime-compatible `at date time` provides date-first order, while `atStartOfDay date` uses midnight.
 
 `calendarDate` requires an erased proof of `So (isValidGregorianDate day month year)`. Idris finds that proof automatically for valid literals. Invalid literals fail to compile:
 
@@ -468,6 +476,8 @@ Both platforms return `IO (Either LocaleError Locale)`, keeping unknown names an
 `parseZonedDateTime` handles locale layouts containing `%Z`. It parses the local fields and one non-whitespace zone token, asks a caller-supplied provider to load that abbreviation, then applies a caller-supplied resolver such as `fromCalendarDateTimeStrictly` or `fromCalendarDateTimeLeniently`. `ZonedPatternError` keeps layout, structural parse, provider, and resolver failures distinct and preserves the caller's error types. A layout without `%Z` returns `MissingZoneSpecifier`.
 
 Machine locale acquisition and locale-driven date, time, and combined date-time patterns are available on Unix and Windows.
+
+Date-bearing patterns currently target Gregorian values. The other shipped calendars retain proof-carrying construction, conversion, arithmetic, and timezone support, but calendar-polymorphic pattern fields remain a separate extension because their month types and validity refinements differ by calendar.
 
 ## Calendar conversion
 

@@ -1,6 +1,14 @@
 package iotaTime
 
 version = 0.1.0
+authors = "Jason Johnson"
+maintainers = "Jason Johnson"
+license = "BSD-3-Clause"
+brief = "Proof-oriented date, time, calendar, and timezone types for Idris 2"
+readme = "README.md"
+homepage = "https://github.com/jason-johnson/iotaTime"
+sourceloc = "https://github.com/jason-johnson/iotaTime"
+bugtracker = "https://github.com/jason-johnson/iotaTime/issues"
 
 depends = contrib
 

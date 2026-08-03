@@ -19,7 +19,15 @@ lateDateTime = on (localTime 23 30 0 0) (calendarDate 31 January 2000)
 
 calendarDateTimeCases : List RuntimeCase
 calendarDateTimeCases =
-  [ MkRuntimeCase "calendar periods apply to CalendarDateTime"
+  [ MkRuntimeCase "date-first constructor matches on"
+      (let date = calendarDate 31 January 2000
+           time = localTime 23 30 0 0 in
+        dateTimeComponents (at date time) ==
+          dateTimeComponents (on time date))
+  , MkRuntimeCase "atStartOfDay constructs midnight"
+      (dateTimeComponents (atStartOfDay (calendarDate 1 March 2000)) ==
+        ((2000, March, 1), (0, 0, 0, 0)))
+  , MkRuntimeCase "calendar periods apply to CalendarDateTime"
       (dateTimeComponents (applyPeriod (months 2) lateDateTime) ==
         ((2000, March, 31), (23, 30, 0, 0)))
   , MkRuntimeCase "time periods apply to CalendarDateTime and carry into the date"

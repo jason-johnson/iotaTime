@@ -1,0 +1,8 @@
+package iotaTime-examples
+
+depends = iotaTime
+
+sourcedir = "."
+
+main = ZonedMeeting
+executable = iotaTime-zoned-meeting

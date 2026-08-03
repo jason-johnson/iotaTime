@@ -420,7 +420,9 @@ Named locale fields parse case-insensitively. As with the fixed English weekday 
 
 `localeDatePattern` compiles a locale's date layout into a bidirectional Gregorian pattern. `compileDatePattern` accepts an explicit `strftime` layout. Date conversion support includes `%Y`, `%y`, `%m`, `%d`, `%e`, `%B`, `%b`, `%h`, `%A`, and `%a`, plus `%%`, `%n`, `%t`, and the composite `%F` and `%D` layouts. Unsupported conversions return `Left (UnsupportedSpecifier value)` and a trailing bare percent returns `Left DanglingPercent`.
 
-Machine locale acquisition, time layouts, and combined date-time layouts remain separate runtime-boundary features.
+`localeTimePattern` similarly compiles a locale's time layout into a bidirectional `LocalTime` pattern, while `compileTimePattern` accepts an explicit layout. Time conversions include `%H`, `%I`, `%l`, `%M`, `%S`, and `%p`; the tokenizer also expands the composite `%T`, `%R`, and `%r` layouts.
+
+Machine locale acquisition and combined date-time layouts remain separate runtime-boundary features.
 
 ## Calendar conversion
 

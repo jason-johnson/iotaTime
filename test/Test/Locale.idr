@@ -27,6 +27,18 @@ localeParsesAs locale source expected = case localeDatePattern locale of
   Left _ => False
   Right pattern => parsesAs pattern source expected
 
+localeTimeFormatsAs : Locale -> LocalTime -> String -> Bool
+localeTimeFormatsAs locale time expected = case localeTimePattern locale of
+  Left _ => False
+  Right pattern => IotaTime.Pattern.format pattern time == expected
+
+localeTimeParsesAs : Locale -> String -> LocalTime -> Bool
+localeTimeParsesAs locale source expected = case localeTimePattern locale of
+  Left _ => False
+  Right pattern => case IotaTime.Pattern.parse pattern source of
+    Left _ => False
+    Right actual => actual == expected
+
 hasStrftimeError : StrftimeError -> Either StrftimeError value -> Bool
 hasStrftimeError expected (Left actual) = actual == expected
 hasStrftimeError _ (Right _) = False
@@ -78,6 +90,24 @@ localeCases =
   , MkRuntimeCase "date layout compiler rejects a dangling percent"
       (hasStrftimeError DanglingPercent
         (compileDatePattern enUS "%Y-%"))
+  , MkRuntimeCase "US locale time layout uses a 12-hour period"
+      (localeTimeFormatsAs enUS (localTime 13 24 35 0) "01:24:35 PM" &&
+       localeTimeParsesAs enUS "01:24:35 PM" (localTime 13 24 35 0))
+  , MkRuntimeCase "German locale time layout uses 24-hour time"
+      (localeTimeFormatsAs deDE (localTime 13 24 35 0) "13:24:35" &&
+       localeTimeParsesAs deDE "13:24:35" (localTime 13 24 35 0))
+  , MkRuntimeCase "Japanese locale time layout preserves separators"
+      (localeTimeFormatsAs jaJP (localTime 13 24 35 0) "13時24分35秒" &&
+       localeTimeParsesAs jaJP "13時24分35秒" (localTime 13 24 35 0))
+  , MkRuntimeCase "time compiler supports short and space-padded layouts"
+      (case (compileTimePattern enUS "%R", compileTimePattern enUS "%l:%M") of
+        (Right short, Right padded) =>
+          IotaTime.Pattern.format short (localTime 13 24 0 0) == "13:24" &&
+          IotaTime.Pattern.format padded (localTime 13 24 0 0) == " 1:24"
+        _ => False)
+  , MkRuntimeCase "time compiler rejects date-only specifiers"
+      (hasStrftimeError (UnsupportedSpecifier 'Y')
+        (compileTimePattern enUS "%Y"))
   ]
 
 export

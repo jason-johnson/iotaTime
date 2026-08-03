@@ -3,8 +3,10 @@ module IotaTime.Pattern.Locale
 import IotaTime.Locale
 import IotaTime.Pattern
 import IotaTime.Pattern.CalendarDate
+import IotaTime.Pattern.LocalTime
 import IotaTime.Calendar
 import IotaTime.Calendar.Gregorian
+import IotaTime.LocalTime
 
 %default total
 
@@ -89,19 +91,22 @@ dateConversion locale 'A' = Right (pdddd' locale)
 dateConversion locale 'a' = Right (pddd' locale)
 dateConversion _ value = Left (UnsupportedSpecifier value)
 
-fragmentPattern : Locale -> LayoutFragment ->
-                  Either StrftimeError
-                    (Pattern DateFields (CalendarDate Gregorian))
-fragmentPattern _ (LiteralRun text) = Right (literalField pyyyy text)
-fragmentPattern locale (Conversion value) = dateConversion locale value
+fragmentPattern : Pattern state value ->
+                  (Char -> Either StrftimeError (Pattern state value)) ->
+                  LayoutFragment -> Either StrftimeError (Pattern state value)
+fragmentPattern template _ (LiteralRun text) =
+  Right (literalField template text)
+fragmentPattern _ conversion (Conversion value) = conversion value
 
-assemble : Locale -> List LayoutFragment ->
-           Either StrftimeError (Pattern DateFields (CalendarDate Gregorian))
-assemble _ [] = Right (literalField pyyyy "")
-assemble locale [fragment] = fragmentPattern locale fragment
-assemble locale (fragment :: rest) = do
-  first <- fragmentPattern locale fragment
-  remaining <- assemble locale rest
+assemble : Pattern state value ->
+           (Char -> Either StrftimeError (Pattern state value)) ->
+           List LayoutFragment -> Either StrftimeError (Pattern state value)
+assemble template _ [] = Right (literalField template "")
+assemble template conversion [fragment] =
+  fragmentPattern template conversion fragment
+assemble template conversion (fragment :: rest) = do
+  first <- fragmentPattern template conversion fragment
+  remaining <- assemble template conversion rest
   Right (first <+> remaining)
 
 public export
@@ -110,10 +115,32 @@ compileDatePattern : Locale -> String ->
                        (Pattern DateFields (CalendarDate Gregorian))
 compileDatePattern locale layout = do
   tokens <- tokenize (unpack layout)
-  assemble locale (toFragments tokens)
+  assemble pyyyy (dateConversion locale) (toFragments tokens)
 
 public export
 localeDatePattern : Locale ->
                     Either StrftimeError
                       (Pattern DateFields (CalendarDate Gregorian))
 localeDatePattern locale = compileDatePattern locale (rawDateFormat locale)
+
+timeConversion : Locale -> Char ->
+                 Either StrftimeError (Pattern TimeFields LocalTime)
+timeConversion _ 'H' = Right pHH
+timeConversion _ 'I' = Right phh
+timeConversion _ 'l' = Right phhSpace
+timeConversion _ 'M' = Right pmm
+timeConversion _ 'S' = Right pss
+timeConversion locale 'p' = Right (ppp' locale)
+timeConversion _ value = Left (UnsupportedSpecifier value)
+
+public export
+compileTimePattern : Locale -> String ->
+                     Either StrftimeError (Pattern TimeFields LocalTime)
+compileTimePattern locale layout = do
+  tokens <- tokenize (unpack layout)
+  assemble pHH (timeConversion locale) (toFragments tokens)
+
+public export
+localeTimePattern : Locale ->
+                    Either StrftimeError (Pattern TimeFields LocalTime)
+localeTimePattern locale = compileTimePattern locale (rawTimeFormat locale)

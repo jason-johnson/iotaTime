@@ -24,6 +24,7 @@ import Test.Pattern
 import Test.PatternLocalTime
 import Test.PatternOffset
 import Test.PatternDuration
+import Test.PatternInstant
 import Test.Locale
 import Test.Support
 
@@ -65,6 +66,7 @@ main = do
   patternLocalTimePassed <- Test.PatternLocalTime.run
   patternOffsetPassed <- Test.PatternOffset.run
   patternDurationPassed <- Test.PatternDuration.run
+  patternInstantPassed <- Test.PatternInstant.run
   localePassed <- Test.Locale.run
   finalizeResults
     [ ("proof tests (compile-time)", True)
@@ -91,5 +93,6 @@ main = do
     , ("local time pattern tests", patternLocalTimePassed)
     , ("offset pattern tests", patternOffsetPassed)
     , ("duration pattern tests", patternDurationPassed)
+    , ("instant pattern tests", patternInstantPassed)
     , ("locale tests", localePassed)
     ]

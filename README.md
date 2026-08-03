@@ -70,6 +70,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Pattern/CalendarDate.idr` — Gregorian numeric date patterns
 - `src/IotaTime/Pattern/LocalTime.idr` — local-time field and standard patterns
 - `src/IotaTime/Pattern/Duration.idr` — signed fixed-duration patterns
+- `src/IotaTime/Pattern/Instant.idr` — ISO-8601 UTC instant patterns
 - `src/IotaTime/Pattern/Offset.idr` — signed UTC-offset patterns
 - `src/IotaTime/Pattern/CalendarDateTime.idr` — combined Gregorian date-time patterns
 - `src/IotaTime/Pattern/OffsetDateTime.idr` — fixed-offset date-time patterns
@@ -414,6 +415,12 @@ Field parsers accumulate raw components in `DateFields` and call `refineGregoria
 `pDuration` formats and parses fixed durations as `[-]D:HH:mm:ss`; `pDurationNano` adds exactly nine fractional digits as `[-]D:HH:mm:ss.fffffffff`. Day counts use arbitrary-precision integers, matching the underlying `Duration` representation.
 
 The optional sign belongs to the complete duration rather than an individual field. Parsing therefore reads the layout as one quantity and constructs the result through `fromNanoseconds`, preserving canonical negative values such as `-0:00:00:00.000000001` without exposing the `Duration` representation.
+
+## Instant patterns
+
+`pInstant` parses and formats UTC instants as `yyyy-MM-ddTHH:mm:ssZ`; `pInstantNano` includes exactly nine fractional digits. `instantPattern` adapts any Gregorian `CalendarDateTime` pattern and treats its value as UTC.
+
+Use `parseInstant` for the typed `Either PatternError Instant` parsing boundary. Because `Instant` has an arbitrary-precision timeline while the proof-carrying Gregorian calendar begins on October 15, 1582, `formatInstant` returns `Either CalendarConversionError String`. An earlier instant therefore reports `TargetCalendarOutOfRange` rather than hiding a partial conversion inside the total `Pattern.format` API.
 
 ## Offset and date-time patterns
 

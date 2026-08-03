@@ -63,25 +63,22 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          git clone --depth 1 --branch v10.4.1 --recurse-submodules --shallow-submodules https://github.com/cisco/ChezScheme "$env:RUNNER_TEMP\ChezScheme"
           git clone --depth 1 --branch v0.8.0 https://github.com/idris-lang/Idris2.git "$env:RUNNER_TEMP\Idris2"
           c:\msys64\usr\bin\bash -l -c "pacman -S --noconfirm tar make mingw-w64-x86_64-gcc"
 
-      - name: Install Chez Scheme on Windows
+      - name: Build Chez Scheme on Windows
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $installer = "$env:RUNNER_TEMP\ChezScheme9.5.8.exe"
-          Invoke-WebRequest -Uri https://github.com/cisco/ChezScheme/releases/download/v9.5.8a/ChezScheme9.5.8.exe -OutFile $installer
-          $process = Start-Process -FilePath $installer -ArgumentList '/S' -PassThru -Wait
-          if ($process.ExitCode -ne 0) {
-            throw "Chez Scheme installer failed with exit code $($process.ExitCode)"
-          }
+          $chez = c:\msys64\usr\bin\cygpath -u "$env:RUNNER_TEMP\ChezScheme"
+          c:\msys64\usr\bin\bash -l -c "cd '$chez' && ./configure --threads && make"
 
       - name: Configure Windows Idris paths
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $chezBin = "${env:ProgramFiles(x86)}\Chez Scheme 9.5.8\bin\ta6nt"
+          $chezBin = "$env:RUNNER_TEMP\ChezScheme\ta6nt\bin\ta6nt"
           $idrisPrefix = "$env:RUNNER_TEMP\.idris2"
           $unixPrefix = c:\msys64\usr\bin\cygpath -u "$idrisPrefix"
           if (-not (Test-Path (Join-Path $chezBin "scheme.exe"))) {

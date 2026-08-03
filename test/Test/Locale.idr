@@ -39,6 +39,28 @@ localeTimeParsesAs locale source expected = case localeTimePattern locale of
     Left _ => False
     Right actual => actual == expected
 
+sameDateTime : CalendarDateTime Gregorian ->
+               CalendarDateTime Gregorian -> Bool
+sameDateTime left right =
+  calendarDays (datePart left) == calendarDays (datePart right) &&
+  localTimeOfDay left == localTimeOfDay right
+
+localeDateTimeFormatsAs : Locale -> CalendarDateTime Gregorian ->
+                          String -> Bool
+localeDateTimeFormatsAs locale value expected =
+  case localeDateTimePattern locale of
+    Left _ => False
+    Right pattern => IotaTime.Pattern.format pattern value == expected
+
+localeDateTimeParsesAs : Locale -> String ->
+                         CalendarDateTime Gregorian -> Bool
+localeDateTimeParsesAs locale source expected =
+  case localeDateTimePattern locale of
+    Left _ => False
+    Right pattern => case IotaTime.Pattern.parse pattern source of
+      Left _ => False
+      Right actual => sameDateTime actual expected
+
 hasStrftimeError : StrftimeError -> Either StrftimeError value -> Bool
 hasStrftimeError expected (Left actual) = actual == expected
 hasStrftimeError _ (Right _) = False
@@ -108,6 +130,43 @@ localeCases =
   , MkRuntimeCase "time compiler rejects date-only specifiers"
       (hasStrftimeError (UnsupportedSpecifier 'Y')
         (compileTimePattern enUS "%Y"))
+  , MkRuntimeCase "US locale date-time drops the zone and round-trips"
+      (let value = on (localTime 13 24 35 0)
+            (calendarDate 15 March 2020) in
+        localeDateTimeFormatsAs enUS value
+          "Sun 15 Mar 2020 01:24:35 PM" &&
+        localeDateTimeParsesAs enUS
+          "Sun 15 Mar 2020 01:24:35 PM" value)
+  , MkRuntimeCase "German locale date-time drops the zone and round-trips"
+      (let value = on (localTime 13 24 35 0)
+            (calendarDate 15 March 2020) in
+        localeDateTimeFormatsAs deDE value "So 15 Mär 2020 13:24:35" &&
+        localeDateTimeParsesAs deDE "So 15 Mär 2020 13:24:35" value)
+  , MkRuntimeCase "Japanese locale date-time round-trips"
+      (let value = on (localTime 13 24 35 0)
+            (calendarDate 15 March 2020) in
+        localeDateTimeFormatsAs jaJP value "2020年03月15日 13時24分35秒" &&
+        localeDateTimeParsesAs jaJP "2020年03月15日 13時24分35秒" value)
+  , MkRuntimeCase "date-time fields parse independently of field order"
+      (case compileDateTimePattern enUS "%H:%M %F" of
+        Left _ => False
+        Right pattern =>
+          let expected = on (localTime 13 24 0 0)
+                (calendarDate 15 March 2020) in
+            IotaTime.Pattern.format pattern expected == "13:24 2020-03-15" &&
+            case IotaTime.Pattern.parse pattern "13:24 2020-03-15" of
+              Left _ => False
+              Right actual => sameDateTime actual expected)
+  , MkRuntimeCase "date-time compiler drops numeric zones"
+      (case compileDateTimePattern enUS "%F %T %z" of
+        Left _ => False
+        Right pattern =>
+          IotaTime.Pattern.format pattern
+            (on (localTime 13 24 35 0) (calendarDate 15 March 2020)) ==
+              "2020-03-15 13:24:35")
+  , MkRuntimeCase "date-time compiler rejects unsupported fields"
+      (hasStrftimeError (UnsupportedSpecifier 'Q')
+        (compileDateTimePattern enUS "%F %Q"))
   ]
 
 export

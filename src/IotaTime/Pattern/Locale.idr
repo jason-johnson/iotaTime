@@ -1,11 +1,13 @@
 module IotaTime.Pattern.Locale
 
+import Data.String.Parser
 import IotaTime.Locale
 import IotaTime.Pattern
 import IotaTime.Pattern.CalendarDate
 import IotaTime.Pattern.LocalTime
 import IotaTime.Calendar
 import IotaTime.Calendar.Gregorian
+import IotaTime.CalendarDateTime
 import IotaTime.LocalTime
 
 %default total
@@ -144,3 +146,96 @@ public export
 localeTimePattern : Locale ->
                     Either StrftimeError (Pattern TimeFields LocalTime)
 localeTimePattern locale = compileTimePattern locale (rawTimeFormat locale)
+
+public export
+record DateTimeFields where
+  constructor MkDateTimeFields
+  parsedDateFields : DateFields
+  parsedTimeFields : TimeFields
+
+initialDateTimeFields : DateTimeFields
+initialDateTimeFields = MkDateTimeFields pyyyy.initialState pHH.initialState
+
+finishDateTime : DateTimeFields ->
+                 Either PatternError (CalendarDateTime Gregorian)
+finishDateTime fields = do
+  date <- pyyyy.finish fields.parsedDateFields
+  time <- pHH.finish fields.parsedTimeFields
+  Right (on time date)
+
+liftDateUpdate : (DateFields -> DateFields) ->
+                 DateTimeFields -> DateTimeFields
+liftDateUpdate update fields =
+  { parsedDateFields := update fields.parsedDateFields } fields
+
+liftTimeUpdate : (TimeFields -> TimeFields) ->
+                 DateTimeFields -> DateTimeFields
+liftTimeUpdate update fields =
+  { parsedTimeFields := update fields.parsedTimeFields } fields
+
+liftDatePattern : Pattern DateFields (CalendarDate Gregorian) ->
+                  Pattern DateTimeFields (CalendarDateTime Gregorian)
+liftDatePattern pattern = MkPattern
+  initialDateTimeFields
+  finishDateTime
+  (map (map liftDateUpdate) pattern.parsePart)
+  (pattern.formatPart . datePart)
+
+liftTimePattern : Pattern TimeFields LocalTime ->
+                  Pattern DateTimeFields (CalendarDateTime Gregorian)
+liftTimePattern pattern = MkPattern
+  initialDateTimeFields
+  finishDateTime
+  (map (map liftTimeUpdate) pattern.parsePart)
+  (pattern.formatPart . localTimeOfDay)
+
+dateTimeConversion : Locale -> Char ->
+                     Either StrftimeError
+                       (Pattern DateTimeFields (CalendarDateTime Gregorian))
+dateTimeConversion locale value = case dateConversion locale value of
+  Right pattern => Right (liftDatePattern pattern)
+  Left _ => map liftTimePattern (timeConversion locale value)
+
+isZoneSpecifier : Char -> Bool
+isZoneSpecifier value = value == 'Z' || value == 'z'
+
+trimTrailingSpaces : String -> String
+trimTrailingSpaces = pack . reverse . dropSpaces . reverse . unpack
+  where
+    dropSpaces : List Char -> List Char
+    dropSpaces (' ' :: rest) = dropSpaces rest
+    dropSpaces values = values
+
+stripZones : List LayoutFragment -> List LayoutFragment
+stripZones [] = []
+stripZones (LiteralRun text :: Conversion value :: rest) =
+  if isZoneSpecifier value
+    then let trimmed = trimTrailingSpaces text in
+      if trimmed == ""
+        then stripZones rest
+        else LiteralRun trimmed :: stripZones rest
+    else LiteralRun text :: stripZones (Conversion value :: rest)
+stripZones (LiteralRun text :: rest) =
+  LiteralRun text :: stripZones rest
+stripZones (Conversion value :: rest) =
+  if isZoneSpecifier value
+    then stripZones rest
+    else Conversion value :: stripZones rest
+
+public export
+compileDateTimePattern : Locale -> String ->
+                         Either StrftimeError
+                           (Pattern DateTimeFields
+                             (CalendarDateTime Gregorian))
+compileDateTimePattern locale layout = do
+  tokens <- tokenize (unpack layout)
+  assemble (liftDatePattern pyyyy) (dateTimeConversion locale)
+    (stripZones (toFragments tokens))
+
+public export
+localeDateTimePattern : Locale ->
+                        Either StrftimeError
+                          (Pattern DateTimeFields
+                            (CalendarDateTime Gregorian))
+localeDateTimePattern locale =
+  compileDateTimePattern locale (rawDateTimeFormat locale)

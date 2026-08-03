@@ -422,7 +422,9 @@ Named locale fields parse case-insensitively. As with the fixed English weekday 
 
 `localeTimePattern` similarly compiles a locale's time layout into a bidirectional `LocalTime` pattern, while `compileTimePattern` accepts an explicit layout. Time conversions include `%H`, `%I`, `%l`, `%M`, `%S`, and `%p`; the tokenizer also expands the composite `%T`, `%R`, and `%r` layouts.
 
-Machine locale acquisition and combined date-time layouts remain separate runtime-boundary features.
+`localeDateTimePattern` compiles the combined locale layout into a Gregorian `CalendarDateTime` pattern, and `compileDateTimePattern` accepts an explicit combined layout. Date and time fields share a `DateTimeFields` accumulator, so their order is independent. Because `CalendarDateTime` represents civil time without a zone, `%Z` and `%z` fields and their preceding layout spaces are deliberately omitted.
+
+Machine locale acquisition remains a separate runtime-boundary feature.
 
 ## Calendar conversion
 

@@ -21,7 +21,6 @@ jobs:
       github.event.pull_request.user.login == github.repository_owner
     steps:
       - name: Checkout
-        if: github.event.action != 'closed'
         uses: actions/checkout@v4
 
       - name: Install Idris 2 build dependencies

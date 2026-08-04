@@ -30,9 +30,10 @@
 
 The tag workflow waits for the full Linux and Windows matrix, verifies the tag
 against both version declarations, creates source and API-documentation
-archives, publishes a GitHub Release, and submits the immutable release commit
-to a branch in the `idris2-pack-db` fork. Open the upstream pull request from
-the URL in the workflow summary.
+archives, publishes the documentation at
+`https://jason-johnson.github.io/iotaTime/`, publishes a GitHub Release, and
+submits the immutable release commit to a branch in the `idris2-pack-db` fork.
+Open the upstream pull request from the URL in the workflow summary.
 
 ## One-time publishing setup
 
@@ -43,7 +44,8 @@ the URL in the workflow summary.
    manages the `gh-pages` branch automatically. Do not edit that branch.
 3. In repository **Settings > Pages**, select **Deploy from a branch**, then
    select `gh-pages` and `/ (root)`. Previews are published at
-   `https://jason-johnson.github.io/iotaTime/pr-preview/pr-N/`.
+   `https://jason-johnson.github.io/iotaTime/pr-preview/pr-N/`; the latest
+   tagged documentation is published at the site root.
 4. Fork `stefan-hoeck/idris2-pack-db` to
    `jason-johnson/idris2-pack-db` on GitHub.
 5. Create a fine-grained personal access token scoped only to

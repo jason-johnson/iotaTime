@@ -213,6 +213,13 @@ jobs:
           tar -C build/docs -czf "release/iotaTime-$VERSION-docs.tar.gz" .
           sha256sum release/*.tar.gz > "release/iotaTime-$VERSION-sha256.txt"
 
+      - name: Publish release documentation
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: build/docs
+          clean-exclude: pr-preview
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:

@@ -1,0 +1,47 @@
+name: Publish release documentation
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag whose documentation archive should be published
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-documentation
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish tagged API documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download documentation archive
+        env:
+          TAG: ${{ inputs.tag }}
+        shell: bash
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Expected a tag such as v0.1.0, got: $TAG" >&2
+            exit 1
+          fi
+          version="${TAG#v}"
+          mkdir -p build/docs
+          curl --fail --location --silent --show-error \
+            "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/iotaTime-${version}-docs.tar.gz" \
+            | tar -xz -C build/docs
+          test -f build/docs/index.html
+
+      - name: Publish release documentation
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: build/docs
+          clean-exclude: pr-preview

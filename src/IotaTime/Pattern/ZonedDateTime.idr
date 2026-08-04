@@ -90,15 +90,18 @@ zoneInfoPattern local = pairPattern fst snd (\dateTime, zone => (dateTime, zone)
 
 ||| Parse using a local date-time pattern, load the captured zone ID, and
 ||| resolve the local value according to the caller's chosen policy.
+||| The provider effect is any `Monad`, allowing use from `IO`, effect
+||| interpreters, or pure test monads.
 public export
 parseZonedDateTimeWith :
+  {m : Type -> Type} -> Monad m =>
   {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
   Pattern state (CalendarDateTime calendar) ->
-  (String -> IO (Either providerError TimeZone)) ->
+  (String -> m (Either providerError TimeZone)) ->
   (CalendarDateTime calendar -> TimeZone ->
     Either resolverError (ZonedDateTime calendar)) ->
   String ->
-  IO (Either (ZonedDateTimePatternError providerError resolverError)
+  m (Either (ZonedDateTimePatternError providerError resolverError)
     (ZonedDateTime calendar))
 parseZonedDateTimeWith local provider resolver source =
   case IotaTime.Pattern.parse (zoneInfoPattern local) source of
@@ -111,14 +114,16 @@ parseZonedDateTimeWith local provider resolver source =
           Left error => Left (ZonedDateTimeResolutionError error)
           Right value => Right value
 
-||| Parse the standard ISO local date-time and zone-ID layout.
+||| Parse the standard ISO local date-time and zone-ID layout in the provider's
+||| monad.
 public export
 parseStandardZonedDateTime :
+  {m : Type -> Type} -> Monad m =>
   {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
-  (String -> IO (Either providerError TimeZone)) ->
+  (String -> m (Either providerError TimeZone)) ->
   (CalendarDateTime calendar -> TimeZone ->
     Either resolverError (ZonedDateTime calendar)) ->
   String ->
-  IO (Either (ZonedDateTimePatternError providerError resolverError)
+  m (Either (ZonedDateTimePatternError providerError resolverError)
     (ZonedDateTime calendar))
 parseStandardZonedDateTime = parseZonedDateTimeWith ps

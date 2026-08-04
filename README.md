@@ -105,15 +105,18 @@ The example loads `Europe/Zurich` through the system provider, parses `2024-04-2
 
 ## API documentation
 
-Generate the declaration-level HTML reference from the Idris `|||` comments:
+Generate the declaration-level HTML reference, grouped API pages, and guide:
 
 ```bash
+npm ci --prefix docs
 idris2 --mkdoc iotaTime.ipkg
+node docs/enhance-docs.mjs build/docs
 ```
 
-Open `build/docs/index.html` after generation. This reference documents
-types and signatures; the sections below provide task-oriented examples and
-design context.
+Open `build/docs/index.html` after generation. `build/docs/guide.html` contains
+the conceptual guide and compiled iotaTime equivalents of HodaTime's examples;
+the module pages retain Idris-generated types and signatures while grouping
+related declarations under curated headings.
 
 Owner-authored pull requests publish temporary API-documentation previews via
 GitHub Pages. Version tags publish source and documentation archives as a

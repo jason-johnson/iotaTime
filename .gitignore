@@ -4,6 +4,7 @@
 build/
 *.so
 *.dll
+docs/node_modules/
 
 # Idris 1
 *.ibc

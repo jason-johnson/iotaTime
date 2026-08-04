@@ -201,7 +201,9 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
+          npm ci --prefix docs
           idris2 --mkdoc iotaTime.ipkg
+          node docs/enhance-docs.mjs build/docs
           mkdir release
           git archive \
             --format=tar.gz \

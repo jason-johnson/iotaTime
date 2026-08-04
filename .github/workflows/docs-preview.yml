@@ -51,7 +51,10 @@ jobs:
       - name: Generate API documentation
         if: github.event.action != 'closed'
         run: |
+          npm ci --prefix docs
           idris2 --mkdoc iotaTime.ipkg
+          node docs/enhance-docs.mjs build/docs
+          test -f build/docs/guide.html
           test -f build/docs/index.html
 
       - name: Publish preview

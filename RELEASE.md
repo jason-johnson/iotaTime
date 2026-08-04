@@ -18,6 +18,9 @@
    sh test/run-compile-fail-tests.sh
    idris2 --build examples/iotaTime-examples.ipkg
    ./examples/build/exec/iotaTime-zoned-meeting
+   npm ci --prefix docs
+   idris2 --mkdoc iotaTime.ipkg
+   node docs/enhance-docs.mjs build/docs
    git diff --check
    ```
 

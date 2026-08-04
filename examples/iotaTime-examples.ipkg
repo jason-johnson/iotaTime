@@ -4,5 +4,8 @@ depends = iotaTime
 
 sourcedir = "."
 
+modules = GuidedMeeting,
+		  GuideExamples
+
 main = ZonedMeeting
 executable = iotaTime-zoned-meeting

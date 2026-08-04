@@ -213,7 +213,6 @@ hebrewMonthNumber : {numbering : HebrewNumbering} -> {year : Year} ->
 hebrewMonthNumber value =
   (HebrewMonths.calendarIndex value - numberingStart {numbering} + 13) `mod` 13 + 1
 
-public export
 monthsInHebrewYear : Year -> Integer
 monthsInHebrewYear value = if isHebrewLeapYear value then 13 else 12
 
@@ -310,7 +309,6 @@ isValidHebrewDay valueDay _ HebrewMonths.Tammuz = valueDay <= 29
 isValidHebrewDay valueDay _ HebrewMonths.Elul = valueDay <= 29
 isValidHebrewDay valueDay _ _ = valueDay <= 30
 
-public export
 total
 daysBeforeHebrewMonth : Year -> Integer -> Integer
 daysBeforeHebrewMonth _ 0 = 0
@@ -333,7 +331,6 @@ daysBeforeHebrewMonth value target =
         12 => 266 + variableDays + adarIDays
         _ => 295 + variableDays + adarIDays
 
-public export
 total
 hebrewYearMonthDayToDays : {numbering : HebrewNumbering} ->
                            (valueYear : Year) -> HebrewMonth numbering valueYear ->

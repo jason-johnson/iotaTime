@@ -46,9 +46,6 @@ bufferBytes buffer = do
       remaining <- readBytes count (offset + 1)
       pure (byte :: remaining)
 
-||| Read and decode one TZif file. Filesystem and format failures remain
-||| distinct typed trust-boundary errors.
-public export
 loadTzifFile : String -> IO (Either TzdbError TzifData)
 loadTzifFile path = do
   loaded <- createBufferFromFile path
@@ -58,8 +55,6 @@ loadTzifFile path = do
       bytes <- bufferBytes buffer
       pure (mapLeft TzdbParseError (parseTzif bytes))
 
-||| Read, decode, and validate one TZif file as a time zone.
-public export
 loadTimeZoneFile : String -> String -> IO (Either TzdbError TimeZone)
 loadTimeZoneFile valueId path = do
   decoded <- loadTzifFile path

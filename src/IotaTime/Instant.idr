@@ -54,7 +54,7 @@ toNanosecondsSinceEpoch : Instant -> Integer
 toNanosecondsSinceEpoch = storedNanoseconds
 
 ||| Backward-compatible name for `toNanosecondsSinceEpoch`.
-public export
+export
 ticks : Instant -> Integer
 ticks = toNanosecondsSinceEpoch
 
@@ -89,7 +89,7 @@ toNanosecondsSinceUnixEpoch value =
   value.storedNanoseconds + unixEpochOffsetNanoseconds
 
 ||| Add a fixed duration to an instant.
-public export
+export
 addDuration : Instant -> Duration -> Instant
 addDuration instant duration = MkInstant
   (instant.storedNanoseconds +
@@ -100,7 +100,7 @@ add : Instant -> Duration -> Instant
 add = addDuration
 
 ||| Subtract a fixed duration from an instant.
-public export
+export
 subtractDuration : Instant -> Duration -> Instant
 subtractDuration instant duration = MkInstant
   (instant.storedNanoseconds -

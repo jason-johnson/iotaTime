@@ -6,6 +6,21 @@ An Idris 2 time library based on Erik Naggum's "Long painful history of time".
 
 iotaTime is a port of HodaTime to Idris 2, but reproducing the Haskell API is only an intermediate step. The project exists to use dependent types to move calendar and time invariants out of runtime validation and into the type system.
 
+## Supported API
+
+The supported interface consists of declarations marked `public export` in
+the modules listed by `docs/public-modules.json`. It follows HodaTime's exposed
+modules, with additional proof predicates, erased-proof constructors, and
+typed runtime refiners where Idris can express a stronger boundary.
+
+Idris package files do not have Cabal's distinction between `exposed-modules`
+and `other-modules`. Implementation modules therefore use non-public imports
+and are omitted from generated API documentation. Some implementation records
+must use `public export` inside those modules so sibling modules can access
+their constructors and fields; importing such a module directly is unsupported.
+Tests for a release exercise the supported modules rather than those internal
+representations, parsers, or platform adapters.
+
 The final public API should follow these principles:
 
 - Domain values carry the proofs needed to establish their validity. A `CalendarDate Gregorian` must always be a valid Gregorian date; there must be no second, possibly-invalid form of the same public type.

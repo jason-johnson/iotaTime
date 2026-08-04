@@ -148,7 +148,6 @@ monthFromNumber 10 = IslamicMonths.Shawwal
 monthFromNumber 11 = IslamicMonths.DhulQadah
 monthFromNumber _ = IslamicMonths.DhulHijjah
 
-public export
 islamicWeekdayFromDays : Integer -> IslamicDayOfWeek
 islamicWeekdayFromDays value = case (value + 3) `mod` 7 of
   0 => IslamicWeekdays.Sunday
@@ -172,7 +171,6 @@ export
 Ord (IslamicDate pattern) where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
 
-public export
 islamicEpoch : Integer
 islamicEpoch = -503166
 
@@ -219,7 +217,6 @@ isValidIslamicDate valueDay valueMonth valueYear =
 monthOffset : IslamicMonth -> Integer
 monthOffset value = ((IslamicMonths.monthNumber value - 1) * 59 + 1) `div` 2
 
-public export
 islamicDaysFromCivil : {pattern : IslamicLeapPattern} ->
                        KnownIslamicLeapPattern pattern =>
                        Year -> IslamicMonth -> DayOfMonth -> Integer

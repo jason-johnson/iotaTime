@@ -16,17 +16,17 @@ rejects pattern source = case IotaTime.Pattern.parse pattern source of
 sameOffsetDateTime : OffsetDateTime Gregorian ->
                      OffsetDateTime Gregorian -> Bool
 sameOffsetDateTime left right =
-  calendarDays (datePart (localDateTime left)) ==
-    calendarDays (datePart (localDateTime right)) &&
-  localTimeOfDay (localDateTime left) == localTimeOfDay (localDateTime right) &&
-  offsetOf left == offsetOf right
+  calendarDays (datePart (toCalendarDateTime left)) ==
+    calendarDays (datePart (toCalendarDateTime right)) &&
+  localTimeOfDay (toCalendarDateTime left) ==
+    localTimeOfDay (toCalendarDateTime right) && offset left == offset right
 
 patternOffsetCases : List RuntimeCase
 patternOffsetCases =
   [ MkRuntimeCase "standard offset pattern formats signed minutes"
       (IotaTime.Pattern.format pOffset (fromHours 2) == "+02:00" &&
        IotaTime.Pattern.format pOffset (fromMinutes (-330)) == "-05:30" &&
-       IotaTime.Pattern.format pOffset zeroOffset == "+00:00")
+      IotaTime.Pattern.format pOffset empty == "+00:00")
   , MkRuntimeCase "standard offset pattern parses signed minutes"
       (parsesAs pOffset "+02:00" (fromHours 2) &&
        parsesAs pOffset "-05:30" (fromMinutes (-330)))
@@ -37,9 +37,9 @@ patternOffsetCases =
         "-00:00:01" &&
        parsesAs pOffsetFull "-05:30:45" (fromSeconds (-19845)))
   , MkRuntimeCase "UTC offset pattern uses Z only for zero"
-      (IotaTime.Pattern.format pOffsetZ zeroOffset == "Z" &&
+      (IotaTime.Pattern.format pOffsetZ empty == "Z" &&
        IotaTime.Pattern.format pOffsetZ (fromHours 2) == "+02:00" &&
-       parsesAs pOffsetZ "Z" zeroOffset &&
+      parsesAs pOffsetZ "Z" empty &&
        parsesAs pOffsetZ "+02:00" (fromHours 2))
   , MkRuntimeCase "compact offset pattern implements strftime percent-z"
       (IotaTime.Pattern.format pOffsetCompact (fromHours 2) == "+0200" &&
@@ -56,7 +56,7 @@ patternOffsetCases =
        rejects pOffsetFull "+02:00:60" &&
        rejects pOffsetCompact "+0200suffix")
   , MkRuntimeCase "standard offset date-time pattern round-trips"
-      (let expected = atOffset
+      (let expected = fromCalendarDateTimeWithOffset
             (on (localTime 9 0 0 0) (calendarDate 23 April 2024))
             (fromMinutes (-330)) in
         IotaTime.Pattern.format pOffsetDateTime expected ==

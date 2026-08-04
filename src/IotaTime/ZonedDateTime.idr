@@ -18,7 +18,7 @@ ZonedDateTime calendar @{cal} = ZonedDateTimeRep calendar cal
 
 ||| Display an instant in a zone using the zone's effective offset. Conversion
 ||| fails only when the resulting local day is outside the calendar's range.
-public export
+export
 inZone : {calendar : Type} -> {auto cal : Calendar calendar} ->
          {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
          DateTimeZone -> Instant ->
@@ -37,13 +37,13 @@ fromInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
               Either CalendarConversionError (ZonedDateTime calendar @{cal})
 fromInstant valueInstant valueZone = inZone valueZone valueInstant
 
-public export
+export
 zonedOffsetDateTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
                       ZonedDateTime calendar @{cal} ->
                       OffsetDateTime calendar @{cal}
 zonedOffsetDateTime = zonedValue
 
-public export
+export
 zonedLocalDateTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
                      ZonedDateTime calendar @{cal} ->
                      CalendarDateTime calendar @{cal}
@@ -101,12 +101,12 @@ nanosecond : {calendar : Type} -> {auto cal : Calendar calendar} ->
         ZonedDateTime calendar @{cal} -> Nanosecond
 nanosecond = IotaTime.LocalTime.nanosecond . toLocalTime
 
-public export
+export
 zonedOffset : {calendar : Type} -> {auto cal : Calendar calendar} ->
               ZonedDateTime calendar @{cal} -> Offset
 zonedOffset = offsetOf . zonedValue
 
-public export
+export
 zonedInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
                {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
                ZonedDateTime calendar @{cal} -> Instant
@@ -118,7 +118,7 @@ toInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
             ZonedDateTime calendar @{cal} -> Instant
 toInstant = zonedInstant
 
-public export
+export
 zoneOf : {calendar : Type} -> {auto cal : Calendar calendar} ->
          ZonedDateTime calendar @{cal} -> DateTimeZone
 zoneOf = zonedZone
@@ -229,7 +229,7 @@ fromCalendarDateTimeLeniently local valueZone =
     Right (Just value) => Right (attachZone valueZone value)
 
 ||| Change zones while preserving the represented instant.
-public export
+export
 withZone : {calendar : Type} -> {auto cal : Calendar calendar} ->
            {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
            DateTimeZone -> ZonedDateTime calendar @{cal} ->
@@ -250,7 +250,7 @@ withCalendar {target} @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value 
     (zonedInstant @{sourceCal} @{sourceRep} value)
 
 ||| Add elapsed time on the global timeline, then re-evaluate the zone offset.
-public export
+export
 addZonedDuration : {calendar : Type} -> {auto cal : Calendar calendar} ->
                    {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
                    Duration -> ZonedDateTime calendar @{cal} ->
@@ -259,7 +259,7 @@ addZonedDuration amount value =
   inZone value.zonedZone (addDuration (zonedInstant value) amount)
 
 ||| Add fixed elapsed time, following HodaTime's value-first argument order.
-public export
+export
 add : {calendar : Type} -> {auto cal : Calendar calendar} ->
   {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
   ZonedDateTime calendar @{cal} -> Duration ->
@@ -267,7 +267,7 @@ add : {calendar : Type} -> {auto cal : Calendar calendar} ->
 add value amount = addZonedDuration amount value
 
 ||| Subtract elapsed time on the global timeline, then re-evaluate the zone offset.
-public export
+export
 subtractZonedDuration : {calendar : Type} -> {auto cal : Calendar calendar} ->
                         {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
                         Duration -> ZonedDateTime calendar @{cal} ->
@@ -276,7 +276,7 @@ subtractZonedDuration amount value =
   inZone value.zonedZone (subtractDuration (zonedInstant value) amount)
 
 ||| Subtract fixed elapsed time, following HodaTime's value-first argument order.
-public export
+export
 minus : {calendar : Type} -> {auto cal : Calendar calendar} ->
         {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
         ZonedDateTime calendar @{cal} -> Duration ->

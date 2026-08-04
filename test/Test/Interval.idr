@@ -25,14 +25,14 @@ intervalCases =
   , MkRuntimeCase "empty interval contains no instant"
       (not (contains emptyInterval (fromNanosecondsSinceEpoch 5)))
   , MkRuntimeCase "interval duration is the endpoint difference"
-      (duration spanningZero == durationFromNanoseconds 20)
+      (duration spanningZero == IotaTime.Duration.fromNanoseconds 20)
   , MkRuntimeCase "empty interval has zero duration"
-      (duration emptyInterval == zeroDuration)
+      (duration emptyInterval == IotaTime.Duration.fromNanoseconds 0)
   , MkRuntimeCase "dynamic ordered endpoints are accepted"
       (case refineInterval
         (fromNanosecondsSinceEpoch 20)
         (fromNanosecondsSinceEpoch 30) of
-          Right value => duration value == durationFromNanoseconds 10
+          Right value => duration value == IotaTime.Duration.fromNanoseconds 10
           Left _ => False)
   , MkRuntimeCase "dynamic reversed endpoints are rejected"
       (let later = fromNanosecondsSinceEpoch 30
@@ -46,7 +46,7 @@ intervalCases =
         (interval
           (-999999999999999999999999999999)
           999999999999999999999999999999) ==
-        durationFromNanoseconds 1999999999999999999999999999998)
+        IotaTime.Duration.fromNanoseconds 1999999999999999999999999999998)
   ]
 
 export

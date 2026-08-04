@@ -15,19 +15,19 @@ record TransitionInfo where
   storedAbbreviation : String
 
 ||| Describe the zone state effective over a timeline segment.
-public export
+export
 transitionInfo : Offset -> Bool -> String -> TransitionInfo
 transitionInfo = MkTransitionInfo
 
-public export
+export
 utcOffset : TransitionInfo -> Offset
 utcOffset = storedUtcOffset
 
-public export
+export
 isDaylightSavingTime : TransitionInfo -> Bool
 isDaylightSavingTime = storedInDst
 
-public export
+export
 abbreviation : TransitionInfo -> String
 abbreviation = storedAbbreviation
 
@@ -61,7 +61,7 @@ record RecurrenceRule where
   recurrenceMode : TransitionTimeMode
 
 ||| Validate a one-based Julian day that omits February 29.
-public export
+export
 julianWithoutLeapRule : Integer -> Integer -> TransitionTimeMode ->
                          Either RecurrenceRuleError RecurrenceRule
 julianWithoutLeapRule day seconds mode =
@@ -70,7 +70,7 @@ julianWithoutLeapRule day seconds mode =
     else Left (JulianDayOutOfRange day)
 
 ||| Validate a zero-based Julian day that includes February 29.
-public export
+export
 julianWithLeapRule : Integer -> Integer -> TransitionTimeMode ->
                       Either RecurrenceRuleError RecurrenceRule
 julianWithLeapRule day seconds mode =
@@ -79,7 +79,7 @@ julianWithLeapRule day seconds mode =
     else Left (JulianDayOutOfRange day)
 
 ||| Validate an Mm.w.d POSIX transition day.
-public export
+export
 monthWeekDayRule : Integer -> Integer -> Integer -> Integer ->
                    TransitionTimeMode -> Either RecurrenceRuleError RecurrenceRule
 monthWeekDayRule month week weekday seconds mode =
@@ -97,7 +97,7 @@ record ZoneRecurrence where
   standardStart : RecurrenceRule
 
 ||| Construct recurring standard/daylight rules from validated transition days.
-public export
+export
 zoneRecurrence : TransitionInfo -> TransitionInfo -> RecurrenceRule ->
                  RecurrenceRule -> ZoneRecurrence
 zoneRecurrence = MkZoneRecurrence
@@ -126,14 +126,14 @@ public export
 TimeZone : Type
 TimeZone = DateTimeZone
 
-public export
+export
 areZoneTransitionsAfter : Integer -> List (Integer, TransitionInfo) -> Bool
 areZoneTransitionsAfter previous [] = True
 areZoneTransitionsAfter previous ((instant, _) :: rest) =
   previous < instant && areZoneTransitionsAfter instant rest
 
 ||| Whether transition instants are strictly increasing.
-public export
+export
 isValidZoneTransitions : List (Integer, TransitionInfo) -> Bool
 isValidZoneTransitions [] = True
 isValidZoneTransitions ((instant, _) :: rest) =
@@ -146,14 +146,14 @@ toTransitions ((instant, valueInfo) :: rest) =
   toTransitions rest
 
 ||| Construct a fixed-offset zone.
-public export
+export
 fixedDateTimeZone : String -> Offset -> DateTimeZone
 fixedDateTimeZone valueId valueOffset =
   MkDateTimeZone valueId (transitionInfo valueOffset False valueId) [] []
 
 ||| Construct a transition zone from statically known, strictly increasing
 ||| nanosecond instants and the offsets effective from those instants onward.
-public export
+export
 dateTimeZone : (valueId : String) -> (valueInitialInfo : TransitionInfo) ->
                (valueTransitions : List (Integer, TransitionInfo)) ->
                {auto 0 valid : So (isValidZoneTransitions valueTransitions)} ->
@@ -182,7 +182,7 @@ toRuntimeTransitions ((instant, valueInfo) :: rest) =
   MkZoneTransition instant valueInfo :: toRuntimeTransitions rest
 
 ||| Validate transition data learned at runtime.
-public export
+export
 refineDateTimeZone : String -> TransitionInfo -> List (Instant, TransitionInfo) ->
                      Either DateTimeZoneError DateTimeZone
 refineDateTimeZone valueId valueInitialInfo valueTransitions =
@@ -192,7 +192,7 @@ refineDateTimeZone valueId valueInitialInfo valueTransitions =
     else Left TransitionsNotStrictlyIncreasing
 
 ||| Validate explicit transitions and attach recurring rules used after them.
-public export
+export
 refineRecurringDateTimeZone : String -> TransitionInfo ->
                               List (Instant, TransitionInfo) -> ZoneRecurrence ->
                               Either DateTimeZoneError DateTimeZone
@@ -215,7 +215,7 @@ refineRecurringDateTimeZone valueId valueInitialInfo valueTransitions recurrence
         go instant info ((next, nextInfo) :: remaining) =
           go next nextInfo remaining
 
-public export
+export
 zoneId : DateTimeZone -> String
 zoneId = storedZoneId
 
@@ -392,7 +392,6 @@ refineTimeZoneEras valueId specs =
 
 ||| Validate ordered recurrence eras. An initial `Nothing` boundary applies
 ||| without a lower timeline bound; subsequent boundaries must increase.
-export
 refineRecurrenceErasDateTimeZone : String ->
   List (Maybe Instant, ZoneRecurrence) -> Either DateTimeZoneError TimeZone
 refineRecurrenceErasDateTimeZone valueId specs =
@@ -425,7 +424,7 @@ activeRecurrenceEra eras fallback query = case select Nothing eras of
         then select (Just era) rest
         else selected
 
-public export
+export
 activeTransitionAt : TimeZone -> Instant -> TransitionInfo
 activeTransitionAt valueZone valueInstant = go
   valueZone.initialTransition valueZone.transitions
@@ -437,7 +436,7 @@ activeTransitionAt valueZone valueInstant = go
         then current
         else go transition.transitionInfo rest
 
-public export
+export
 zoneOffsetAt : TimeZone -> Instant -> Offset
 zoneOffsetAt valueZone = utcOffset . activeTransitionAt valueZone
 
@@ -569,7 +568,7 @@ data LocalMapping : (calendar : Type) ->
               (additional : List (OffsetDateTime calendar @{cal})) ->
               LocalMapping calendar cal
 
-public export
+export
 mapLocal : {calendar : Type} -> {auto cal : Calendar calendar} ->
            {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
            DateTimeZone -> CalendarDateTime calendar @{cal} ->

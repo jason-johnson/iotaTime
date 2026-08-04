@@ -41,7 +41,7 @@ OffsetDateTime : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 OffsetDateTime calendar @{cal} = OffsetDateTimeRep calendar cal
 
 ||| Associate a calendar-local date and time with its displacement from UTC.
-public export
+export
 atOffset : {calendar : Type} -> {auto cal : Calendar calendar} ->
            CalendarDateTime calendar @{cal} -> Offset ->
            OffsetDateTime calendar @{cal}
@@ -55,7 +55,7 @@ fromCalendarDateTimeWithOffset : {calendar : Type} ->
                                  OffsetDateTime calendar @{cal}
 fromCalendarDateTimeWithOffset = atOffset
 
-public export
+export
 localDateTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
                 OffsetDateTime calendar @{cal} ->
                 CalendarDateTime calendar @{cal}
@@ -67,7 +67,7 @@ toCalendarDateTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
                      CalendarDateTime calendar @{cal}
 toCalendarDateTime = localDateTime
 
-public export
+export
 offsetOf : {calendar : Type} -> {auto cal : Calendar calendar} ->
            OffsetDateTime calendar @{cal} -> Offset
 offsetOf = offsetValue
@@ -91,7 +91,7 @@ localTimeFromNanoseconds value = localTime
   (nanosecondFromInteger (value `mod` nanosecondsPerSecond))
 
 ||| Resolve an offset date-time to its unique point on the global timeline.
-public export
+export
 toInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
             {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
             OffsetDateTime calendar @{cal} -> Instant
@@ -102,7 +102,7 @@ toInstant @{cal} @{rep} value = fromNanosecondsSinceEpoch
 
 ||| Display an instant using a calendar and offset. Conversion can fail only
 ||| when the resulting local day lies outside the calendar's supported range.
-public export
+export
 fromInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
               {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
               Offset -> Instant ->
@@ -131,7 +131,7 @@ fromInstantWithOffset valueInstant valueOffset =
   fromInstant valueOffset valueInstant
 
 ||| Change the displayed offset while preserving the represented instant.
-public export
+export
 withOffset : {calendar : Type} -> {auto cal : Calendar calendar} ->
              {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
              Offset -> OffsetDateTime calendar @{cal} ->
@@ -139,7 +139,7 @@ withOffset : {calendar : Type} -> {auto cal : Calendar calendar} ->
 withOffset valueOffset value = fromInstant valueOffset (toInstant value)
 
 ||| Change the calendar while preserving the local time, offset, and instant.
-public export
+export
 withCalendar : {source : Type} -> {target : Type} ->
                {auto sourceCal : Calendar source} ->
                {auto targetCal : Calendar target} ->

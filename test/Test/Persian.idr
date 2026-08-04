@@ -13,9 +13,9 @@ pymd date = case yearMonthDay {calendar = Persian} date of
   (valueYear ** (valueMonth, valueDay)) =>
     (valueYear, valueMonth, valueDay)
 
-persianRoundTrips : Integer -> Bool
-persianRoundTrips current =
-  if current > lastPersianDay
+persianRoundTrips : Integer -> Integer -> Bool
+persianRoundTrips final current =
+  if current > final
     then True
     else case refinePersianDays current of
       Left _ => False
@@ -25,7 +25,7 @@ persianRoundTrips current =
               Left _ => False
               Right rebuilt =>
                 toDays {calendar = Persian} rebuilt == current &&
-                persianRoundTrips (current + 97)
+                persianRoundTrips final (current + 97)
 
 timeComponents : LocalTime -> (Hour, Minute, Second, Nanosecond)
 timeComponents value = (hour value, minute value, second value, nanosecond value)
@@ -44,9 +44,14 @@ persianCases =
       (pymd (persianFromDays (-503284)) ==
         (1, PersianMonths.Farvardin, 1))
   , MkRuntimeCase "Persian conversion samples the complete supported range"
-      (persianRoundTrips persianEpoch &&
-       pymd (persianFromDays lastPersianDay) ==
-         (1500, PersianMonths.Esfand, 29))
+      (let first = toDays {calendar = Persian}
+             (persianDate 1 PersianMonths.Farvardin 1)
+           final = toDays {calendar = Persian}
+             (persianDate 29 PersianMonths.Esfand 1500)
+        in persianRoundTrips final first &&
+       case refinePersianDays final of
+         Right date => pymd date == (1500, PersianMonths.Esfand, 29)
+         Left _ => False)
   , MkRuntimeCase "Persian epoch matches Julian March 19 622"
       (calendarDays (persianDate 1 PersianMonths.Farvardin 1) ==
        calendarDays (julianDate 19 JulianMonths.March 622))
@@ -97,7 +102,8 @@ persianCases =
         (persianDate 1 PersianMonths.Farvardin 1500)) ==
         (1500, PersianMonths.Esfand, 29))
   , MkRuntimeCase "Persian epoch weekday is Friday"
-      (dayOfWeek {calendar = Persian} (persianFromDays persianEpoch) ==
+      (dayOfWeek {calendar = Persian}
+        (persianDate 1 PersianMonths.Farvardin 1) ==
         PersianWeekdays.Friday)
   , MkRuntimeCase "first Monday of Farvardin 1400"
       (dayOfWeek {calendar = Persian}

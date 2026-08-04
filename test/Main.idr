@@ -7,8 +7,7 @@ import Test.Duration
 import Test.Interval
 import Test.Offset
 import Test.OffsetDateTime
-import Test.DateTimeZone
-import Test.Tzif
+import Test.TimeZone
 import Test.ZonedDateTime
 import Test.Gregorian
 import Test.Iso
@@ -51,8 +50,7 @@ main = do
   intervalPassed <- Test.Interval.run
   offsetPassed <- Test.Offset.run
   offsetDateTimePassed <- Test.OffsetDateTime.run
-  dateTimeZonePassed <- Test.DateTimeZone.run
-  tzifPassed <- Test.Tzif.run
+  timeZonePassed <- Test.TimeZone.run
   zonedDateTimePassed <- Test.ZonedDateTime.run
   gregorianPassed <- Test.Gregorian.run
   isoPassed <- Test.Iso.run
@@ -80,8 +78,7 @@ main = do
     , ("interval tests", intervalPassed)
     , ("offset tests", offsetPassed)
     , ("offset date-time tests", offsetDateTimePassed)
-    , ("date-time zone tests", dateTimeZonePassed)
-    , ("TZif tests", tzifPassed)
+    , ("time-zone provider tests", timeZonePassed)
     , ("zoned date-time tests", zonedDateTimePassed)
     , ("Gregorian calendar tests", gregorianPassed)
     , ("ISO week-date tests", isoPassed)

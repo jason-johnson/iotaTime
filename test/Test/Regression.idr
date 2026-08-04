@@ -5,13 +5,14 @@ import Test.Support
 
 regressionCases : List RuntimeCase
 regressionCases =
-  [ MkRuntimeCase "regression: epoch remains canonical zero instant" (ticks epoch == 0)
+  [ MkRuntimeCase "regression: epoch remains canonical zero instant"
+      (toNanosecondsSinceEpoch epoch == 0)
   , MkRuntimeCase "regression: negative epoch offsets remain representable"
       (let beforeEpoch = fromNanosecondsSinceEpoch (-1) in
-       ticks beforeEpoch < ticks epoch)
+      toNanosecondsSinceEpoch beforeEpoch < toNanosecondsSinceEpoch epoch)
   , MkRuntimeCase "regression: integer identity round-trip remains stable"
       (let value = -999999999999999999999999999999 in
-       ticks (fromNanosecondsSinceEpoch value) == value)
+      toNanosecondsSinceEpoch (fromNanosecondsSinceEpoch value) == value)
   ]
 
 export

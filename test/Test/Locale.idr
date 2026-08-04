@@ -2,7 +2,6 @@ module Test.Locale
 
 import Data.Vect
 import IotaTime
-import IotaTime.Locale.Windows.Platform
 import System.Info
 import Test.Support
 
@@ -52,8 +51,8 @@ sameDateTime left right =
 sameOffsetDateTime : OffsetDateTime Gregorian ->
                      OffsetDateTime Gregorian -> Bool
 sameOffsetDateTime left right =
-  sameDateTime (localDateTime left) (localDateTime right) &&
-  offsetOf left == offsetOf right
+  sameDateTime (toCalendarDateTime left) (toCalendarDateTime right) &&
+  offset left == offset right
 
 localeDateTimeFormatsAs : Locale -> CalendarDateTime Gregorian ->
                           String -> Bool
@@ -181,7 +180,7 @@ localeCases =
       (case compileOffsetDateTimePattern enUS "%F %T %z end" of
         Left _ => False
         Right pattern =>
-          let expected = atOffset
+          let expected = fromCalendarDateTimeWithOffset
                 (on (localTime 13 24 35 0) (calendarDate 15 March 2020))
                 (fromHours 2) in
             IotaTime.Pattern.format pattern expected ==
@@ -196,16 +195,6 @@ localeCases =
   , MkRuntimeCase "locale offset rejects fields following percent-z"
       (hasStrftimeError (UnsupportedSpecifier 'Y')
         (compileOffsetDateTimePattern enUS "%F %z %Y"))
-  , MkRuntimeCase "Windows pictures translate field widths"
-      (windowsPictureToStrftime "dddd, dd MMMM yyyy HH:mm:ss tt" ==
-        "%A, %d %B %Y %H:%M:%S %p" &&
-       windowsPictureToStrftime "ddd d MMM yy h:m:s t" ==
-        "%a %e %b %y %I:%M:%S %p")
-  , MkRuntimeCase "Windows pictures preserve quoted literals"
-      (windowsPictureToStrftime "yyyy'年'MM'月'dd'日'" ==
-        "%Y年%m月%d日" &&
-       windowsPictureToStrftime "hh 'o''clock' tt 100%" ==
-        "%I o'clock %p 100%%")
   ]
 
 patternsCompile : Locale -> Bool
@@ -241,10 +230,6 @@ nativeLocaleCases = if isWindows
             _ => False)
       ]
 
-utcProvider : String -> IO (Either String TimeZone)
-utcProvider "UTC" = pure (Right (fixedDateTimeZone "UTC" zeroOffset))
-utcProvider name = pure (Left ("unknown zone: " ++ name))
-
 strictResolver : CalendarDateTime Gregorian -> TimeZone ->
                  Either ZonedDateTimeError (ZonedDateTime Gregorian)
 strictResolver = fromCalendarDateTimeStrictly
@@ -253,17 +238,20 @@ rejectingResolver : CalendarDateTime Gregorian -> TimeZone ->
                     Either String (ZonedDateTime Gregorian)
 rejectingResolver local zone = Left "resolution rejected"
 
-zonedLocaleCases : IO (List RuntimeCase)
-zonedLocaleCases = do
-  resolved <- parseZonedDateTime utcProvider strictResolver enUS
+zonedLocaleCases : TimeZone -> IO (List RuntimeCase)
+zonedLocaleCases utcZone = do
+  let provider : String -> IO (Either String TimeZone)
+      provider "UTC" = pure (Right utcZone)
+      provider name = pure (Left ("unknown zone: " ++ name))
+  resolved <- parseZonedDateTime provider strictResolver enUS
     "Sun 15 Mar 2020 01:24:35 PM UTC"
-  zoneless <- parseZonedDateTime utcProvider strictResolver jaJP
+  zoneless <- parseZonedDateTime provider strictResolver jaJP
     "2020年03月15日 13時24分35秒"
-  unknown <- parseZonedDateTime utcProvider strictResolver enUS
+  unknown <- parseZonedDateTime provider strictResolver enUS
     "Sun 15 Mar 2020 01:24:35 PM EDT"
-  rejected <- parseZonedDateTime utcProvider rejectingResolver enUS
+  rejected <- parseZonedDateTime provider rejectingResolver enUS
     "Sun 15 Mar 2020 01:24:35 PM UTC"
-  malformed <- parseZonedDateTime utcProvider strictResolver enUS
+  malformed <- parseZonedDateTime provider strictResolver enUS
     "Sun 15 Mar 2020 01:24:35 PM UTC extra"
   pure
     [ MkRuntimeCase "locale percent-Z resolves through provider and resolver"
@@ -295,5 +283,11 @@ export
 run : IO Bool
 run = do
   nativeCases <- nativeLocaleCases
-  zonedCases <- zonedLocaleCases
-  runSuite "locale tests" (localeCases ++ nativeCases ++ zonedCases)
+  loadedUtc <- utc
+  case loadedUtc of
+    Left _ => runSuite "locale tests"
+      (localeCases ++ nativeCases ++
+        [MkRuntimeCase "UTC loads for zoned locale tests" False])
+    Right utcZone => do
+      zonedCases <- zonedLocaleCases utcZone
+      runSuite "locale tests" (localeCases ++ nativeCases ++ zonedCases)

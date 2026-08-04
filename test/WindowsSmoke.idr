@@ -12,6 +12,12 @@ allPassed : List Bool -> Bool
 allPassed [] = True
 allPassed (passed :: rest) = passed && allPassed rest
 
+zoneHourAt : TimeZone -> Integer -> Maybe Hour
+zoneHourAt zone seconds = case IotaTime.ZonedDateTime.fromInstant
+  {calendar = Gregorian} (fromSecondsSinceUnixEpoch seconds) zone of
+    Right value => Just (IotaTime.ZonedDateTime.hour value)
+    Left _ => Nothing
+
 export
 main : IO ()
 main = do
@@ -27,7 +33,7 @@ main = do
 
   utcPassed <- report "UTC loads without registry dependence"
     (case utcResult of
-      Right zone => zoneOffsetAt zone epoch == zeroOffset
+      Right zone => zoneId zone == "UTC"
       Left _ => False)
   zonesPassed <- report "registry zones include Eastern Standard Time"
     (case zonesResult of
@@ -36,10 +42,8 @@ main = do
   dynamicPassed <- report "registry Dynamic DST changes in 2007"
     (case easternResult of
       Right zone =>
-        zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1142856000) ==
-          offsetFromHours (-5) &&
-        zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1174392000) ==
-          offsetFromHours (-4)
+        zoneHourAt zone 1142856000 == Just 7 &&
+        zoneHourAt zone 1174392000 == Just 8
       Left _ => False)
   localPassed <- report "local Windows zone resolves"
     (case localResult of

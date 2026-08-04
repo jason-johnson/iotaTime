@@ -104,7 +104,6 @@ monthFromNumber 11 = CopticMonths.Epip
 monthFromNumber 12 = CopticMonths.Mesori
 monthFromNumber _ = CopticMonths.PiKogiEnavot
 
-public export
 weekdayFromNumber : Integer -> CopticDayOfWeek
 weekdayFromNumber value = case value `mod` 7 of
   0 => CopticWeekdays.Sunday
@@ -128,7 +127,6 @@ export
 Ord CopticDate where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
 
-public export
 copticEpoch : Integer
 copticEpoch = -626575
 
@@ -155,7 +153,6 @@ isValidCopticDate valueDay _ valueYear =
   let dayNumber = dayOfMonthValue valueDay
    in dayNumber >= 1 && dayNumber <= 30 && yearValue valueYear >= 1
 
-public export
 copticDaysFromCivil : Year -> CopticMonth -> DayOfMonth -> Integer
 copticDaysFromCivil valueYear valueMonth valueDay =
   copticEpoch + (yearValue valueYear - 1) * 365 +
@@ -227,7 +224,6 @@ applyCopticPeriod period =
   . shiftCopticMonths (periodMonths period)
   . shiftCopticYears (periodYears period)
 
-public export
 copticWeekdayFromDays : Integer -> CopticDayOfWeek
 copticWeekdayFromDays days = weekdayFromNumber (days + 3)
 

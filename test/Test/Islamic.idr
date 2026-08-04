@@ -44,7 +44,7 @@ mixedIslamicResult = applyPeriod (months 1 <+> hours 2)
 islamicCases : List RuntimeCase
 islamicCases =
   [ MkRuntimeCase "Islamic epoch is 1 Muharram 1"
-      (iymd (islamicFromDays (-503166)) ==
+      (iymd (islamicDate 1 IslamicMonths.Muharram 1) ==
         (1, IslamicMonths.Muharram, 1))
   , MkRuntimeCase "Islamic conversion round-trips two 30-year cycles"
       (islamicRoundTrips (-503166) (-481904))
@@ -104,7 +104,8 @@ islamicCases =
         (1, IslamicMonths.Muharram, 1))
   , MkRuntimeCase "Islamic epoch weekday is Thursday"
       (dayOfWeek {calendar = Islamic Base16}
-        (islamicFromDays (-503166)) == IslamicWeekdays.Thursday)
+        (islamicDate' {pattern = Base16}
+          1 IslamicMonths.Muharram 1) == IslamicWeekdays.Thursday)
   , MkRuntimeCase "first Monday of Muharram 1443"
       (dayOfWeek {calendar = Islamic Base16}
         (islamicFromNthDay First IslamicWeekdays.Monday

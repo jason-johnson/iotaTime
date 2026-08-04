@@ -5,4 +5,4 @@ module ForgedRecurrenceRule
 import IotaTime.DateTimeZone
 
 invalid : RecurrenceRule
-invalid = MkRecurrenceRule (JulianWithLeap 500) 0 WallTime
+invalid = MkRecurrenceRule

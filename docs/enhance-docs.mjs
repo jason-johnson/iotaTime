@@ -1,4 +1,4 @@
-import { access, cp, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { access, cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { load } from "cheerio";
@@ -10,6 +10,9 @@ const docsDirectory = path.join(outputDirectory, "docs");
 const groups = JSON.parse(
   await readFile(path.join(scriptDirectory, "groups.json"), "utf8"),
 );
+const publicModules = new Set(JSON.parse(
+  await readFile(path.join(scriptDirectory, "public-modules.json"), "utf8"),
+));
 
 function slugify(value) {
   return value
@@ -44,6 +47,21 @@ function addSharedNavigation($, root) {
 function groupModulePage(html, moduleName, configuredGroups) {
   const $ = load(html, { decodeEntities: false });
   addSharedNavigation($, "../");
+
+  $("dl.decls > dt").each((_, element) => {
+    const term = $(element);
+    const description = term.next("dd");
+    const visibility = description.find("b")
+      .filter((__, label) => $(label).text().trim() === "Visibility")
+      .next("span.keyword")
+      .text()
+      .replaceAll(" ", " ")
+      .trim();
+    if (visibility !== "public export") {
+      description.remove();
+      term.remove();
+    }
+  });
 
   const definitionsHeading = $("h2")
     .filter((_, element) => $(element).text().trim() === "Definitions")
@@ -108,6 +126,11 @@ function groupModulePage(html, moduleName, configuredGroups) {
 function enhanceIndex(html) {
   const $ = load(html, { decodeEntities: false });
   addSharedNavigation($, "");
+  $(".index-namespace-url > a.code").each((_, element) => {
+    if (!publicModules.has($(element).text().trim())) {
+      $(element).closest("li").remove();
+    }
+  });
   const heading = $(".container > h1").first();
   heading.replaceWith(`
     <section class="docs-hero">
@@ -177,11 +200,18 @@ for (const [moduleName, configuredGroups] of Object.entries(groups)) {
 
 const moduleFiles = await readdir(docsDirectory);
 for (const filename of moduleFiles.filter((value) => value.endsWith(".html"))) {
-  if (Object.hasOwn(groups, filename.slice(0, -5))) continue;
+  const moduleName = filename.slice(0, -5);
+  if (!publicModules.has(moduleName)) {
+    await rm(path.join(docsDirectory, filename));
+    continue;
+  }
+  if (Object.hasOwn(groups, moduleName)) continue;
   const modulePath = path.join(docsDirectory, filename);
-  const $ = load(await readFile(modulePath, "utf8"), { decodeEntities: false });
-  addSharedNavigation($, "../");
-  await writeFile(modulePath, $.html());
+  await writeFile(modulePath, groupModulePage(
+    await readFile(modulePath, "utf8"),
+    moduleName,
+    [],
+  ));
 }
 
 const guide = await readFile(path.join(scriptDirectory, "guide.md"), "utf8");

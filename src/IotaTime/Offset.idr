@@ -42,7 +42,7 @@ isValidOffsetHours : Integer -> Bool
 isValidOffsetHours value =
   value >= -18 && value <= 18
 
-public export
+export
 offsetFromSeconds : (value : Integer) ->
                     {auto 0 valid : So (isValidOffsetSeconds value)} -> Offset
 offsetFromSeconds value = MkOffset value
@@ -52,7 +52,7 @@ fromSeconds : (value : Integer) ->
               {auto 0 valid : So (isValidOffsetSeconds value)} -> Offset
 fromSeconds = offsetFromSeconds
 
-public export
+export
 offsetFromMinutes : (value : Integer) ->
                     {auto 0 valid : So (isValidOffsetMinutes value)} -> Offset
 offsetFromMinutes value = MkOffset (value * secondsPerMinute)
@@ -62,7 +62,7 @@ fromMinutes : (value : Integer) ->
               {auto 0 valid : So (isValidOffsetMinutes value)} -> Offset
 fromMinutes = offsetFromMinutes
 
-public export
+export
 offsetFromHours : (value : Integer) ->
                   {auto 0 valid : So (isValidOffsetHours value)} -> Offset
 offsetFromHours value = MkOffset (value * secondsPerHour)
@@ -82,7 +82,7 @@ refineOffsetSeconds value =
     Left valid => Right (offsetFromSeconds value @{valid})
     Right _ => Left (OffsetOutOfRange value)
 
-public export
+export
 totalOffsetSeconds : Offset -> Integer
 totalOffsetSeconds (MkOffset value) = value
 
@@ -90,7 +90,7 @@ componentSign : Integer -> Integer
 componentSign value = if value < 0 then -1 else 1
 
 ||| The signed whole-hour component of an offset.
-public export
+export
 offsetHours : Offset -> Integer
 offsetHours value =
   componentSign seconds * (abs seconds `div` secondsPerHour)
@@ -102,7 +102,7 @@ hours : Offset -> Integer
 hours = offsetHours
 
 ||| The signed minute-within-hour component of an offset.
-public export
+export
 offsetMinutes : Offset -> Integer
 offsetMinutes value =
   componentSign seconds *
@@ -115,7 +115,7 @@ minutes : Offset -> Integer
 minutes = offsetMinutes
 
 ||| The signed second-within-minute component of an offset.
-public export
+export
 offsetSeconds : Offset -> Integer
 offsetSeconds value =
   componentSign seconds * (abs seconds `mod` secondsPerMinute)
@@ -126,7 +126,7 @@ public export
 seconds : Offset -> Integer
 seconds = offsetSeconds
 
-public export
+export
 zeroOffset : Offset
 zeroOffset = MkOffset 0
 
@@ -138,7 +138,7 @@ clampOffsetSeconds : Integer -> Integer
 clampOffsetSeconds value = max (-64800) (min 64800 value)
 
 ||| Add two offsets, clamping the result to the supported bounds.
-public export
+export
 addOffsetClamped : Offset -> Offset -> Offset
 addOffsetClamped left right = MkOffset (clampOffsetSeconds
   (totalOffsetSeconds left + totalOffsetSeconds right))
@@ -148,7 +148,7 @@ addClamped : Offset -> Offset -> Offset
 addClamped = addOffsetClamped
 
 ||| Subtract the second offset, clamping the result to the supported bounds.
-public export
+export
 subtractOffsetClamped : Offset -> Offset -> Offset
 subtractOffsetClamped left right = MkOffset (clampOffsetSeconds
   (totalOffsetSeconds left - totalOffsetSeconds right))
@@ -159,7 +159,7 @@ minusClamped = subtractOffsetClamped
 
 ||| Reverse an offset's direction. Both bounds are symmetric, so no clamping
 ||| is needed.
-public export
+export
 negateOffset : Offset -> Offset
 negateOffset value = MkOffset (negate (totalOffsetSeconds value))
 

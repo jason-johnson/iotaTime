@@ -1,16 +1,16 @@
 {
   "IotaTime.Instant": [
     { "title": "Type and constants", "names": ["Instant", "epoch"] },
-    { "title": "Construction and conversion", "names": ["fromNanosecondsSinceEpoch", "toNanosecondsSinceEpoch", "ticks", "fromSecondsSinceUnixEpoch", "fromNanosecondsSinceUnixEpoch", "toNanosecondsSinceUnixEpoch"] },
-    { "title": "Timeline arithmetic", "names": ["addDuration", "add", "subtractDuration", "minus", "difference"] },
+    { "title": "Construction and conversion", "names": ["fromNanosecondsSinceEpoch", "toNanosecondsSinceEpoch", "fromSecondsSinceUnixEpoch", "fromNanosecondsSinceUnixEpoch", "toNanosecondsSinceUnixEpoch"] },
+    { "title": "Timeline arithmetic", "names": ["add", "minus", "difference"] },
     { "title": "System clock", "names": ["now"] },
     { "title": "Proofs", "names": ["instantNanosecondsRoundTrip", "instantRoundTrip"] }
   ],
   "IotaTime.Duration": [
-    { "title": "Type and constants", "names": ["Duration", "zeroDuration"] },
-    { "title": "Construction", "names": ["durationFromNanoseconds", "fromNanoseconds", "durationFromMicroseconds", "fromMicroseconds", "durationFromMilliseconds", "fromMilliseconds", "durationFromSeconds", "fromSeconds", "durationFromMinutes", "fromMinutes", "durationFromHours", "fromHours", "durationFromStandardDays", "fromStandardDays", "durationFromStandardWeeks", "fromStandardWeeks"] },
+    { "title": "Type", "names": ["Duration"] },
+    { "title": "Construction", "names": ["fromNanoseconds", "fromMicroseconds", "fromMilliseconds", "fromSeconds", "fromMinutes", "fromHours", "fromStandardDays", "fromStandardWeeks"] },
     { "title": "Conversion", "names": ["toDurationNanoseconds"] },
-    { "title": "Arithmetic", "names": ["addDurations", "add", "subtractDurations", "minus", "negateDuration", "scaleDuration"] },
+    { "title": "Arithmetic", "names": ["add", "minus"] },
     { "title": "Proofs", "names": ["durationNanosecondsRoundTrip", "durationRoundTrip"] }
   ],
   "IotaTime.Calendar.Gregorian": [
@@ -25,12 +25,11 @@
     { "title": "Runtime refinement", "names": ["LocalTimeError", "refineLocalTime"] }
   ],
   "IotaTime.ZonedDateTime": [
-    { "title": "Type and instant-based construction", "names": ["ZonedDateTime", "inZone", "fromInstant"] },
-    { "title": "Local mapping and resolution", "names": ["ZonedMapping", "resolveLocal", "fromCalendarDateTimeAll", "ZonedDateTimeError", "fromCalendarDateTimeStrictly", "fromCalendarDateTimeLeniently"] },
-    { "title": "Civil components", "names": ["zonedOffsetDateTime", "zonedLocalDateTime", "toCalendarDateTime", "toCalendarDate", "toLocalTime", "year", "month", "day", "hour", "minute", "second", "nanosecond"] },
-    { "title": "Timeline and zone information", "names": ["zonedOffset", "zonedInstant", "toInstant", "zoneOf", "zoneId", "inDst", "zoneAbbreviation"] },
-    { "title": "Conversion", "names": ["withZone", "withCalendar"] },
-    { "title": "Timeline arithmetic", "names": ["addZonedDuration", "add", "subtractZonedDuration", "minus"] }
+    { "title": "Type and instant-based construction", "names": ["ZonedDateTime", "fromInstant"] },
+    { "title": "Local mapping and resolution", "names": ["resolveLocal", "fromCalendarDateTimeAll", "ZonedDateTimeError", "fromCalendarDateTimeStrictly", "fromCalendarDateTimeLeniently"] },
+    { "title": "Civil components", "names": ["toCalendarDateTime", "toCalendarDate", "toLocalTime", "year", "month", "day", "hour", "minute", "second", "nanosecond"] },
+    { "title": "Timeline and zone information", "names": ["toInstant", "zoneId", "inDst", "zoneAbbreviation"] },
+    { "title": "Conversion", "names": ["withCalendar"] }
   ],
   "IotaTime.Pattern.CalendarDate": [
     { "title": "Pattern state", "names": ["DateFields"] },

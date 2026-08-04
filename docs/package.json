@@ -1,0 +1,12 @@
+{
+  "name": "iotatime-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node enhance-docs.mjs"
+  },
+  "dependencies": {
+    "cheerio": "1.0.0",
+    "marked": "12.0.2"
+  }
+}

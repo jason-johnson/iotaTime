@@ -4,7 +4,7 @@ This guide complements the [complete API index](index.html). It starts with the 
 
 ## Why iotaTime exists
 
-iotaTime is a proof-oriented Idris 2 port of HodaTime. It separates values that are merely *labels* from values that identify a point on the global timeline, and it moves calendar and clock invariants into types wherever Idris can prove them.
+iotaTime is a proof-oriented Idris 2 port of HodaTime (which, itself, was a Haskell port of Nodatime, which was a Csharp port of Java's famous Jodatime). It separates values that are merely *labels* from values that identify a point on the global timeline, and it moves calendar and clock invariants into types wherever Idris can prove them.
 
 A statically known valid date needs no runtime check:
 

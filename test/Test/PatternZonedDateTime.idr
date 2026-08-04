@@ -22,6 +22,10 @@ zoneProvider "Test/Spring" = pure (Right springZone)
 zoneProvider "Test/Fall" = pure (Right fallZone)
 zoneProvider name = pure (Left ("unknown zone: " ++ name))
 
+pureZoneProvider : String -> Either String (Either String TimeZone)
+pureZoneProvider "UTC" = Right (Right utcZone)
+pureZoneProvider name = Right (Left ("unknown zone: " ++ name))
+
 strictResolver : CalendarDateTime Gregorian -> TimeZone ->
   Either ZonedDateTimeError (ZonedDateTime Gregorian)
 strictResolver = fromCalendarDateTimeStrictly
@@ -53,6 +57,13 @@ formatCases =
                   (\zoned => " [" ++ IotaTime.ZonedDateTime.zoneId zoned ++ "]")
              in formatZonedDateTime pattern value ==
                   "2000-03-01T00:00:00.000000001 [UTC]")
+  , MkRuntimeCase "zoned parsing accepts providers in a non-IO monad"
+      (case parseStandardZonedDateTime pureZoneProvider strictResolver
+        "1970-01-01T00:00:00 UTC" of
+          Right (Right value) =>
+            IotaTime.ZonedDateTime.toInstant value ==
+              fromSecondsSinceUnixEpoch 0
+          _ => False)
   ]
 
 parseCases : IO (List RuntimeCase)

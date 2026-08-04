@@ -120,6 +120,12 @@ GitHub Pages. Version tags publish source and documentation archives as a
 GitHub Release and submit the release commit to the Idris 2 `pack` collection;
 see `RELEASE.md` for the one-time repository setup.
 
+Zoned parsing accepts provider callbacks in any `Monad`, so applications may
+compose it with `IO`, `Control.App`, or an external effects interpreter without
+iotaTime depending on a particular effects package. Operations that directly
+read the system clock, locale database, filesystem, or Windows registry remain
+explicit `IO` boundaries.
+
 ## Instants and fixed durations
 
 `Instant` is an opaque point on the global timeline, stored canonically as an arbitrary-precision nanosecond count relative to March 1, 2000 UTC. `Duration` is a distinct opaque fixed amount measured in nanoseconds. Neither representation can overflow or requires carry normalization.

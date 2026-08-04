@@ -363,14 +363,16 @@ zoneInfoPattern locale layout = do
   Right (pairPattern fst snd (\local, zone => (local, zone))
     localPattern (zoneTokenPattern trailing))
 
-||| Parse a locale %Z layout, load the captured zone, and resolve local time.
+||| Parse a locale %Z layout, load the captured zone in any `Monad`, and resolve
+||| local time.
 public export
 parseZonedDateTime :
-  (String -> IO (Either providerError TimeZone)) ->
+  {m : Type -> Type} -> Monad m =>
+  (String -> m (Either providerError TimeZone)) ->
   (CalendarDateTime Gregorian -> TimeZone ->
     Either resolverError (ZonedDateTime Gregorian)) ->
   Locale -> String ->
-  IO (Either (ZonedPatternError providerError resolverError)
+  m (Either (ZonedPatternError providerError resolverError)
     (ZonedDateTime Gregorian))
 parseZonedDateTime provider resolver locale source =
   case zoneInfoPattern locale (rawDateTimeFormat locale) of

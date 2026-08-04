@@ -31,7 +31,8 @@
 The tag workflow waits for the full Linux and Windows matrix, verifies the tag
 against both version declarations, creates source and API-documentation
 archives, publishes a GitHub Release, and submits the immutable release commit
-to `idris2-pack-db`.
+to a branch in the `idris2-pack-db` fork. Open the upstream pull request from
+the URL in the workflow summary.
 
 ## One-time publishing setup
 
@@ -45,16 +46,17 @@ to `idris2-pack-db`.
    `https://jason-johnson.github.io/iotaTime/pr-preview/pr-N/`.
 4. Fork `stefan-hoeck/idris2-pack-db` to
    `jason-johnson/idris2-pack-db` on GitHub.
-5. Create a classic personal access token with the `public_repo` scope. Add it
-   to this repository under **Settings > Secrets and variables > Actions** as
-   `PACK_DB_TOKEN`. GitHub currently requires that cross-repository scope for
-   the workflow to push to your fork and open a pull request against the
-   upstream public repository.
+5. Create a fine-grained personal access token scoped only to
+   `jason-johnson/idris2-pack-db`, with **Contents: Read and write**. Add it to
+   this repository under **Settings > Secrets and variables > Actions** as
+   `PACK_DB_TOKEN`.
+6. After a tag workflow pushes the release branch, follow its summary URL to
+   open the pull request against `stefan-hoeck/idris2-pack-db` manually.
 
 There is no Idris package-registry login or upload token. The extra credential
-is a GitHub token used only to push a branch to the pack-db fork and open its
-upstream pull request. GitHub's built-in `GITHUB_TOKEN` publishes the release
-and PR documentation without any additional secret.
+is a GitHub token used only to push a branch to the pack-db fork. GitHub's
+built-in `GITHUB_TOKEN` publishes the release and PR documentation without any
+additional secret.
 
 ## Scope boundary
 

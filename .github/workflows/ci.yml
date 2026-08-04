@@ -272,29 +272,9 @@ jobs:
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Open pack-db pull request
+      - name: Report pack-db pull request URL
         env:
           BRANCH: ${{ steps.package.outputs.branch }}
-          VERSION: ${{ steps.package.outputs.version }}
         run: |
-          existing=$(curl --fail-with-body --silent --show-error \
-            --header "Accept: application/vnd.github+json" \
-            --header "Authorization: Bearer $PACK_DB_TOKEN" \
-            --header "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/stefan-hoeck/idris2-pack-db/pulls?state=open&head=jason-johnson:$BRANCH")
-          url=$(printf '%s' "$existing" | jq -r '.[0].html_url // empty')
-          if test -z "$url"; then
-            response=$(curl --fail-with-body --silent --show-error \
-              --request POST \
-              --header "Accept: application/vnd.github+json" \
-              --header "Authorization: Bearer $PACK_DB_TOKEN" \
-              --header "X-GitHub-Api-Version: 2022-11-28" \
-              https://api.github.com/repos/stefan-hoeck/idris2-pack-db/pulls \
-              --data "$(jq -n \
-                --arg title "[ iotaTime ] Release $VERSION" \
-                --arg head "jason-johnson:$BRANCH" \
-                --arg body "Adds iotaTime $VERSION from its immutable release commit." \
-                '{title: $title, head: $head, base: "main", body: $body}')")
-            url=$(printf '%s' "$response" | jq -r .html_url)
-          fi
-          echo "Pack-db pull request: $url" >> "$GITHUB_STEP_SUMMARY"
+          url="https://github.com/stefan-hoeck/idris2-pack-db/compare/main...jason-johnson:$BRANCH?expand=1"
+          echo "Open the pack-db pull request manually: $url" >> "$GITHUB_STEP_SUMMARY"

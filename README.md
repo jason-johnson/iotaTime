@@ -111,9 +111,14 @@ Generate the declaration-level HTML reference from the Idris `|||` comments:
 idris2 --mkdoc iotaTime.ipkg
 ```
 
-Open `build/docs/docs/index.html` after generation. This reference documents
+Open `build/docs/index.html` after generation. This reference documents
 types and signatures; the sections below provide task-oriented examples and
 design context.
+
+Owner-authored pull requests publish temporary API-documentation previews via
+GitHub Pages. Version tags publish source and documentation archives as a
+GitHub Release and submit the release commit to the Idris 2 `pack` collection;
+see `RELEASE.md` for the one-time repository setup.
 
 ## Instants and fixed durations
 

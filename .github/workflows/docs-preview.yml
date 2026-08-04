@@ -1,0 +1,62 @@
+name: Documentation preview
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: docs-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: API documentation candidate
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login == github.repository_owner
+    steps:
+      - name: Checkout
+        if: github.event.action != 'closed'
+        uses: actions/checkout@v4
+
+      - name: Install Idris 2 build dependencies
+        if: github.event.action != 'closed'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            ca-certificates \
+            chezscheme \
+            git \
+            libffi-dev \
+            libgmp-dev \
+            libncurses-dev \
+            libssl-dev \
+            make \
+            pkg-config
+
+      - name: Install Idris 2
+        if: github.event.action != 'closed'
+        run: |
+          git clone --depth 1 --branch v0.8.0 https://github.com/idris-lang/Idris2.git /tmp/Idris2
+          make -C /tmp/Idris2 bootstrap SCHEME=chezscheme
+          make -C /tmp/Idris2 install
+          echo "$HOME/.idris2/bin" >> "$GITHUB_PATH"
+
+      - name: Generate API documentation
+        if: github.event.action != 'closed'
+        run: |
+          idris2 --mkdoc iotaTime.ipkg
+          test -f build/docs/index.html
+
+      - name: Publish preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: build/docs
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview

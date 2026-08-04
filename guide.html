@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iotaTime Guide</title>
+  <link rel="stylesheet" type="text/css" href="default.css">
+  <link rel="stylesheet" type="text/css" href="iotatime.css">
+</head>
+<body>
+<header>
+  <strong>iotaTime</strong>
+  <nav><a class="guide-link" href="guide.html">Guide</a><a href="index.html">API index</a></nav>
+</header>
+<main class="container guide"><h1>iotaTime guide</h1>
+<p>This guide complements the <a href="index.html">complete API index</a>. It starts with the distinction that drives the library, then follows a value from civil time to physical time and back. Every valid code example is mirrored by <code>GuideExamples</code> or <code>GuidedMeeting</code> in the <code>examples/</code> package and compiled in CI; the deliberately invalid date is covered by the compile-fail suite.</p>
+<h2>Why iotaTime exists</h2>
+<p>iotaTime is a proof-oriented Idris 2 port of HodaTime. It separates values that are merely <em>labels</em> from values that identify a point on the global timeline, and it moves calendar and clock invariants into types wherever Idris can prove them.</p>
+<p>A statically known valid date needs no runtime check:</p>
+<pre><code class="language-idris">leapDay : CalendarDate Gregorian
+leapDay = calendarDate 29 February 2020
+</code></pre>
+<p>The corresponding invalid declaration does not compile because Idris cannot produce <code>So False</code>:</p>
+<pre><code class="language-idris">invalid : CalendarDate Gregorian
+invalid = calendarDate 29 February 2021
+</code></pre>
+<p>Values learned from text, files, the operating system, or users remain fallible. Runtime refiners return <code>Either Error ValidValue</code>, after which normal operations preserve the invariant.</p>
+<h2>Core concepts</h2>
+<p>Almost everything follows from the difference between <strong>physical time</strong> and <strong>civil time</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="docs/IotaTime.Instant.html"><code>Instant</code></a></td>
+<td>One point on the global timeline.</td>
+</tr>
+<tr>
+<td><a href="docs/IotaTime.Duration.html"><code>Duration</code></a></td>
+<td>An exact elapsed amount, independent of calendars and zones.</td>
+</tr>
+<tr>
+<td><a href="docs/IotaTime.Interval.html"><code>Interval</code></a></td>
+<td>A proof-carrying half-open range of instants.</td>
+</tr>
+<tr>
+<td><a href="docs/IotaTime.Calendar.html"><code>CalendarDate</code></a></td>
+<td>A valid date in a particular calendar.</td>
+</tr>
+<tr>
+<td><a href="docs/IotaTime.LocalTime.html"><code>LocalTime</code></a></td>
+<td>A wall-clock time with no date or zone.</td>
+</tr>
+<tr>
+<td><a href="docs/IotaTime.CalendarDateTime.html"><code>CalendarDateTime</code></a></td>
+<td>A date and local time, still not tied to the timeline.</td>
+</tr>
+<tr>
+<td><a href="docs/IotaTime.OffsetDateTime.html"><code>OffsetDateTime</code></a></td>
+<td>Civil time anchored by one fixed UTC offset.</td>
+</tr>
+<tr>
+<td><a href="docs/IotaTime.DateTimeZone.html"><code>TimeZone</code></a></td>
+<td>The historical and future offset rules for a place.</td>
+</tr>
+<tr>
+<td><a href="docs/IotaTime.ZonedDateTime.html"><code>ZonedDateTime</code></a></td>
+<td>Civil time resolved in a zone and therefore tied to an instant.</td>
+</tr>
+<tr>
+<td><a href="docs/IotaTime.Period.html"><code>Period</code></a></td>
+<td>A calendar-relative amount whose type records required capabilities.</td>
+</tr>
+<tr>
+<td><a href="docs/IotaTime.Pattern.html"><code>Pattern</code></a></td>
+<td>One typed description used for both parsing and formatting.</td>
+</tr>
+</tbody></table>
+<p>A label such as “23 April 2024 at 09:00” is civil time. It becomes physical time only after you supply an offset or zone and decide how daylight-saving gaps and overlaps are resolved.</p>
+<h2>A meeting in two zones</h2>
+<p>This is the iotaTime version of HodaTime&#39;s opening example. It schedules a Zürich meeting, resolves it to an instant, and displays that same instant in New York.</p>
+<pre><code class="language-idris">module GuidedMeeting
+
+import IotaTime
+
+meetingDate : CalendarDate Gregorian
+meetingDate = calendarDate 23 April 2024
+
+meetingTime : LocalTime
+meetingTime = localTime 9 0 0 0
+
+meeting : CalendarDateTime Gregorian
+meeting = at meetingDate meetingTime
+
+main : IO ()
+main = do
+  zurichResult &lt;- timeZone &quot;Europe/Zurich&quot;
+  newYorkResult &lt;- timeZone &quot;America/New_York&quot;
+  case (zurichResult, newYorkResult) of
+    (Right zurich, Right newYork) =&gt;
+      case fromCalendarDateTimeStrictly meeting zurich of
+        Left _ =&gt; putStrLn &quot;The meeting time is skipped or ambiguous&quot;
+        Right here =&gt;
+          case IotaTime.ZonedDateTime.fromInstant
+            (IotaTime.ZonedDateTime.toInstant here) newYork of
+            Left _ =&gt; putStrLn &quot;The instant is outside the Gregorian range&quot;
+            Right there =&gt; do
+              let display = zonedDateTimePattern pF
+                    (\value =&gt; &quot; &quot; ++ zoneAbbreviation value)
+              putStrLn (formatZonedDateTime display here)
+              putStrLn (formatZonedDateTime display there)
+    _ =&gt; putStrLn &quot;Could not load both time zones&quot;
+</code></pre>
+<p>In April, the two lines describe the same instant as 09:00 in Zürich and 03:00 in New York. The conversion is explicit:</p>
+<ol>
+<li><code>calendarDate</code> and <code>localTime</code> construct valid civil values.</li>
+<li><code>at</code> combines them without pretending they identify an instant.</li>
+<li><code>fromCalendarDateTimeStrictly</code> supplies Zürich&#39;s rules and refuses to guess for skipped or ambiguous local times.</li>
+<li><code>toInstant</code> crosses into physical time.</li>
+<li><code>fromInstant</code> expresses that same point using New York&#39;s zone rules.</li>
+</ol>
+<h2>Physical time</h2>
+<p>An <a href="docs/IotaTime.Instant.html"><code>Instant</code></a> is independent of calendars and zones. A <a href="docs/IotaTime.Duration.html"><code>Duration</code></a> is an exact number of nanoseconds.</p>
+<pre><code class="language-idris">start : Instant
+start = fromSecondsSinceUnixEpoch 0
+
+elapsed : Duration
+elapsed = IotaTime.Duration.fromMinutes 90
+
+finish : Instant
+finish = IotaTime.Instant.add start elapsed
+
+checked : Duration
+checked = difference finish start
+</code></pre>
+<p><code>fromStandardDays 1</code> means exactly 24 hours. It is intentionally different from <code>days 1</code>, which is a calendar-relative <a href="docs/IotaTime.Period.html"><code>Period</code></a>. Across daylight saving, “24 hours later” and “the same local time tomorrow” may be different instants.</p>
+<h2>Civil time and periods</h2>
+<p>Date and clock components are opaque refined values. Valid literals elaborate directly; runtime integers use refiners such as <code>refineGregorianDate</code> and <code>refineLocalTime</code>.</p>
+<pre><code class="language-idris">late : LocalTime
+late = localTime 23 30 0 0
+
+endOfMonth : CalendarDateTime Gregorian
+endOfMonth = at (calendarDate 31 January 2000) late
+
+advanced : CalendarDateTime Gregorian
+advanced = applyPeriod (months 1 &lt;+&gt; hours 2) endOfMonth
+</code></pre>
+<p>Periods apply date fields from largest to smallest, then time fields. Month arithmetic clamps invalid end-of-month days, and time rollover carries into the date. The target index rejects applying month fields to a <code>LocalTime</code> or hour fields to a <code>CalendarDate</code>.</p>
+<h2>Skipped and ambiguous local times</h2>
+<p>A zone transition can make a civil label map to no instant or to multiple instants. iotaTime requires an explicit policy:</p>
+<ul>
+<li><code>fromCalendarDateTimeAll</code> returns every valid mapping.</li>
+<li><code>fromCalendarDateTimeStrictly</code> reports <code>DateTimeDoesNotExist</code> or <code>DateTimeAmbiguous</code>.</li>
+<li><code>fromCalendarDateTimeLeniently</code> moves skipped times forward and selects the earlier ambiguous instant.</li>
+<li><code>resolveLocal</code> exposes the complete mapping for a custom policy.</li>
+</ul>
+<p>The reverse journey is always unambiguous: at every instant a zone has exactly one effective offset.</p>
+<h2>Calendars</h2>
+<p>The calendar is part of the date type. <code>CalendarDate Gregorian</code>, <code>CalendarDate Julian</code>, and <code>CalendarDate HebrewCivil</code> cannot be mixed accidentally.</p>
+<pre><code class="language-idris">gregorianChristmas : CalendarDate Gregorian
+gregorianChristmas = calendarDate 25 December 2024
+
+julianChristmas : Either CalendarConversionError (CalendarDate Julian)
+julianChristmas =
+  IotaTime.Calendar.withCalendar gregorianChristmas
+</code></pre>
+<p>The result is an <code>Either</code> because calendars have different supported ranges. iotaTime includes Gregorian, ISO week dates, Julian, Coptic, Persian, indexed tabular Islamic calendars, and civil or scriptural Hebrew month numbering.</p>
+<p>Calendar-specific month structure also lives in types. <code>HebrewMonths.AdarI</code> requires erased evidence that its year is leap, so selecting it for a common year is unrepresentable.</p>
+<h2>Typed parsing and formatting</h2>
+<p>A <a href="docs/IotaTime.Pattern.html"><code>Pattern</code></a> carries a parser and formatter together. Standard patterns cover common layouts:</p>
+<pre><code class="language-idris">text : String
+text = format (pR {calendar = Gregorian}) (calendarDate 3 March 2020)
+
+parsed : Either PatternError (CalendarDate Gregorian)
+parsed = parse (pR {calendar = Gregorian}) &quot;2020-03-03&quot;
+</code></pre>
+<p>Custom fields compose without a stringly-typed format language:</p>
+<pre><code class="language-idris">custom : Pattern DateFields (CalendarDate Gregorian)
+custom =
+  ((pyyyy {calendar = Gregorian} &lt;% char &#39;/&#39;) &lt;+&gt;
+   (pMM {calendar = Gregorian} &lt;% char &#39;/&#39;)) &lt;+&gt;
+  pdd {calendar = Gregorian}
+</code></pre>
+<p>The <a href="docs/IotaTime.Pattern.CalendarDate.html">calendar-date pattern reference</a> groups year, month, day, and standard patterns. Equivalent pages cover local times, offsets, durations, instants, offset date-times, and zoned date-times.</p>
+<h2>Locale-driven layouts</h2>
+<p>Built-in <code>enUS</code>, <code>deDE</code>, and <code>jaJP</code> values are pure. Native locale acquisition reads operating-system data at an explicit <code>IO</code> boundary.</p>
+<pre><code class="language-idris">germanDate : Either StrftimeError
+  (Pattern DateFields (CalendarDate Gregorian))
+germanDate = localeDatePattern deDE
+</code></pre>
+<p><code>localeDatePattern</code>, <code>localeTimePattern</code>, and <code>localeDateTimePattern</code> compile OS-style <code>strftime</code> layouts into typed patterns. Locale date layouts remain Gregorian because native locale snapshots expose exactly twelve Gregorian month names.</p>
+<h2>Where to go next</h2>
+<ul>
+<li>Browse the <a href="index.html">API index</a> for all modules.</li>
+<li>Start with <a href="docs/IotaTime.html"><code>IotaTime</code></a> when importing the umbrella API.</li>
+<li>Read the grouped references for <a href="docs/IotaTime.Instant.html"><code>Instant</code></a>, <a href="docs/IotaTime.Duration.html"><code>Duration</code></a>, <a href="docs/IotaTime.Calendar.Gregorian.html"><code>Gregorian</code></a>, <a href="docs/IotaTime.LocalTime.html"><code>LocalTime</code></a>, <a href="docs/IotaTime.ZonedDateTime.html"><code>ZonedDateTime</code></a>, and <a href="docs/IotaTime.Pattern.CalendarDate.html">date patterns</a>.</li>
+<li>See the repository README for platform setup, native timezone details, and complete calendar-specific examples.</li>
+</ul>
+</main>
+</body>
+</html>

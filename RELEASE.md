@@ -34,14 +34,15 @@ to `idris2-pack-db`.
 
 1. In repository **Settings > Actions > General > Workflow permissions**,
    select **Read and write permissions**.
-2. Open or update an owner-authored pull request once so the documentation
-   workflow creates the `gh-pages` branch. Then, in repository
-   **Settings > Pages**, select **Deploy from a branch**, `gh-pages`, and
-   `/ (root)`. Previews are published at
+2. Open a pull request from one of your branches in this repository. Wait for
+   its **Documentation preview** workflow to finish; the workflow creates and
+   manages the `gh-pages` branch automatically. Do not edit that branch.
+3. In repository **Settings > Pages**, select **Deploy from a branch**, then
+   select `gh-pages` and `/ (root)`. Previews are published at
    `https://jason-johnson.github.io/iotaTime/pr-preview/pr-N/`.
-3. Fork `stefan-hoeck/idris2-pack-db` to
+4. Fork `stefan-hoeck/idris2-pack-db` to
    `jason-johnson/idris2-pack-db` on GitHub.
-4. Create a classic personal access token with the `public_repo` scope. Add it
+5. Create a classic personal access token with the `public_repo` scope. Add it
    to this repository under **Settings > Secrets and variables > Actions** as
    `PACK_DB_TOKEN`. GitHub currently requires that cross-repository scope for
    the workflow to push to your fork and open a pull request against the

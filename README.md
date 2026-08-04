@@ -103,6 +103,18 @@ idris2 --build examples/iotaTime-examples.ipkg
 
 The example loads `Europe/Zurich` through the system provider, parses `2024-04-23T09:00:00 Europe/Zurich` with strict local-time resolution, and formats the resolved value back through `pZonedDateTime`.
 
+## API documentation
+
+Generate the declaration-level HTML reference from the Idris `|||` comments:
+
+```bash
+idris2 --mkdoc iotaTime.ipkg
+```
+
+Open `build/docs/docs/index.html` after generation. This reference documents
+types and signatures; the sections below provide task-oriented examples and
+design context.
+
 ## Instants and fixed durations
 
 `Instant` is an opaque point on the global timeline, stored canonically as an arbitrary-precision nanosecond count relative to March 1, 2000 UTC. `Duration` is a distinct opaque fixed amount measured in nanoseconds. Neither representation can overflow or requires carry normalization.

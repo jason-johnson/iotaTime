@@ -6,6 +6,7 @@ import Data.So
 
 %default total
 
+||| The astronomical Persian calendar over its vouched year range 1-1500.
 public export
 data Persian = PersianCalendar
 
@@ -168,6 +169,7 @@ persianLeapYears =
   , 1498
   ]
 
+||| Whether a supported Persian year contains Esfand 30.
 public export
 isPersianLeapYear : Year -> Bool
 isPersianLeapYear value = elem (yearValue value) persianLeapYears
@@ -339,6 +341,7 @@ public export
 ApplyPeriod PersianDate where
   applyPeriod = applyPersianPeriod
 
+||| Construct a statically validated Persian date in years 1-1500.
 public export
 persianDate : (valueDay : DayOfMonth) -> (valueMonth : PersianMonth) ->
               (valueYear : Year) ->
@@ -348,6 +351,7 @@ persianDate : (valueDay : DayOfMonth) -> (valueMonth : PersianMonth) ->
 persianDate valueDay valueMonth valueYear =
   MkPersianDate (persianDaysFromCivil valueYear valueMonth valueDay)
 
+||| Failures produced while refining untrusted Persian date data.
 public export
 data PersianDateError
   = InvalidPersianDate DayOfMonth PersianMonth Year
@@ -355,6 +359,7 @@ data PersianDateError
   | InvalidPersianNthDay DayNth PersianDayOfWeek PersianMonth Year
   | InvalidPersianWeekDate WeekNumber PersianDayOfWeek Year
 
+||| Validate runtime day, month, and year components as a Persian date.
 public export
 refinePersianDate : DayOfMonth -> PersianMonth -> Year ->
                     Either PersianDateError (CalendarDate Persian)
@@ -363,12 +368,14 @@ refinePersianDate valueDay valueMonth valueYear =
     Left valid => Right (persianDate valueDay valueMonth valueYear @{valid})
     Right _ => Left (InvalidPersianDate valueDay valueMonth valueYear)
 
+||| Construct a Persian date from a statically valid calendar-relative day count.
 public export
 persianFromDays : (days : Integer) ->
                   {auto 0 valid : So (isValidPersianDays days)} ->
                   CalendarDate Persian
 persianFromDays days = MkPersianDate days
 
+||| Validate a runtime Persian day count within the supported year range.
 public export
 refinePersianDays : Integer -> Either PersianDateError (CalendarDate Persian)
 refinePersianDays days = case choose (isValidPersianDays days) of
@@ -404,6 +411,7 @@ isValidPersianNthDay nth target valueMonth valueYear =
       maxPersianDaysInMonth valueMonth valueYear
     _ => True
 
+||| Construct the nth requested weekday in a Persian month.
 public export
 persianFromNthDay : (nth : DayNth) -> (target : PersianDayOfWeek) ->
                     (valueMonth : PersianMonth) -> (valueYear : Year) ->
@@ -414,6 +422,7 @@ persianFromNthDay nth target valueMonth valueYear =
   MkPersianDate (persianDaysFromCivil valueYear valueMonth
     (nthPersianDayOfMonth nth target valueMonth valueYear))
 
+||| Validate an nth-weekday request for a Persian month.
 public export
 refinePersianNthDay : DayNth -> PersianDayOfWeek -> PersianMonth -> Year ->
                       Either PersianDateError (CalendarDate Persian)
@@ -440,6 +449,7 @@ isValidPersianWeekDate week target valueYear =
    in yearValue valueYear >= minimumPersianYear &&
       yearValue valueYear <= maximumPersianYear && isValidPersianDays days
 
+||| Construct a Persian Saturday-based week date under static validity evidence.
 public export
 persianFromWeekDate : (week : WeekNumber) -> (target : PersianDayOfWeek) ->
                       (valueYear : Year) ->
@@ -449,6 +459,7 @@ persianFromWeekDate : (week : WeekNumber) -> (target : PersianDayOfWeek) ->
 persianFromWeekDate week target valueYear =
   MkPersianDate (persianWeekDateDays week target valueYear)
 
+||| Validate a runtime Persian Saturday-based week date.
 public export
 refinePersianWeekDate : WeekNumber -> PersianDayOfWeek -> Year ->
                         Either PersianDateError (CalendarDate Persian)

@@ -8,6 +8,10 @@ import System.Info
 
 %default total
 
+||| Locale data used by Gregorian date and local-time patterns.
+|||
+||| Values are acquired from the operating system or supplied by the built-in
+||| locales. The representation is hidden so all name tables retain their sizes.
 export
 record Locale where
   constructor MkLocale
@@ -22,30 +26,37 @@ record Locale where
   storedRawTimeFormat : String
   storedRawDateTimeFormat : String
 
+||| The operating-system identifier or stable identifier of a locale.
 public export
 localeId : Locale -> String
 localeId = storedLocaleId
 
+||| Full Gregorian month names ordered January through December.
 public export
 monthNames : Locale -> Vect 12 String
 monthNames = storedMonthNames
 
+||| Abbreviated Gregorian month names ordered January through December.
 public export
 monthNamesShort : Locale -> Vect 12 String
 monthNamesShort = storedMonthNamesShort
 
+||| Full weekday names ordered Sunday through Saturday.
 public export
 dayNames : Locale -> Vect 7 String
 dayNames = storedDayNames
 
+||| Abbreviated weekday names ordered Sunday through Saturday.
 public export
 dayNamesShort : Locale -> Vect 7 String
 dayNamesShort = storedDayNamesShort
 
+||| The locale's ante-meridiem designator, which may be empty.
 public export
 amName : Locale -> String
 amName = storedAmName
 
+||| The locale's post-meridiem designator, which may be empty.
 public export
 pmName : Locale -> String
 pmName = storedPmName
@@ -62,6 +73,7 @@ export
 rawDateTimeFormat : Locale -> String
 rawDateTimeFormat = storedRawDateTimeFormat
 
+||| A failure to acquire locale data from the operating system.
 public export
 data LocaleError
   = LocaleNotFound String
@@ -169,6 +181,7 @@ currentLocale = if isWindows
   then windowsCurrentLocale
   else unixCurrentLocale
 
+||| Built-in United States English locale data.
 public export
 enUS : Locale
 enUS = MkLocale
@@ -189,6 +202,7 @@ enUS = MkLocale
   "%r"
   "%a %d %b %Y %r %Z"
 
+||| Built-in German locale data for Germany.
 public export
 deDE : Locale
 deDE = MkLocale
@@ -209,6 +223,7 @@ deDE = MkLocale
   "%T"
   "%a %d %b %Y %T %Z"
 
+||| Built-in Japanese locale data for Japan.
 public export
 jaJP : Locale
 jaJP = MkLocale

@@ -6,16 +6,19 @@ import IotaTime.Period
 
 %default total
 
+||| A calendar date paired with a local time of day.
 public export
 record CalendarDateTimeRep (calendar : Type) (cal : Calendar calendar) where
   constructor MkCalendarDateTime
   date : CalendarDate calendar @{cal}
   time : LocalTime
 
+||| The date-time representation selected by a calendar implementation.
 public export
 CalendarDateTime : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 CalendarDateTime calendar @{cal} = CalendarDateTimeRep calendar cal
 
+||| Associate a local time with a date, using time-first argument order.
 public export
 on : {calendar : Type} -> {auto cal : Calendar calendar} ->
      LocalTime -> CalendarDate calendar @{cal} -> CalendarDateTime calendar @{cal}
@@ -33,16 +36,20 @@ atStartOfDay : {calendar : Type} -> {auto cal : Calendar calendar} ->
       CalendarDate calendar @{cal} -> CalendarDateTime calendar @{cal}
 atStartOfDay valueDate = at valueDate (localTime 0 0 0 0)
 
+||| Extract the calendar date component.
 public export
 datePart : {calendar : Type} -> {auto cal : Calendar calendar} ->
            CalendarDateTime calendar @{cal} -> CalendarDate calendar @{cal}
 datePart = date
 
+||| Extract the local time-of-day component.
 public export
 localTimeOfDay : {calendar : Type} -> {auto cal : Calendar calendar} ->
                  CalendarDateTime calendar @{cal} -> LocalTime
 localTimeOfDay = time
 
+||| Convert the date component to another calendar while preserving the local
+||| time of day and absolute day.
 public export
 withCalendar : {source : Type} -> {target : Type} ->
                {auto sourceCal : Calendar source} ->

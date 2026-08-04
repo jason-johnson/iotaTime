@@ -6,6 +6,7 @@ import Data.So
 
 %default total
 
+||| The 13-month Coptic calendar, supported from 1 Thout 1.
 public export
 data Coptic = CopticCalendar
 
@@ -131,6 +132,7 @@ public export
 copticEpoch : Integer
 copticEpoch = -626575
 
+||| Whether a Coptic year has a sixth epagomenal day.
 public export
 isCopticLeapYear : Year -> Bool
 isCopticLeapYear value = yearValue value `mod` 4 == 3
@@ -281,6 +283,7 @@ public export
 ApplyPeriod CopticDate where
   applyPeriod = applyCopticPeriod
 
+||| Construct a statically validated Coptic date.
 public export
 copticDate : (valueDay : DayOfMonth) -> (valueMonth : CopticMonth) ->
              (valueYear : Year) ->
@@ -289,6 +292,7 @@ copticDate : (valueDay : DayOfMonth) -> (valueMonth : CopticMonth) ->
 copticDate valueDay valueMonth valueYear =
   MkCopticDate (copticDaysFromCivil valueYear valueMonth valueDay)
 
+||| Failures produced while refining untrusted Coptic date data.
 public export
 data CopticDateError
   = InvalidCopticDate DayOfMonth CopticMonth Year
@@ -296,6 +300,7 @@ data CopticDateError
   | InvalidCopticNthDay DayNth CopticDayOfWeek CopticMonth Year
   | InvalidCopticWeekDate WeekNumber CopticDayOfWeek Year
 
+||| Validate runtime day, month, and year components as a Coptic date.
 public export
 refineCopticDate : DayOfMonth -> CopticMonth -> Year ->
                    Either CopticDateError (CalendarDate Coptic)
@@ -304,12 +309,14 @@ refineCopticDate valueDay valueMonth valueYear =
     Left valid => Right (copticDate valueDay valueMonth valueYear @{valid})
     Right _ => Left (InvalidCopticDate valueDay valueMonth valueYear)
 
+||| Construct a Coptic date from a statically valid calendar-relative day count.
 public export
 copticFromDays : (days : Integer) ->
                  {auto 0 valid : So (isValidCopticDays days)} ->
                  CalendarDate Coptic
 copticFromDays days = MkCopticDate days
 
+||| Validate a runtime Coptic day count.
 public export
 refineCopticDays : Integer -> Either CopticDateError (CalendarDate Coptic)
 refineCopticDays days = case choose (isValidCopticDays days) of
@@ -346,6 +353,7 @@ isValidCopticNthDay nth target valueMonth valueYear =
       Fifth => nthCopticDayOfMonth nth target valueMonth valueYear <= 30
       _ => True
 
+||| Construct the nth requested weekday in a Coptic month.
 public export
 copticFromNthDay : (nth : DayNth) -> (target : CopticDayOfWeek) ->
                    (valueMonth : CopticMonth) -> (valueYear : Year) ->
@@ -356,6 +364,7 @@ copticFromNthDay nth target valueMonth valueYear =
   MkCopticDate (copticDaysFromCivil valueYear valueMonth
     (nthCopticDayOfMonth nth target valueMonth valueYear))
 
+||| Validate an nth-weekday request for a Coptic month.
 public export
 refineCopticNthDay : DayNth -> CopticDayOfWeek -> CopticMonth -> Year ->
                      Either CopticDateError (CalendarDate Coptic)
@@ -380,6 +389,7 @@ isValidCopticWeekDate week target valueYear =
   yearValue valueYear > 1 ||
   isValidCopticDays (copticWeekDateDays week target valueYear)
 
+||| Construct a Coptic Sunday-based week date under static validity evidence.
 public export
 copticFromWeekDate : (week : WeekNumber) -> (target : CopticDayOfWeek) ->
                      (valueYear : Year) ->
@@ -389,6 +399,7 @@ copticFromWeekDate : (week : WeekNumber) -> (target : CopticDayOfWeek) ->
 copticFromWeekDate week target valueYear =
   MkCopticDate (copticWeekDateDays week target valueYear)
 
+||| Validate a runtime Coptic Sunday-based week date.
 public export
 refineCopticWeekDate : WeekNumber -> CopticDayOfWeek -> Year ->
                        Either CopticDateError (CalendarDate Coptic)

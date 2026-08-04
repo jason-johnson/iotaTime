@@ -6,6 +6,7 @@ import Data.So
 
 %default total
 
+||| The proleptic Julian calendar, supported from January 1, 45 BC.
 public export
 data Julian = JulianCalendar
 
@@ -122,6 +123,7 @@ export
 Ord JulianDate where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
 
+||| Whether a Julian year is divisible by four and therefore leap.
 public export
 isJulianLeapYear : Year -> Bool
 isJulianLeapYear value = yearValue value `mod` 4 == 0
@@ -258,6 +260,7 @@ public export
 ApplyPeriod JulianDate where
   applyPeriod = applyJulianPeriod
 
+||| Construct a statically validated Julian date.
 public export
 julianDate : (valueDay : DayOfMonth) -> (valueMonth : JulianMonth) ->
              (valueYear : Year) ->
@@ -266,6 +269,7 @@ julianDate : (valueDay : DayOfMonth) -> (valueMonth : JulianMonth) ->
 julianDate valueDay valueMonth valueYear =
   MkJulianDate (daysFromJulianCivil valueYear valueMonth valueDay)
 
+||| Failures produced while refining untrusted Julian date data.
 public export
 data JulianDateError
   = InvalidJulianDate DayOfMonth JulianMonth Year
@@ -273,6 +277,7 @@ data JulianDateError
   | InvalidJulianNthDay DayNth JulianDayOfWeek JulianMonth Year
   | InvalidJulianWeekDate WeekNumber JulianDayOfWeek Year
 
+||| Validate runtime day, month, and year components as a Julian date.
 public export
 refineJulianDate : DayOfMonth -> JulianMonth -> Year ->
                    Either JulianDateError (CalendarDate Julian)
@@ -281,11 +286,13 @@ refineJulianDate valueDay valueMonth valueYear =
     Left valid => Right (julianDate valueDay valueMonth valueYear @{valid})
     Right _ => Left (InvalidJulianDate valueDay valueMonth valueYear)
 
+||| Construct a Julian date from a statically valid calendar-relative day count.
 public export
 julianFromDays : (days : Integer) -> {auto 0 valid : So (isValidJulianDays days)} ->
                  CalendarDate Julian
 julianFromDays days = MkJulianDate days
 
+||| Validate a runtime Julian day count.
 public export
 refineJulianDays : Integer -> Either JulianDateError (CalendarDate Julian)
 refineJulianDays days = case choose (isValidJulianDays days) of
@@ -323,6 +330,7 @@ isValidJulianNthDay nth target valueMonth valueYear =
     else isValidJulianDate
       (nthJulianDayOfMonth nth target valueMonth valueYear) valueMonth valueYear
 
+||| Construct the nth requested weekday in a Julian month.
 public export
 julianFromNthDay : (nth : DayNth) -> (target : JulianDayOfWeek) ->
                    (valueMonth : JulianMonth) -> (valueYear : Year) ->
@@ -334,6 +342,7 @@ julianFromNthDay nth target valueMonth valueYear =
     (daysFromJulianCivil valueYear valueMonth
       (nthJulianDayOfMonth nth target valueMonth valueYear))
 
+||| Validate an nth-weekday request for a Julian month.
 public export
 refineJulianNthDay : DayNth -> JulianDayOfWeek -> JulianMonth -> Year ->
                      Either JulianDateError (CalendarDate Julian)
@@ -356,6 +365,7 @@ isValidJulianWeekDate week target valueYear =
   yearValue valueYear > -44 ||
   isValidJulianDays (julianWeekDateDays week target valueYear)
 
+||| Construct a Julian Sunday-based week date under static validity evidence.
 public export
 julianFromWeekDate : (week : WeekNumber) -> (target : JulianDayOfWeek) ->
                      (valueYear : Year) ->
@@ -364,6 +374,7 @@ julianFromWeekDate : (week : WeekNumber) -> (target : JulianDayOfWeek) ->
 julianFromWeekDate week target valueYear =
   MkJulianDate (julianWeekDateDays week target valueYear)
 
+||| Validate a runtime Julian Sunday-based week date.
 public export
 refineJulianWeekDate : WeekNumber -> JulianDayOfWeek -> Year ->
                        Either JulianDateError (CalendarDate Julian)

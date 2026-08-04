@@ -20,6 +20,8 @@ import IotaTime.ZonedDateTime
 
 %default total
 
+||| Failure to translate an operating-system `strftime` layout into a typed
+||| iotaTime pattern.
 public export
 data StrftimeError
   = UnsupportedSpecifier Char
@@ -125,6 +127,8 @@ assemble template conversion (fragment :: rest) = do
   remaining <- assemble template conversion rest
   Right (first <+> remaining)
 
+||| Compile a Gregorian date pattern from a supported `strftime` layout.
+||| Locale month and weekday names are used for textual fields.
 public export
 compileDatePattern : Locale -> String ->
                      Either StrftimeError
@@ -134,6 +138,7 @@ compileDatePattern locale layout = do
   assemble (pyyyy {calendar = Gregorian}) (dateConversion locale)
     (toFragments tokens)
 
+||| Compile the operating system's preferred Gregorian date layout.
 public export
 localeDatePattern : Locale ->
                     Either StrftimeError
@@ -150,6 +155,7 @@ timeConversion _ 'S' = Right pss
 timeConversion locale 'p' = Right (ppp' locale)
 timeConversion _ value = Left (UnsupportedSpecifier value)
 
+||| Compile a local-time pattern from a supported `strftime` layout.
 public export
 compileTimePattern : Locale -> String ->
                      Either StrftimeError (Pattern TimeFields LocalTime)
@@ -157,11 +163,13 @@ compileTimePattern locale layout = do
   tokens <- tokenize (unpack layout)
   assemble pHH (timeConversion locale) (toFragments tokens)
 
+||| Compile the operating system's preferred local-time layout.
 public export
 localeTimePattern : Locale ->
                     Either StrftimeError (Pattern TimeFields LocalTime)
 localeTimePattern locale = compileTimePattern locale (rawTimeFormat locale)
 
+||| Parser state for a combined Gregorian date and local-time pattern.
 public export
 record DateTimeFields where
   constructor MkDateTimeFields
@@ -238,6 +246,8 @@ stripZones (Conversion value :: rest) =
     then stripZones rest
     else Conversion value :: stripZones rest
 
+||| Compile a Gregorian local date-time pattern from a supported `strftime`
+||| layout. Zone specifiers are omitted because this pattern has no zone value.
 public export
 compileDateTimePattern : Locale -> String ->
                          Either StrftimeError
@@ -249,6 +259,7 @@ compileDateTimePattern locale layout = do
     (dateTimeConversion locale)
     (stripZones (toFragments tokens))
 
+||| Compile the operating system's preferred Gregorian local date-time layout.
 public export
 localeDateTimePattern : Locale ->
                         Either StrftimeError
@@ -273,6 +284,7 @@ splitOffset (fragment :: rest) = do
   (before, trailing) <- splitOffset rest
   Right (fragment :: before, trailing)
 
+||| Compile a Gregorian offset date-time layout containing a numeric `%z` field.
 public export
 compileOffsetDateTimePattern : Locale -> String ->
   Either StrftimeError
@@ -285,6 +297,7 @@ compileOffsetDateTimePattern locale layout = do
   Right (offsetDateTimePattern localPattern
     (pOffsetCompact <% string trailing))
 
+||| Compile the operating system's preferred Gregorian offset date-time layout.
 public export
 localeOffsetDateTimePattern : Locale ->
   Either StrftimeError
@@ -292,6 +305,8 @@ localeOffsetDateTimePattern : Locale ->
 localeOffsetDateTimePattern locale =
   compileOffsetDateTimePattern locale (rawDateTimeFormat locale)
 
+||| Errors from layout compilation, local parsing, zone loading, or local-time
+||| resolution while parsing a zoned date-time.
 public export
 data ZonedPatternError providerError resolverError
   = ZonedLayoutError StrftimeError

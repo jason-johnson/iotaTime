@@ -5,6 +5,7 @@ import Data.String
 
 %default total
 
+||| A failure encountered while parsing or refining a patterned value.
 public export
 data PatternError
   = UnexpectedEnd Integer String
@@ -18,6 +19,10 @@ public export
 PatternParser : Type -> Type
 PatternParser = Parser.Parser
 
+||| A bidirectional textual representation of a value.
+|||
+||| `state` accumulates fields during parsing. `finish` validates that state and
+||| constructs the value, while `formatPart` projects text from an existing value.
 public export
 record Pattern state value where
   constructor MkPattern
@@ -26,6 +31,7 @@ record Pattern state value where
   parsePart : PatternParser (Either PatternError (state -> state))
   formatPart : value -> String
 
+||| Literal text that can be appended to a pattern with `<%`.
 public export
 record LiteralPattern where
   constructor MkLiteralPattern
@@ -108,6 +114,7 @@ pairPattern leftOf rightOf combine left right = MkPattern
         pure (map (pairUpdate updateLeft) parsedRight))
   (\value => left.formatPart (leftOf value) ++ right.formatPart (rightOf value))
 
+||| Format a value using the supplied pattern.
 public export
 format : Pattern state value -> value -> String
 format pattern = pattern.formatPart
@@ -133,6 +140,7 @@ parseWith pattern start source =
             else Left (TrailingInput (cast final.pos)
               (strSubstr final.pos (final.maxPos - final.pos) source))
 
+||| Parse an entire string using a pattern's default initial state.
 public export
 parse : Pattern state value -> String -> Either PatternError value
 parse pattern = parseWith pattern pattern.initialState

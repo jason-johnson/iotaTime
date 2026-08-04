@@ -3,12 +3,18 @@ module IotaTime.Calendar
 import public IotaTime.Calendar.Component
 import IotaTime.Period
 
+||| Selects an occurrence of a weekday within a month.
 public export
 data DayNth = First | Second | Third | Fourth | Fifth | Last
 
+||| A calendar conversion failed because the target calendar cannot represent
+||| the source date's absolute day count.
 public export
 data CalendarConversionError = TargetCalendarOutOfRange String Integer
 
+||| Capabilities and dependent representations required of a calendar.
+||| `MonthRep` may depend on the year, allowing calendars such as Hebrew to
+||| make leap-only months unrepresentable in common years.
 public export
 interface Calendar calendar where
   DateRep : Type
@@ -32,10 +38,12 @@ interface Calendar calendar where
   next : Integer -> WeekdayRep -> DateRep -> DateRep
   previous : Integer -> WeekdayRep -> DateRep -> DateRep
 
+||| The opaque date representation selected by a calendar implementation.
 public export
 CalendarDate : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 CalendarDate calendar @{cal} = DateRep @{cal}
 
+||| A date-like value that can participate in absolute-day calendar conversion.
 public export
 interface HasCalendarDate date where
   calendarDays : date -> Integer
@@ -44,17 +52,20 @@ interface HasCalendarDate date where
                          {auto 0 valid : So (acceptsCalendarDays days)} -> date
   calendarDateName : String
 
+||| Extract the calendar year from a date.
 public export
 year : {calendar : Type} -> {auto cal : Calendar calendar} ->
   CalendarDate calendar @{cal} -> Year
 year @{cal} = year' @{cal}
 
+||| Extract the year-indexed calendar month from a date.
 public export
 month : {calendar : Type} -> {auto cal : Calendar calendar} ->
   (date : CalendarDate calendar @{cal}) ->
   MonthRep @{cal} (year {calendar} @{cal} date)
 month @{cal} = month' @{cal}
 
+||| Extract the day of month from a date.
 public export
 day : {calendar : Type} -> {auto cal : Calendar calendar} ->
   CalendarDate calendar @{cal} -> DayOfMonth
@@ -71,6 +82,7 @@ shiftCalendarDays : {calendar : Type} -> {auto cal : Calendar calendar} ->
                     Integer -> CalendarDate calendar @{cal} -> CalendarDate calendar @{cal}
 shiftCalendarDays @{cal} = shiftCalendarDays' @{cal}
 
+||| Decompose a date while preserving the dependency between its year and month.
 public export
 yearMonthDay : {calendar : Type} -> {auto cal : Calendar calendar} ->
                (date : CalendarDate calendar @{cal}) ->
@@ -78,6 +90,8 @@ yearMonthDay : {calendar : Type} -> {auto cal : Calendar calendar} ->
 yearMonthDay @{cal} date =
   (year' @{cal} date ** toYmd @{cal} date)
 
+||| Convert a date to another calendar while preserving its absolute day.
+||| Returns `TargetCalendarOutOfRange` when the target cannot represent it.
 public export
 withCalendar : {sourceDate : Type} -> {targetDate : Type} ->
                {auto sourceRep : HasCalendarDate sourceDate} ->

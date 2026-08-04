@@ -6,9 +6,11 @@ import Data.So
 
 %default total
 
+||| The supported tabular Islamic 30-year leap-cycle assignments.
 public export
 data IslamicLeapPattern = Base15 | Base16 | Indian | HabashAlHasib
 
+||| Evidence and leap-year positions for one Islamic leap pattern.
 public export
 interface KnownIslamicLeapPattern (pattern : IslamicLeapPattern) where
   leapCycleYears : List Integer
@@ -29,6 +31,7 @@ public export
 KnownIslamicLeapPattern HabashAlHasib where
   leapCycleYears = [2, 5, 8, 11, 13, 16, 19, 21, 24, 27, 0]
 
+||| A tabular Islamic calendar indexed by its leap-cycle pattern.
 public export
 data Islamic : IslamicLeapPattern -> Type where
   IslamicCalendar : Islamic pattern
@@ -379,6 +382,7 @@ public export
   ApplyPeriod (IslamicDate pattern) where
   applyPeriod = applyIslamicPeriod {pattern}
 
+||| Construct a statically validated Islamic date for the selected leap pattern.
 public export
 islamicDate' : {pattern : IslamicLeapPattern} ->
                {auto known : KnownIslamicLeapPattern pattern} ->
@@ -391,6 +395,7 @@ islamicDate' valueDay valueMonth valueYear =
   makeIslamicDate {pattern}
     (islamicDaysFromCivil {pattern} valueYear valueMonth valueDay)
 
+||| Construct a statically validated Base16/BCL Islamic date.
 public export
 islamicDate : (valueDay : DayOfMonth) -> (valueMonth : IslamicMonth) ->
               (valueYear : Year) ->
@@ -400,6 +405,7 @@ islamicDate : (valueDay : DayOfMonth) -> (valueMonth : IslamicMonth) ->
               CalendarDate IslamicBcl
 islamicDate = islamicDate' {pattern = Base16}
 
+||| Failures produced while refining untrusted Islamic date data.
 public export
 data IslamicDateError
   = InvalidIslamicDate DayOfMonth IslamicMonth Year
@@ -407,6 +413,7 @@ data IslamicDateError
   | InvalidIslamicNthDay DayNth IslamicDayOfWeek IslamicMonth Year
   | InvalidIslamicWeekDate WeekNumber IslamicDayOfWeek Year
 
+||| Validate runtime date components for the selected Islamic leap pattern.
 public export
 refineIslamicDate' : {pattern : IslamicLeapPattern} ->
                      {auto known : KnownIslamicLeapPattern pattern} ->
@@ -418,11 +425,14 @@ refineIslamicDate' @{known} valueDay valueMonth valueYear =
       (islamicDate' {pattern} @{known} valueDay valueMonth valueYear @{valid})
     Right _ => Left (InvalidIslamicDate valueDay valueMonth valueYear)
 
+||| Validate runtime date components using the Base16/BCL leap pattern.
 public export
 refineIslamicDate : DayOfMonth -> IslamicMonth -> Year ->
                     Either IslamicDateError (CalendarDate IslamicBcl)
 refineIslamicDate = refineIslamicDate' {pattern = Base16}
 
+||| Construct a date in the selected Islamic pattern from a statically valid
+||| calendar-relative day count.
 public export
 islamicFromDays' : {pattern : IslamicLeapPattern} ->
                    {auto known : KnownIslamicLeapPattern pattern} ->
@@ -437,6 +447,7 @@ islamicFromDays : (days : Integer) ->
                   CalendarDate IslamicBcl
 islamicFromDays = islamicFromDays' {pattern = Base16}
 
+||| Validate a runtime day count for the selected Islamic leap pattern.
 public export
 refineIslamicDays' : {pattern : IslamicLeapPattern} ->
                      {auto known : KnownIslamicLeapPattern pattern} ->
@@ -483,6 +494,8 @@ isValidIslamicNthDay nth target valueMonth valueYear =
       maxIslamicDaysInMonth {pattern} valueMonth valueYear
     _ => True
 
+||| Construct the nth requested weekday in an Islamic month for the selected
+||| leap pattern.
 public export
 islamicFromNthDay' : {pattern : IslamicLeapPattern} ->
                      {auto known : KnownIslamicLeapPattern pattern} ->
@@ -505,6 +518,7 @@ islamicFromNthDay : (nth : DayNth) -> (target : IslamicDayOfWeek) ->
                     CalendarDate IslamicBcl
 islamicFromNthDay = islamicFromNthDay' {pattern = Base16}
 
+||| Validate an nth-weekday request for the selected Islamic leap pattern.
 public export
 refineIslamicNthDay' : {pattern : IslamicLeapPattern} ->
                        {auto known : KnownIslamicLeapPattern pattern} ->
@@ -544,6 +558,7 @@ isValidIslamicWeekDate week target valueYear =
   yearValue valueYear > 1 ||
   isValidIslamicDays (islamicWeekDateDays {pattern} week target valueYear)
 
+||| Construct a Saturday-based Islamic week date for the selected leap pattern.
 public export
 islamicFromWeekDate' : {pattern : IslamicLeapPattern} ->
                        {auto known : KnownIslamicLeapPattern pattern} ->
@@ -566,6 +581,7 @@ islamicFromWeekDate : (week : WeekNumber) ->
                       CalendarDate IslamicBcl
 islamicFromWeekDate = islamicFromWeekDate' {pattern = Base16}
 
+||| Validate a runtime Islamic week date for the selected leap pattern.
 public export
 refineIslamicWeekDate' : {pattern : IslamicLeapPattern} ->
                          {auto known : KnownIslamicLeapPattern pattern} ->

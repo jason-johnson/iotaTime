@@ -10,6 +10,7 @@ import IotaTime.Pattern.Offset
 
 %default total
 
+||| Combine independently typed local date-time and UTC-offset patterns.
 public export
 offsetDateTimePattern :
   {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
@@ -18,6 +19,8 @@ offsetDateTimePattern :
   Pattern (localState, offsetState) (OffsetDateTime calendar)
 offsetDateTimePattern = pairPattern localDateTime offsetOf atOffset
 
+||| ISO local date-time followed by an ISO offset, for example
+||| `2024-04-23T09:00:00+02:00`.
 public export
 pOffsetDateTime : {calendar : Type} ->
   {auto patterned : CalendarPattern calendar} ->

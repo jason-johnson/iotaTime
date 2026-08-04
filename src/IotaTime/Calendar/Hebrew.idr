@@ -6,9 +6,11 @@ import Data.So
 
 %default total
 
+||| Hebrew month numbering: civil begins at Tishri, scriptural at Nisan.
 public export
 data HebrewNumbering = Civil | Scriptural
 
+||| Evidence exposing the starting month for a Hebrew numbering system.
 public export
 interface KnownHebrewNumbering (numbering : HebrewNumbering) where
   numberingStart : Integer
@@ -21,6 +23,7 @@ public export
 KnownHebrewNumbering Scriptural where
   numberingStart = 7
 
+||| The Hebrew calendar indexed by its month-numbering convention.
 public export
 data Hebrew : HebrewNumbering -> Type where
   HebrewCalendar : Hebrew numbering
@@ -113,6 +116,7 @@ namespace HebrewMonths
     show Av = "Av"
     show Elul = "Elul"
 
+||| A non-dependent Hebrew month name used at runtime refinement boundaries.
 public export
 data HebrewMonthName
   = TishriName | CheshvanName | KislevName | TevetName | ShevatName
@@ -558,6 +562,8 @@ public export
 {numbering : HebrewNumbering} -> ApplyPeriod (HebrewDate numbering) where
   applyPeriod = applyHebrewPeriod
 
+||| Construct a statically validated Hebrew date in the selected numbering.
+||| The month is indexed by the year, making Adar I unavailable in common years.
 public export
 hebrewDate' : {numbering : HebrewNumbering} ->
               {auto known : KnownHebrewNumbering numbering} ->
@@ -568,6 +574,7 @@ hebrewDate' : {numbering : HebrewNumbering} ->
 hebrewDate' valueDay valueYear valueMonth =
   makeHebrewDate (hebrewYearMonthDayToDays valueYear valueMonth valueDay)
 
+||| Construct a statically validated civil-numbered Hebrew date.
 public export
 hebrewDate : (valueDay : DayOfMonth) -> (valueYear : Year) ->
              (valueMonth : HebrewMonth Civil valueYear) ->
@@ -575,6 +582,7 @@ hebrewDate : (valueDay : DayOfMonth) -> (valueYear : Year) ->
              CalendarDate HebrewCivil
 hebrewDate = hebrewDate'
 
+||| Failures produced while refining untrusted Hebrew date data.
 public export
 data HebrewDateError
   = InvalidHebrewMonth HebrewMonthName Year
@@ -583,6 +591,8 @@ data HebrewDateError
   | InvalidHebrewNthDay DayNth HebrewMonthName Year
   | InvalidHebrewWeekDate WeekNumber Year
 
+||| Refine a runtime month name into a year-indexed Hebrew month.
+||| Adar I is rejected when the supplied year is not leap.
 public export
 refineHebrewMonth : {numbering : HebrewNumbering} -> (valueYear : Year) -> HebrewMonthName ->
                     Either HebrewDateError (HebrewMonth numbering valueYear)
@@ -602,6 +612,7 @@ refineHebrewMonth _ TammuzName = Right HebrewMonths.Tammuz
 refineHebrewMonth _ AvName = Right HebrewMonths.Av
 refineHebrewMonth _ ElulName = Right HebrewMonths.Elul
 
+||| Validate runtime date components in the selected Hebrew numbering.
 public export
 refineHebrewDate' : {numbering : HebrewNumbering} ->
                     {auto known : KnownHebrewNumbering numbering} ->
@@ -614,11 +625,14 @@ refineHebrewDate' @{known} valueDay valueMonthName valueYear =
       Left valid => Right (hebrewDate' @{known} valueDay valueYear valueMonth @{valid})
       Right _ => Left (InvalidHebrewDate valueDay valueMonthName valueYear)
 
+||| Validate runtime date components using civil Hebrew numbering.
 public export
 refineHebrewDate : DayOfMonth -> HebrewMonthName -> Year ->
                    Either HebrewDateError (CalendarDate HebrewCivil)
 refineHebrewDate = refineHebrewDate'
 
+||| Construct a Hebrew date in the selected numbering from a statically valid
+||| calendar-relative day count.
 public export
 hebrewFromDays' : {numbering : HebrewNumbering} ->
                   {auto known : KnownHebrewNumbering numbering} ->
@@ -631,6 +645,7 @@ hebrewFromDays : (days : Integer) -> {auto 0 valid : So (isValidHebrewDays days)
                  CalendarDate HebrewCivil
 hebrewFromDays = hebrewFromDays'
 
+||| Validate a runtime Hebrew day count in the selected numbering.
 public export
 refineHebrewDays' : {numbering : HebrewNumbering} ->
                     {auto known : KnownHebrewNumbering numbering} ->
@@ -680,6 +695,8 @@ isValidHebrewNthDay Fifth target valueYear valueMonth =
   dayOfMonthValue (nthHebrewDayOfMonth Fifth target valueYear valueMonth) <=
     dayOfMonthValue (maxHebrewDaysInMonth valueMonth)
 
+||| Construct the nth requested weekday in a Hebrew month using the selected
+||| numbering convention.
 public export
 hebrewFromNthDay' : {numbering : HebrewNumbering} -> KnownHebrewNumbering numbering =>
                      (nth : DayNth) -> (target : HebrewDayOfWeek numbering) ->
@@ -700,6 +717,7 @@ hebrewFromNthDay : (nth : DayNth) -> (target : HebrewDayOfWeek Civil) ->
                    CalendarDate HebrewCivil
 hebrewFromNthDay = hebrewFromNthDay'
 
+||| Validate an nth-weekday request in the selected Hebrew numbering.
 public export
 refineHebrewNthDay' : {numbering : HebrewNumbering} ->
                       {auto known : KnownHebrewNumbering numbering} ->
@@ -738,6 +756,7 @@ isValidHebrewWeekDate week target valueYear =
     then True
     else isValidHebrewDays (hebrewWeekDateDays week target valueYear)
 
+||| Construct a Sunday-based Hebrew week date in the selected numbering.
 public export
 hebrewFromWeekDate' : {numbering : HebrewNumbering} -> KnownHebrewNumbering numbering =>
                       (week : WeekNumber) -> (target : HebrewDayOfWeek numbering) ->
@@ -754,6 +773,7 @@ hebrewFromWeekDate : (week : WeekNumber) -> (target : HebrewDayOfWeek Civil) ->
                      CalendarDate HebrewCivil
 hebrewFromWeekDate = hebrewFromWeekDate'
 
+||| Validate a runtime Hebrew week date in the selected numbering.
 public export
 refineHebrewWeekDate' : {numbering : HebrewNumbering} ->
                         {auto known : KnownHebrewNumbering numbering} ->

@@ -1,9 +1,9 @@
 module IotaTime.Tzdb
 
-import public IotaTime.Tzdb.Tzif
-import public IotaTime.Tzdb.Posix
-import public IotaTime.Tzdb.Windows
-import public IotaTime.Tzdb.Windows.Platform
+import IotaTime.Tzdb.Tzif
+import IotaTime.Tzdb.Posix
+import IotaTime.Tzdb.Windows
+import IotaTime.Tzdb.Windows.Platform
 import public IotaTime.Tzdb.Provider
 import public Data.Buffer
 import public System.File.Buffer
@@ -18,10 +18,6 @@ mapLeft : (left -> mapped) -> Either left right -> Either mapped right
 mapLeft convert (Left error) = Left (convert error)
 mapLeft convert (Right value) = Right value
 
-||| Convert decoded TZif data into an invariant-preserving zone. A recurring
-||| footer controls instants after the final explicit transition; absent and
-||| fixed footers preserve the final explicit state indefinitely.
-public export
 timeZoneFromTzif : String -> TzifData -> Either TzdbError TimeZone
 timeZoneFromTzif valueId decoded = case decoded.posixFooter of
   Nothing => finiteZone

@@ -195,7 +195,7 @@ The HodaTime names `empty`, `fromSeconds`, `fromMinutes`, `fromHours`, `seconds`
 
 `zoneOffsetAt` selects the offset effective at an instant, with a transition's new offset taking effect exactly at its instant. Finite zones retain their final transition state indefinitely. TZDB zones can additionally carry ordered fixed or recurring eras. Validated POSIX recurrence rules calculate future standard and daylight transitions after the final explicit TZif entry. `mapLocal` maps a `CalendarDateTime` explicitly to `Skipped`, `Unambiguous`, or `Ambiguous`. Ambiguous results are ordered by instant and retain every candidate, even for synthetic transition data that creates more than the usual two mappings.
 
-`parseTzif` is a pure, bounds-checked TZif v1-v4 decoder. It validates transition type and abbreviation indexes, offset bounds, section lengths, and footer framing. `parsePosixZone` validates fixed and recurring POSIX footer forms, including `Jn`, `n`, and `Mm.w.d` days and wall, standard, or UTC transition clocks. `timeZoneFromTzif` joins both trust boundaries and constructs a validated `TimeZone`.
+`parseTzif` is a pure, bounds-checked TZif v1-v4 decoder. It validates transition type and abbreviation indexes, offset bounds, section lengths, and footer framing. `parsePosixZone` validates fixed and recurring POSIX footer forms, including `Jn`, `n`, and `Mm.w.d` days and wall, standard, or UTC transition clocks. The provider keeps the assembly of those decoded forms into a `TimeZone` internal.
 
 On Unix-like systems, the HodaTime-compatible names have typed effect signatures:
 

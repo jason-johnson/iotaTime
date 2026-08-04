@@ -2,8 +2,11 @@ module Test.Tzif
 
 import IotaTime
 import IotaTime.Tzdb
+import IotaTime.Tzdb.Posix
 import IotaTime.Tzdb.Tzif
 import IotaTime.Tzdb.Windows
+import IotaTime.Tzdb.Windows.Platform
+import IotaTime.Tzdb.Windows.Types
 import Data.String
 import System.Info
 import Test.Support
@@ -107,6 +110,15 @@ easternTzif = MkTzifData Version4
   (transitionInfo (offsetFromHours (-5)) False "EST") []
   (Just "EST5EDT,M3.2.0/2,M11.1.0/2")
 
+easternZone : Either String TimeZone
+easternZone = case parsePosixZone "EST5EDT,M3.2.0/2,M11.1.0/2" of
+  Right (PosixRecurring recurrence) =>
+    case refineRecurringDateTimeZone "America/New_York"
+      (transitionInfo (offsetFromHours (-5)) False "EST") [] recurrence of
+        Right zone => Right zone
+        Left _ => Left "invalid recurring zone"
+  _ => Left "invalid POSIX recurrence"
+
 springGapLocal : CalendarDateTime Gregorian
 springGapLocal = on (localTime 2 30 0 0) (calendarDate 10 March 2024)
 
@@ -170,7 +182,7 @@ tzifCases =
         Left (PosixRuleOutOfRange (MonthOutOfRange 13)) => True
         _ => False)
   , MkRuntimeCase "recurring footer enters daylight time in future years"
-      (case timeZoneFromTzif "America/New_York" easternTzif of
+      (case easternZone of
         Right zone =>
           zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1710053999) ==
             offsetFromHours (-5) &&
@@ -178,7 +190,7 @@ tzifCases =
             offsetFromHours (-4)
         Left _ => False)
   , MkRuntimeCase "recurring footer returns to standard time"
-      (case timeZoneFromTzif "America/New_York" easternTzif of
+      (case easternZone of
         Right zone =>
           zoneOffsetAt zone (fromSecondsSinceUnixEpoch 1730613599) ==
             offsetFromHours (-4) &&
@@ -186,13 +198,13 @@ tzifCases =
             offsetFromHours (-5)
         Left _ => False)
   , MkRuntimeCase "recurring spring local time is skipped"
-      (case timeZoneFromTzif "America/New_York" easternTzif of
+      (case easternZone of
         Right zone => case mapLocal zone springGapLocal of
             Skipped => True
             _ => False
         Left _ => False)
   , MkRuntimeCase "recurring spring gap shifts leniently"
-      (case timeZoneFromTzif "America/New_York" easternTzif of
+      (case easternZone of
         Right zone => case fromCalendarDateTimeLeniently
           springGapLocal zone of
             Right value => IotaTime.ZonedDateTime.hour value == 3 &&
@@ -201,7 +213,7 @@ tzifCases =
             Left _ => False
         Left _ => False)
   , MkRuntimeCase "recurring autumn local time is ambiguous"
-      (case timeZoneFromTzif "America/New_York" easternTzif of
+      (case easternZone of
         Right zone => case mapLocal zone autumnOverlapLocal of
             Ambiguous first second [] =>
               offsetOf first == offsetFromHours (-4) &&

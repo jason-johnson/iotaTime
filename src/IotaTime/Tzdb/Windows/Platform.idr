@@ -1,7 +1,8 @@
 module IotaTime.Tzdb.Windows.Platform
 
-import public IotaTime.Tzdb.Provider
-import public IotaTime.Tzdb.Windows
+import IotaTime.Tzdb.Provider
+import IotaTime.Tzdb.Windows
+import IotaTime.Tzdb.Windows.Types
 import Data.List
 
 %default total

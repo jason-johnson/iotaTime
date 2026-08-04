@@ -1,9 +1,9 @@
 module IotaTime.Tzdb.Provider
 
 import public IotaTime.DateTimeZone
-import public IotaTime.Tzdb.Posix
-import public IotaTime.Tzdb.Tzif
-import public IotaTime.Tzdb.Windows.Types
+import IotaTime.Tzdb.Posix
+import IotaTime.Tzdb.Tzif
+import IotaTime.Tzdb.Windows.Types
 
 %default total
 

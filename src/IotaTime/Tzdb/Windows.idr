@@ -1,6 +1,6 @@
 module IotaTime.Tzdb.Windows
 
-import public IotaTime.Tzdb.Windows.Types
+import IotaTime.Tzdb.Windows.Types
 import Data.String
 
 %default total

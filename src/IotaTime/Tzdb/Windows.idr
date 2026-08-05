@@ -230,7 +230,8 @@ windowsZoneRecurrence rule = do
   end <- windowsRule rule.standardStart
   Right (zoneRecurrence
     (transitionInfo standardOffset False rule.standardName)
-    (transitionInfo daylightOffset True rule.daylightName)
+    (transitionInfoWithSavings daylightOffset
+      (minusClamped daylightOffset standardOffset) rule.daylightName)
     start end)
 
 ||| Validate Windows TZI data and construct an invariant-preserving zone.

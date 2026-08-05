@@ -284,6 +284,16 @@ localZone : IO (Either TzdbError TimeZone)
 availableZones : IO (Either TzdbError (List String))
 ```
 
+`zoneOffsetAt` returns the wall offset effective at an instant.
+`zoneIntervalAt` additionally returns an opaque half-open timeline segment.
+`intervalStart` and `intervalEnd` use `Nothing` for an unbounded endpoint;
+`wallOffset`, `intervalIsDaylightSavingTime`, and `intervalAbbreviation`
+describe the effective state. `savings` returns `Just` the exact daylight
+adjustment when the source data identifies a standard offset, or `Nothing`
+for caller-supplied transition data that records only a daylight flag. TZIF,
+POSIX, Windows, and fixed-zone providers retain exact savings when they can be
+established from their source data.
+
 `TZDIR` overrides `/usr/share/zoneinfo`; `TZ` overrides `/etc/localtime` for the local zone. Named zones cannot escape the TZDB root. `availableZones` reports files that successfully decode as TZif rather than relying on filename conventions.
 
 `TimeZoneProvider` isolates platform discovery. The `utcWith`, `timeZoneWith`, `localZoneWith`, and `availableZonesWith` variants accept an explicit provider; the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. On Windows, internal registry models decode `REG_TZI_FORMAT`, `SYSTEMTIME`, and Dynamic DST history with typed malformed-data and unknown-zone failures.

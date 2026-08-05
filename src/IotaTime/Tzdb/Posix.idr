@@ -149,7 +149,8 @@ parseDaylight standardName standardOffset daylightName input = do
   afterEndComma <- expect ',' afterStart
   (endRule, remaining) <- parseRule afterEndComma
   let standardInfo = transitionInfo standardOffset False standardName
-  let daylightInfo = transitionInfo daylightOffset True daylightName
+      daylightInfo = transitionInfoWithSavings daylightOffset
+        (minusClamped daylightOffset standardOffset) daylightName
   Right (PosixRecurring
     (zoneRecurrence standardInfo daylightInfo startRule endRule), remaining)
   where

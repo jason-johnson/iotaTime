@@ -192,6 +192,21 @@ buildTransitions (instant :: instants) (index :: indices) types = do
   Right ((fromSecondsSinceUnixEpoch instant, info) :: remaining)
 buildTransitions _ _ _ = Left UnexpectedEnd
 
+annotateSavings : Maybe Offset -> List (Instant, TransitionInfo) ->
+                  List (Instant, TransitionInfo)
+annotateSavings standardOffset [] = []
+annotateSavings standardOffset ((instant, info) :: rest) =
+  if isDaylightSavingTime info
+    then let annotated = case standardOffset of
+               Nothing => info
+               Just standard => transitionInfoWithSavings (utcOffset info)
+                 (minusClamped (utcOffset info) standard) (abbreviation info)
+          in (instant, annotated) :: annotateSavings standardOffset rest
+    else let annotated = transitionInfoWithSavings
+               (utcOffset info) IotaTime.Offset.empty (abbreviation info)
+          in (instant, annotated) ::
+               annotateSavings (Just (utcOffset info)) rest
+
 parsePayload : Nat -> Header -> List Bits8 ->
                Either TzifError ((TransitionInfo, List (Instant, TransitionInfo)),
                  List Bits8)
@@ -206,7 +221,10 @@ parsePayload width header bytes = do
   infos <- traverse (toTransitionInfo abbreviations) rawTypes
   initial <- chooseInitial (zip rawTypes infos)
   parsedTransitions <- buildTransitions instants indices infos
-  Right ((initial, parsedTransitions), remaining)
+  let initialStandard = if isDaylightSavingTime initial
+        then Nothing
+        else Just (utcOffset initial)
+  Right ((initial, annotateSavings initialStandard parsedTransitions), remaining)
 
 skipPayload : Nat -> Header -> List Bits8 -> Either TzifError (List Bits8)
 skipPayload width header bytes = do

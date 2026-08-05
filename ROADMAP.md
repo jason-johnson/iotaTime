@@ -1,28 +1,104 @@
 # Roadmap
 
-This roadmap tracks verified gaps between iotaTime and HodaTime's exposed API,
-plus completed Idris-specific engineering work. It is audited against HodaTime
-1.1.0.0. Differences such as erased validity proofs, typed refinement errors,
-explicit time-zone resolution, and the Gregorian reform boundary are intentional
-design choices rather than compatibility defects.
+This roadmap compares iotaTime with HodaTime 1.1.0.0 in both directions. It
+tracks APIs to port, improvements that should flow back to HodaTime, shared
+opportunities neither library currently implements, and differences that are
+intentional consequences of Idris 2 and Haskell.
 
-## High priority
+In each directional section, a checked item means the destination library has
+the capability. Shared opportunities remain unchecked until both libraries have
+adopted them or the item is split into library-specific work.
 
-- [x] Provide injectable system and fixed clocks for deterministic applications
-  and tests.
-- [x] Add zoned-clock adapters while keeping mutable fake clocks in test support.
-- [x] Add exact period-difference operations for dates, local times, and calendar date-times.
-- [x] Promote supported `OffsetDateTime` instant, offset, and calendar conversions.
-- [x] Promote supported `ZonedDateTime` zone conversion and fixed-duration arithmetic.
-- [x] Decouple pure library use from mandatory native Unix or Windows support builds.
+## HodaTime to iotaTime
 
-## Medium priority
+Features present in HodaTime that iotaTime should support.
 
-- [x] Add bounded interval overlap, intersection, connected union, and adjacency.
-- [ ] Expand standard/custom patterns and locale data where typed use cases require it.
+- [ ] Audit and fill remaining standard/custom pattern and locale coverage.
+- [ ] Add appropriate `Eq`, `Ord`, and `Show` implementations for compound
+  values. HodaTime also provides `NFData` and `Hashable`; adopt Idris ecosystem
+  equivalents only where they have clear value and preserve proof reduction.
 - [x] Expose ISO week-date construction through the supported public surface.
+- [x] Promote `OffsetDateTime` instant, offset, and calendar conversions.
+- [x] Promote `ZonedDateTime` calendar conversion and local-time resolution
+  policies.
 
-## Lower priority
+## iotaTime to HodaTime
 
-- [ ] Add value instances for compound types where equality and ordering have clear
-  domain semantics and remain compatible with proof reduction.
+Features implemented in iotaTime that would strengthen HodaTime.
+
+- [ ] Add exact `between` operations for dates, local times, and calendar
+  date-times. The current iotaTime API returns canonical day/nanosecond periods
+  that apply back to the end value without choosing a years/months policy.
+- [ ] Add validated half-open intervals plus emptiness, overlap, adjacency,
+  intersection, and connected union operations.
+- [ ] Add injectable system and fixed clocks, with zoned-clock adapters, so
+  application code does not need to call the process clock directly.
+- [ ] Add an explicit time-zone provider contract for deterministic tests,
+  embedded data, databases, and non-system zone sources.
+- [ ] Add `OffsetDateTime.withOffset` and `ZonedDateTime.withZone` operations
+  that preserve the represented instant.
+- [ ] Add fixed-duration `ZonedDateTime` arithmetic that advances the timeline
+  and then re-evaluates the active zone offset.
+
+## Shared opportunities
+
+Features absent from both libraries that may belong in both after their
+semantics and data sources are specified.
+
+- [ ] Expose direct zone-offset and zone-interval queries for an instant,
+  including interval bounds, wall offset, savings, and abbreviation.
+- [ ] Expose TZDB version metadata, canonical identifiers, aliases, and
+  IANA/Windows platform mappings.
+- [ ] Add a civil-epoch tabular Islamic variant while retaining leap-pattern
+  types, and add Persian variants only where their supported ranges can be
+  vouched for explicitly.
+- [ ] Add an unbounded interval representation and define its relationship to
+  the existing bounded half-open interval.
+- [ ] Design configurable years/months period-difference decomposition. Exact
+  day/nanosecond differences already avoid end-of-month ambiguity; calendar
+  decomposition requires an explicit rounding and clamping policy.
+- [ ] Define stable interchange before adding adapters: versioned textual or
+  binary encodings for instants, offsets, calendar values, and zone IDs, then
+  optional JSON and database mappings. These adapters must not expose internal
+  representations or force serialization/database dependencies into the core
+  packages.
+- [ ] Add caching and richer discovery controls to time-zone providers where
+  profiling or deployment requirements justify them.
+
+## Intentional differences
+
+These are corresponding capabilities rather than gaps to erase.
+
+- HodaTime constructors such as `calendarDate` and `localTime` validate with
+  `Maybe`. iotaTime rejects invalid static inputs with erased `So` proofs and
+  validates runtime inputs with typed `Either` refiners.
+- HodaTime uses `MonadThrow` exceptions for strict zoned resolution. iotaTime
+  represents skipped, ambiguous, provider, and calendar-range failures as
+  explicit data and `Either` values.
+- HodaTime uses lenses for many observations and updates. iotaTime uses total
+  projections and proof-preserving functions so hidden constructors cannot be
+  bypassed.
+- HodaTime relies on fixed-width machine integers where appropriate. iotaTime
+  uses opaque semantic components and arbitrary-precision integers where that
+  removes overflow and normalization states.
+- HodaTime can derive many value instances opaquely. Public iotaTime equality
+  and ordering used by external `So` proofs must remain definitionally
+  reducible, so derivation is limited to instances that do not cross that
+  boundary.
+- iotaTime keeps mutable fake clocks outside the supported core API;
+  applications and test suites can implement them through `Clock`.
+
+## Packaging and engineering
+
+- [x] Decouple native-free use from mandatory Unix or Windows support builds
+  through `iotaTime-pure` and `IotaTime.Pure`.
+- [x] Keep constructors and raw representations outside the supported API and
+  enforce that boundary with compile-fail tests.
+- [x] Support explicit runtime providers while retaining convenient system
+  time-zone and locale acquisition in the complete package.
+
+## Not currently planned
+
+`AnnualDate`, `YearMonth`, `OffsetDate`, `OffsetTime`, and `DateInterval` are
+Noda Time concepts, not HodaTime 1.1.0.0 APIs. They should be added only for a
+demonstrated iotaTime or HodaTime use case, not described as compatibility gaps.

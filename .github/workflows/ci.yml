@@ -100,6 +100,27 @@ jobs:
       - name: Verify Idris 2
         run: idris2 --version
 
+      - name: Install elab-util on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          git init /tmp/elab-util
+          git -C /tmp/elab-util remote add origin https://github.com/stefan-hoeck/idris2-elab-util.git
+          git -C /tmp/elab-util fetch --depth 1 origin 6786ac7ef9931b1c8321a83e007f36a66e139e86
+          git -C /tmp/elab-util checkout --detach FETCH_HEAD
+          idris2 --install /tmp/elab-util/elab-util.ipkg
+
+      - name: Install elab-util on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $elabUtil = Join-Path $env:RUNNER_TEMP "elab-util"
+          git init $elabUtil
+          git -C $elabUtil remote add origin https://github.com/stefan-hoeck/idris2-elab-util.git
+          git -C $elabUtil fetch --depth 1 origin 6786ac7ef9931b1c8321a83e007f36a66e139e86
+          git -C $elabUtil checkout --detach FETCH_HEAD
+          idris2 --install (Join-Path $elabUtil "elab-util.ipkg")
+
       - name: Verify native-free package
         if: runner.os == 'Linux'
         shell: bash
@@ -211,6 +232,14 @@ jobs:
           make -C /tmp/Idris2 bootstrap SCHEME=chezscheme
           make -C /tmp/Idris2 install
           echo "$HOME/.idris2/bin" >> "$GITHUB_PATH"
+
+      - name: Install elab-util
+        run: |
+          git init /tmp/elab-util
+          git -C /tmp/elab-util remote add origin https://github.com/stefan-hoeck/idris2-elab-util.git
+          git -C /tmp/elab-util fetch --depth 1 origin 6786ac7ef9931b1c8321a83e007f36a66e139e86
+          git -C /tmp/elab-util checkout --detach FETCH_HEAD
+          idris2 --install /tmp/elab-util/elab-util.ipkg
 
       - name: Build release archives
         env:

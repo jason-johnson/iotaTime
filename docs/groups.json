@@ -24,6 +24,11 @@
     { "title": "Components", "names": ["hour", "minute", "second", "nanosecond"] },
     { "title": "Runtime refinement", "names": ["LocalTimeError", "refineLocalTime"] }
   ],
+  "IotaTime.OffsetDateTime": [
+    { "title": "Type and construction", "names": ["OffsetDateTime", "fromCalendarDateTimeWithOffset", "fromInstantWithOffset"] },
+    { "title": "Observation", "names": ["toCalendarDateTime", "offset", "toInstant"] },
+    { "title": "Conversion", "names": ["withOffset", "withCalendar"] }
+  ],
   "IotaTime.ZonedDateTime": [
     { "title": "Type and instant-based construction", "names": ["ZonedDateTime", "fromInstant"] },
     { "title": "Local mapping and resolution", "names": ["resolveLocal", "fromCalendarDateTimeAll", "ZonedDateTimeError", "fromCalendarDateTimeStrictly", "fromCalendarDateTimeLeniently"] },

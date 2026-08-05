@@ -91,7 +91,7 @@ localTimeFromNanoseconds value = localTime
   (nanosecondFromInteger (value `mod` nanosecondsPerSecond))
 
 ||| Resolve an offset date-time to its unique point on the global timeline.
-export
+public export
 toInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
             {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
             OffsetDateTime calendar @{cal} -> Instant
@@ -131,7 +131,7 @@ fromInstantWithOffset valueInstant valueOffset =
   fromInstant valueOffset valueInstant
 
 ||| Change the displayed offset while preserving the represented instant.
-export
+public export
 withOffset : {calendar : Type} -> {auto cal : Calendar calendar} ->
              {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
              Offset -> OffsetDateTime calendar @{cal} ->
@@ -139,7 +139,7 @@ withOffset : {calendar : Type} -> {auto cal : Calendar calendar} ->
 withOffset valueOffset value = fromInstant valueOffset (toInstant value)
 
 ||| Change the calendar while preserving the local time, offset, and instant.
-export
+public export
 withCalendar : {source : Type} -> {target : Type} ->
                {auto sourceCal : Calendar source} ->
                {auto targetCal : Calendar target} ->

@@ -11,7 +11,7 @@ choices rather than compatibility defects.
   and tests.
 - [ ] Add mutable fake-clock advancement and zoned-clock adapters.
 - [ ] Add period-difference operations for dates, local times, and calendar date-times.
-- [ ] Promote supported `OffsetDateTime` instant, offset, and calendar conversions.
+- [x] Promote supported `OffsetDateTime` instant, offset, and calendar conversions.
 - [ ] Promote supported `ZonedDateTime` zone conversion and fixed-duration arithmetic.
 - [ ] Decouple pure library use from mandatory native Unix or Windows support builds.
 

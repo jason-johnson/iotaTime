@@ -54,6 +54,36 @@ offsetDateTimeCases =
                (on (localTime 0 0 0 0) (calendarDate 1 January 2025))
                expected)
         in offset value == expected)
+  , MkRuntimeCase "toInstant resolves local time using its offset"
+      (let value = the (OffsetDateTime Gregorian)
+            (fromCalendarDateTimeWithOffset
+              (on (localTime 1 30 0 0) (calendarDate 1 March 2000))
+              (IotaTime.Offset.fromMinutes 90))
+        in toInstant value == epoch)
+  , MkRuntimeCase "withOffset preserves the represented instant"
+      (let original = the (OffsetDateTime Gregorian)
+            (fromCalendarDateTimeWithOffset
+              (on (localTime 0 0 0 0) (calendarDate 2 March 2000)) empty)
+        in case IotaTime.OffsetDateTime.withOffset
+          (IotaTime.Offset.fromHours 2) original of
+            Right converted =>
+              toInstant converted == toInstant original &&
+              gregorianComponents converted ==
+                ((2000, March, 2), (2, 0, 0, 0), IotaTime.Offset.fromHours 2)
+            Left _ => False)
+  , MkRuntimeCase "withCalendar preserves local time offset and instant"
+      (let original = the (OffsetDateTime Gregorian)
+            (fromCalendarDateTimeWithOffset
+              (on (localTime 12 34 56 7) (calendarDate 1 March 2000))
+              (IotaTime.Offset.fromHours 1))
+        in case the (Either CalendarConversionError (OffsetDateTime Julian))
+          (IotaTime.OffsetDateTime.withCalendar original) of
+            Right converted =>
+              toInstant converted == toInstant original &&
+              offset converted == offset original &&
+              localTimeOfDay (toCalendarDateTime converted) ==
+                localTimeOfDay (toCalendarDateTime original)
+            Left _ => False)
   ]
 
 export

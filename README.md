@@ -222,7 +222,7 @@ The HodaTime names `empty`, `fromSeconds`, `fromMinutes`, `fromHours`, `seconds`
 
 `OffsetDateTime calendar` associates a valid `CalendarDateTime calendar` with a valid `Offset`. The constructor remains private. HodaTime-compatible construction uses `fromCalendarDateTimeWithOffset` or `fromInstantWithOffset`; the latter returns `Either` when the requested calendar cannot represent the local result.
 
-`toCalendarDateTime` and `offset` expose the HodaTime-compatible observers.
+`toCalendarDateTime`, `offset`, and `toInstant` expose the HodaTime-compatible observers. `withOffset` changes the displayed offset while preserving the represented instant, and `withCalendar` changes the calendar while preserving the local time, offset, and instant. Both transformations return `Either CalendarConversionError` when the target calendar cannot represent the result.
 
 ## Date-time zones
 

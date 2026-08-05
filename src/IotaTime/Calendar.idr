@@ -82,6 +82,15 @@ shiftCalendarDays : {calendar : Type} -> {auto cal : Calendar calendar} ->
                     Integer -> CalendarDate calendar @{cal} -> CalendarDate calendar @{cal}
 shiftCalendarDays @{cal} = shiftCalendarDays' @{cal}
 
+||| Compute the exact signed day period from `start` to `end`.
+public export
+between : {calendar : Type} -> {auto cal : Calendar calendar} ->
+          {auto target : HasCalendar (CalendarDate calendar @{cal})} ->
+          (start : CalendarDate calendar @{cal}) ->
+          (end : CalendarDate calendar @{cal}) ->
+          Period (CalendarDate calendar @{cal})
+between @{cal} start end = days (toDays @{cal} end - toDays @{cal} start)
+
 ||| Decompose a date while preserving the dependency between its year and month.
 public export
 yearMonthDay : {calendar : Type} -> {auto cal : Calendar calendar} ->

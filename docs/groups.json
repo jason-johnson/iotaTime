@@ -13,6 +13,11 @@
     { "title": "Arithmetic", "names": ["add", "minus"] },
     { "title": "Proofs", "names": ["durationNanosecondsRoundTrip", "durationRoundTrip"] }
   ],
+  "IotaTime.Calendar": [
+    { "title": "Calendar capability", "names": ["Calendar", "CalendarDate", "HasCalendarDate"] },
+    { "title": "Date components", "names": ["year", "month", "day", "yearMonthDay"] },
+    { "title": "Conversion and arithmetic", "names": ["withCalendar", "between"] }
+  ],
   "IotaTime.Calendar.Gregorian": [
     { "title": "Calendar and components", "names": ["Gregorian", "Month", "monthNumber", "DayOfWeek", "weekdayNumber"] },
     { "title": "Calendar rules", "names": ["isLeapYear", "maxDaysInMonth", "isValidGregorianDate", "isValidGregorianDays", "isValidGregorianNthDay", "isValidGregorianWeekDate"] },
@@ -22,7 +27,13 @@
   "IotaTime.LocalTime": [
     { "title": "Type and construction", "names": ["LocalTime", "localTime"] },
     { "title": "Components", "names": ["hour", "minute", "second", "nanosecond"] },
+    { "title": "Arithmetic", "names": ["between"] },
     { "title": "Runtime refinement", "names": ["LocalTimeError", "refineLocalTime"] }
+  ],
+  "IotaTime.CalendarDateTime": [
+    { "title": "Type and construction", "names": ["CalendarDateTime", "on", "at", "atStartOfDay"] },
+    { "title": "Components", "names": ["datePart", "localTimeOfDay"] },
+    { "title": "Conversion and arithmetic", "names": ["withCalendar", "between"] }
   ],
   "IotaTime.OffsetDateTime": [
     { "title": "Type and construction", "names": ["OffsetDateTime", "fromCalendarDateTimeWithOffset", "fromInstantWithOffset"] },

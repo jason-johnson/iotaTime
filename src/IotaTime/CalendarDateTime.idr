@@ -6,6 +6,9 @@ import IotaTime.Period
 
 %default total
 
+nanosecondsPerDay : Integer
+nanosecondsPerDay = 86400 * 1000000000
+
 ||| A calendar date paired with a local time of day.
 public export
 record CalendarDateTimeRep (calendar : Type) (cal : Calendar calendar) where
@@ -80,3 +83,14 @@ implementation {calendar : Type} -> {cal : Calendar calendar} ->
     let dateAfterPeriod = applyCalendarPeriod @{cal} period value.date
         (carry, timeAfterPeriod) = applyTimePeriodWithCarry period value.time
      in MkCalendarDateTime (shiftCalendarDays @{cal} carry dateAfterPeriod) timeAfterPeriod
+
+||| Compute the exact signed period from `start` to `end`, treating each civil
+||| calendar day as 24 hours.
+public export
+between : {calendar : Type} -> {auto cal : Calendar calendar} ->
+          (start : CalendarDateTime calendar @{cal}) ->
+          (end : CalendarDateTime calendar @{cal}) ->
+          Period (CalendarDateTime calendar @{cal})
+between @{cal} start end = nanoseconds
+  ((toDays @{cal} end.date - toDays @{cal} start.date) * nanosecondsPerDay +
+   toNanosecondsSinceMidnight end.time - toNanosecondsSinceMidnight start.time)

@@ -318,6 +318,8 @@ advanced = applyPeriod (months 1 <+> hours 2) lateDateTime
 
 Time-only periods wrap a `LocalTime` within its 24-hour day. On `CalendarDateTime`, date fields apply first from largest to smallest, then time fields apply and any positive or negative day carry adjusts the resulting date. `CalendarDate` supports only calendar units, `LocalTime` only time units, and `CalendarDateTime` both.
 
+Each of those value kinds provides a module-qualified `between start end`. `IotaTime.Calendar.between` returns an exact signed day period, `IotaTime.LocalTime.between` returns the signed same-day nanosecond difference, and `IotaTime.CalendarDateTime.between` combines absolute calendar days with nanosecond-precise local time. In every case, applying the result to `start` yields `end`. These canonical differences intentionally avoid policy-dependent decomposition into years and months, where end-of-month clamping can admit multiple answers.
+
 `on time date` constructs a calendar date-time with time-first argument order. The HodaTime-compatible `at date time` provides date-first order, while `atStartOfDay date` uses midnight.
 
 `calendarDate` requires an erased proof of `So (isValidGregorianDate day month year)`. Idris finds that proof automatically for valid literals. Invalid literals fail to compile:

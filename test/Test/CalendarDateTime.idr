@@ -17,6 +17,25 @@ dateTimeComponents value = (ymd (datePart value), timeComponents (localTimeOfDay
 lateDateTime : CalendarDateTime Gregorian
 lateDateTime = on (localTime 23 30 0 0) (calendarDate 31 January 2000)
 
+dateBetweenApplies : CalendarDate Gregorian -> CalendarDate Gregorian -> Bool
+dateBetweenApplies start end =
+  applyPeriod (IotaTime.Calendar.between {calendar = Gregorian} start end) start == end
+
+dateTimeBetweenApplies : CalendarDateTime Gregorian ->
+                         CalendarDateTime Gregorian -> Bool
+dateTimeBetweenApplies start end = dateTimeComponents
+  (applyPeriod (IotaTime.CalendarDateTime.between start end) start) ==
+  dateTimeComponents end
+
+dateTimeBetweenReverses : CalendarDateTime Gregorian ->
+                          CalendarDateTime Gregorian -> Bool
+dateTimeBetweenReverses start end =
+  let forward = IotaTime.CalendarDateTime.between start end
+      backward = IotaTime.CalendarDateTime.between end start
+   in dateTimeComponents
+        (applyPeriod backward (applyPeriod forward start)) ==
+      dateTimeComponents start
+
 calendarDateTimeCases : List RuntimeCase
 calendarDateTimeCases =
   [ MkRuntimeCase "date-first constructor matches on"
@@ -44,6 +63,17 @@ calendarDateTimeCases =
       (dateTimeComponents (applyPeriod (years 1 <+> hours 24)
         (on (localTime 0 0 0 0) (calendarDate 28 February 1999))) ==
           ((2000, February, 29), (0, 0, 0, 0)))
+  , MkRuntimeCase "calendar date between applies back to its endpoint"
+      (dateBetweenApplies (calendarDate 31 January 2000)
+        (calendarDate 2 March 2000))
+  , MkRuntimeCase "date-time between spans days and subsecond time"
+      (dateTimeBetweenApplies
+        (on (localTime 23 59 59 999999999) (calendarDate 28 February 2000))
+        (on (localTime 0 0 0 1) (calendarDate 1 March 2000)))
+  , MkRuntimeCase "date-time between reverses by swapping endpoints"
+      (dateTimeBetweenReverses
+        (on (localTime 6 7 8 9) (calendarDate 15 October 2024))
+        (on (localTime 20 30 40 50) (calendarDate 2 March 2025)))
   ]
 
 export

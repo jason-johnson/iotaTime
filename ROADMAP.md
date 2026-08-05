@@ -10,7 +10,7 @@ choices rather than compatibility defects.
 - [x] Provide injectable system and fixed clocks for deterministic applications
   and tests.
 - [ ] Add mutable fake-clock advancement and zoned-clock adapters.
-- [ ] Add period-difference operations for dates, local times, and calendar date-times.
+- [x] Add exact period-difference operations for dates, local times, and calendar date-times.
 - [x] Promote supported `OffsetDateTime` instant, offset, and calendar conversions.
 - [x] Promote supported `ZonedDateTime` zone conversion and fixed-duration arithmetic.
 - [ ] Decouple pure library use from mandatory native Unix or Windows support builds.
@@ -30,4 +30,5 @@ choices rather than compatibility defects.
 
 - [ ] Add value instances for compound types where equality and ordering have clear
   domain semantics and remain compatible with proof reduction.
+- [ ] Add configurable years/months period-difference decomposition.
 - [ ] Add caching and richer discovery controls to time-zone providers.

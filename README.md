@@ -200,6 +200,8 @@ For arbitrary `Instant` endpoints learned at runtime, `refineInterval` returns `
 
 Static construction accepts scalar endpoints because `Instant` is intentionally opaque: Idris cannot reduce two arbitrary `Instant` values to synthesize their ordering proof outside the implementation module. Runtime refinement preserves that opacity without casts or unchecked constructors.
 
+`isEmpty`, `overlaps`, and `isAdjacent` expose half-open range relationships. `intersection` returns only a non-empty shared range, so adjacent intervals have no intersection. `union` returns the smallest connected interval for overlapping or adjacent inputs, absorbs empty intervals, and returns `Nothing` for separated ranges.
+
 ## Offsets
 
 `Offset` is an opaque signed whole-second displacement from UTC, bounded inclusively to plus or minus 18 hours. Statically known values use unit-specific proof-carrying constructors; out-of-range literals fail compilation:

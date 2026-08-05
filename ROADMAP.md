@@ -18,7 +18,8 @@ choices rather than compatibility defects.
 ## Medium priority
 
 - [ ] Add `AnnualDate`, `YearMonth`, `OffsetDate`, `OffsetTime`, and `DateInterval`.
-- [ ] Add interval overlap, intersection, union, adjacency, and unbounded endpoints.
+- [x] Add bounded interval overlap, intersection, connected union, and adjacency.
+- [ ] Add an unbounded interval representation and operations.
 - [ ] Expose TZDB version metadata, canonical identifiers, aliases, and platform mappings.
 - [ ] Expose direct zone-offset and zone-interval queries.
 - [ ] Add civil Islamic and additional vouched Persian calendar variants.

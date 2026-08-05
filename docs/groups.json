@@ -13,6 +13,11 @@
     { "title": "Arithmetic", "names": ["add", "minus"] },
     { "title": "Proofs", "names": ["durationNanosecondsRoundTrip", "durationRoundTrip"] }
   ],
+  "IotaTime.Interval": [
+    { "title": "Type and construction", "names": ["Interval", "interval", "refineInterval", "IntervalError"] },
+    { "title": "Endpoints and membership", "names": ["start", "end", "contains", "isEmpty", "duration"] },
+    { "title": "Relationships and set operations", "names": ["overlaps", "isAdjacent", "intersection", "union"] }
+  ],
   "IotaTime.Calendar": [
     { "title": "Calendar capability", "names": ["Calendar", "CalendarDate", "HasCalendarDate"] },
     { "title": "Date components", "names": ["year", "month", "day", "yearMonthDay"] },

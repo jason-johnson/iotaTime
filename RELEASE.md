@@ -26,7 +26,7 @@
 
 4. Confirm Linux full-suite and Windows registry jobs pass in CI.
 5. Review public API and README changes, then push a tag matching the package
-   version, for example `v0.1.0`.
+   version, for example `v0.2.0`.
 
 The tag workflow waits for the full Linux and Windows matrix, verifies the tag
 against both version declarations, creates source and API-documentation

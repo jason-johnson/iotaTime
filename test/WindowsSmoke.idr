@@ -26,6 +26,7 @@ main = do
   zonesResult <- availableZones
   easternResult <- timeZone "Eastern Standard Time"
   localResult <- localZone
+  metadataResult <- metadata
   missingResult <- timeZone "IotaTime Missing Zone"
   germanLocaleResult <- localeByName "de-DE"
   currentLocaleResult <- currentLocale
@@ -48,6 +49,14 @@ main = do
   localPassed <- report "local Windows zone resolves"
     (case localResult of
       Right _ => True
+      Left _ => False)
+  metadataPassed <- report "Windows metadata exposes CLDR mappings"
+    (case metadataResult of
+      Right value => value.tzdbVersion == Nothing &&
+        value.cldrVersion == Just "48" &&
+        null value.zoneAliases &&
+        ianaZoneIdsForWindows value "Eastern Standard Time" "001" ==
+          ["America/New_York"]
       Left _ => False)
   missingPassed <- report "unknown Windows zone remains explicit"
     (case missingResult of
@@ -75,7 +84,8 @@ main = do
       _ => False)
 
   if allPassed
-    [ utcPassed, zonesPassed, dynamicPassed, localPassed, missingPassed
+    [ utcPassed, zonesPassed, dynamicPassed, localPassed, metadataPassed
+    , missingPassed
     , germanLocalePassed, currentLocalePassed, missingLocalePassed
     ]
     then putStrLn "All Windows registry smoke tests passed"

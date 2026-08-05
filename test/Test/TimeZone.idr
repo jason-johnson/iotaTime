@@ -27,6 +27,15 @@ intervalContains interval instant =
   maybe True (\start => start <= instant) (intervalStart interval) &&
   maybe True (\end => instant < end) (intervalEnd interval)
 
+tzdataParserWorks : Bool
+tzdataParserWorks =
+  let (version, aliases) = parseTzdataIdentity
+        "# version 2026a\nL Test/Canonical Test/Alias\n"
+      metadata = MkTzdbMetadata version Nothing aliases []
+   in version == Just "2026a" &&
+      canonicalZoneId metadata "Test/Alias" == "Test/Canonical" &&
+      canonicalZoneId metadata "Test/Canonical" == "Test/Canonical"
+
 export
 run : IO Bool
 run = do
@@ -35,6 +44,7 @@ run = do
   rejectedPath <- timeZone "../etc/passwd"
   systemLocal <- localZone
   listedZones <- availableZones
+  systemMetadata <- metadata
   runSuite "time-zone provider tests"
     [ MkRuntimeCase "system UTC zone is loaded"
         (case systemUtc of
@@ -133,5 +143,31 @@ run = do
     , MkRuntimeCase "available zones include UTC"
         (case listedZones of
           Right values => elem "UTC" values
+          Left _ => False)
+    , MkRuntimeCase "tzdata identity parser reads version and aliases"
+        tzdataParserWorks
+    , MkRuntimeCase "system metadata exposes TZDB and CLDR versions"
+        (case systemMetadata of
+          Right value => value.tzdbVersion /= Nothing &&
+            value.cldrVersion == Just "48"
+          Left _ => False)
+    , MkRuntimeCase "system metadata canonicalizes a TZDB alias"
+        (case systemMetadata of
+          Right value => canonicalZoneId value "US/Eastern" ==
+            "America/New_York"
+          Left _ => False)
+    , MkRuntimeCase "Windows IDs resolve globally and by territory"
+        (case systemMetadata of
+          Right value =>
+            ianaZoneIdsForWindows value "Eastern Standard Time" "001" ==
+              ["America/New_York"] &&
+            elem "America/Detroit"
+              (ianaZoneIdsForWindows value "Eastern Standard Time" "US")
+          Left _ => False)
+    , MkRuntimeCase "IANA aliases resolve back to Windows IDs"
+        (case systemMetadata of
+          Right value =>
+            windowsZoneIdForIana value "US/Eastern" "US" ==
+              Just "Eastern Standard Time"
           Left _ => False)
     ]

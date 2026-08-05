@@ -46,14 +46,15 @@ Features implemented in iotaTime that would strengthen HodaTime.
 - [ ] Add direct zone-offset and zone-interval queries for an instant. iotaTime
   exposes half-open interval bounds, wall offset, optional exact savings, and
   abbreviation without exposing its zone representation.
+- [ ] Add TZDB version metadata, canonical identifiers, aliases, and
+  IANA/Windows mappings. iotaTime reads TZDB identity data from the platform
+  provider and uses a pinned Unicode CLDR mapping table.
 
 ## Shared opportunities
 
 Features absent from both libraries that may belong in both after their
 semantics and data sources are specified.
 
-- [ ] Expose TZDB version metadata, canonical identifiers, aliases, and
-  IANA/Windows platform mappings.
 - [ ] Add a civil-epoch tabular Islamic variant while retaining leap-pattern
   types, and add Persian variants only where their supported ranges can be
   vouched for explicitly.

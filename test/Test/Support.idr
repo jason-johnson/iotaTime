@@ -1,6 +1,44 @@
 module Test.Support
 
+import Data.IORef
+import IotaTime
 import System
+import System.Concurrency
+
+export
+record MutableTestClock where
+  constructor MkMutableTestClock
+  currentInstant : IORef Instant
+  accessLock : Mutex
+
+withLock : Mutex -> IO value -> IO value
+withLock lock action = do
+  mutexAcquire lock
+  result <- action
+  mutexRelease lock
+  pure result
+
+public export
+Clock MutableTestClock where
+  getCurrentInstant value = withLock value.accessLock
+    (readIORef value.currentInstant)
+
+export
+newMutableTestClock : Instant -> IO MutableTestClock
+newMutableTestClock value = do
+  reference <- newIORef value
+  lock <- makeMutex
+  pure (MkMutableTestClock reference lock)
+
+export
+setTestInstant : MutableTestClock -> Instant -> IO ()
+setTestInstant clock value = withLock clock.accessLock
+  (writeIORef clock.currentInstant value)
+
+export
+advanceTestClock : MutableTestClock -> Duration -> IO ()
+advanceTestClock clock amount = withLock clock.accessLock
+  (modifyIORef clock.currentInstant (\value => IotaTime.Instant.add value amount))
 
 public export
 record RuntimeCase where

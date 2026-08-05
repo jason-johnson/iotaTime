@@ -27,8 +27,18 @@ run : IO Bool
 run = do
   let fixedInstant = fromNanosecondsSinceEpoch 42
   observed <- getCurrentInstant (fixedClock fixedInstant)
+  fake <- newMutableTestClock epoch
+  advanceTestClock fake (IotaTime.Duration.fromSeconds 90)
+  advanced <- getCurrentInstant fake
+  setTestInstant fake fixedInstant
+  reset <- getCurrentInstant fake
   runSuite "runtime behavior tests"
     (runtimeCases ++
       [ MkRuntimeCase "fixed clock returns its configured instant"
           (observed == fixedInstant)
+      , MkRuntimeCase "fake clock advances by fixed duration"
+          (advanced == IotaTime.Instant.add epoch
+            (IotaTime.Duration.fromSeconds 90))
+      , MkRuntimeCase "fake clock can be set to an exact instant"
+          (reset == fixedInstant)
       ])

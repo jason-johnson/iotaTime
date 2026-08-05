@@ -185,6 +185,8 @@ deterministicClock = fixedClock epoch
 
 `systemClock` provides the production implementation. Unix conversion is available at whole-second and nanosecond precision.
 
+Tests and applications that need controlled advancement can implement `Clock` with their own mutable state; iotaTime keeps that policy outside the supported library API. The test suite includes such an implementation. `zonedClock` pairs any `Clock` with a `TimeZone` and calendar, and `getCurrentZonedDateTime` returns its current zoned representation with a typed calendar-range error.
+
 The scalar representation is intentionally simple. A proof-oriented representation using an `Integer` day, `Fin 86400` second-of-day, and `Fin 1000000000` nanosecond remains a future benchmarking candidate if profiling shows a material benefit.
 
 ## Intervals

@@ -1,6 +1,7 @@
 module IotaTime.Clock
 
 import IotaTime.Instant
+import IotaTime.ZonedDateTime
 
 %default total
 
@@ -35,3 +36,28 @@ Clock FixedClock where
 public export
 fixedClock : Instant -> FixedClock
 fixedClock = MkFixedClock
+
+||| A clock paired with a time zone and calendar representation.
+export
+record ZonedClock (calendar : Type) (clock : Type) where
+  constructor MkZonedClock
+  underlyingClock : clock
+  clockZone : TimeZone
+
+||| Pair any clock with the zone used to display its current instant.
+public export
+zonedClock : {calendar : Type} -> clock -> TimeZone -> ZonedClock calendar clock
+zonedClock = MkZonedClock
+
+||| Read a clock and display its current instant in the configured zone.
+public export
+getCurrentZonedDateTime : {calendar : Type} -> {clock : Type} ->
+                          {auto cal : Calendar calendar} ->
+                          {auto rep : HasCalendarDate
+                            (CalendarDate calendar @{cal})} ->
+                          Clock clock => ZonedClock calendar clock ->
+                          IO (Either CalendarConversionError
+                            (ZonedDateTime calendar @{cal}))
+getCurrentZonedDateTime value = do
+  instant <- getCurrentInstant value.underlyingClock
+  pure (IotaTime.ZonedDateTime.fromInstant instant value.clockZone)

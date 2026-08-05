@@ -89,13 +89,35 @@ zoneCases utcZone timeZoneValue =
             Left _ => False)
       ]
 
+zonedClockCases : TimeZone -> IO (List RuntimeCase)
+zonedClockCases utcZone = do
+  fake <- newMutableTestClock epoch
+  let clock = zonedClock {calendar = Gregorian} fake utcZone
+  initial <- getCurrentZonedDateTime clock
+  advanceTestClock fake (IotaTime.Duration.fromMinutes 90)
+  advanced <- getCurrentZonedDateTime clock
+  pure
+    [ MkRuntimeCase "zoned clock displays its current instant"
+        (case initial of
+          Right value => IotaTime.ZonedDateTime.toInstant value == epoch &&
+            IotaTime.ZonedDateTime.zoneId value == "UTC"
+          Left _ => False)
+    , MkRuntimeCase "zoned clock reflects fake clock advancement"
+        (case advanced of
+          Right value => IotaTime.ZonedDateTime.hour value == 1 &&
+            IotaTime.ZonedDateTime.minute value == 30
+          Left _ => False)
+    ]
+
 export
 run : IO Bool
 run = do
   loaded <- timeZone "America/New_York"
   loadedUtc <- utc
   case (loadedUtc, loaded) of
-    (Right utcZone, Right timeZoneValue) => runSuite "zoned date-time tests"
-      (zoneCases utcZone timeZoneValue)
+    (Right utcZone, Right timeZoneValue) => do
+      clockCases <- zonedClockCases utcZone
+      runSuite "zoned date-time tests"
+        (zoneCases utcZone timeZoneValue ++ clockCases)
     _ => runSuite "zoned date-time tests"
       [MkRuntimeCase "UTC and America/New_York load" False]

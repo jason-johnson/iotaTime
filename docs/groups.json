@@ -6,6 +6,11 @@
     { "title": "System clock", "names": ["now"] },
     { "title": "Proofs", "names": ["instantNanosecondsRoundTrip", "instantRoundTrip"] }
   ],
+  "IotaTime.Clock": [
+    { "title": "Clock capability", "names": ["Clock", "getCurrentInstant"] },
+    { "title": "System and fixed clocks", "names": ["SystemClock", "systemClock", "FixedClock", "fixedClock"] },
+    { "title": "Zoned clock", "names": ["ZonedClock", "zonedClock", "getCurrentZonedDateTime"] }
+  ],
   "IotaTime.Duration": [
     { "title": "Type", "names": ["Duration"] },
     { "title": "Construction", "names": ["fromNanoseconds", "fromMicroseconds", "fromMilliseconds", "fromSeconds", "fromMinutes", "fromHours", "fromStandardDays", "fromStandardWeeks"] },

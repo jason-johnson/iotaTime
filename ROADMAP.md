@@ -9,7 +9,7 @@ choices rather than compatibility defects.
 
 - [x] Provide injectable system and fixed clocks for deterministic applications
   and tests.
-- [ ] Add mutable fake-clock advancement and zoned-clock adapters.
+- [x] Add zoned-clock adapters while keeping mutable fake clocks in test support.
 - [x] Add exact period-difference operations for dates, local times, and calendar date-times.
 - [x] Promote supported `OffsetDateTime` instant, offset, and calendar conversions.
 - [x] Promote supported `ZonedDateTime` zone conversion and fixed-duration arithmetic.

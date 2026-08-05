@@ -126,6 +126,11 @@ structuralError source position expected =
       actual :: _ => Left (UnexpectedCharacter (cast position) expected actual)
       [] => Left (UnexpectedEnd (cast position) expected)
 
+||| Parse an entire string using an explicit initial field state.
+|||
+||| This is useful for partial patterns whose omitted fields should come from
+||| caller policy rather than the pattern's built-in defaults.
+public export
 parseWith : Pattern state value -> state -> String -> Either PatternError value
 parseWith pattern start source =
   let initial = Parser.S source 0 (strLength source)

@@ -13,7 +13,8 @@ adopted them or the item is split into library-specific work.
 
 Features present in HodaTime that iotaTime should support.
 
-- [ ] Audit and fill remaining standard/custom pattern and locale coverage.
+- [x] Audit and fill standard/custom pattern and locale coverage. `parseWith`
+  supplies HodaTime `parse'`-style caller defaults through typed parser state.
 - [ ] Add appropriate `Eq`, `Ord`, and `Show` implementations for compound
   values. HodaTime also provides `NFData` and `Hashable`; adopt Idris ecosystem
   equivalents only where they have clear value and preserve proof reduction.
@@ -85,6 +86,10 @@ These are corresponding capabilities rather than gaps to erase.
   and ordering used by external `So` proofs must remain definitionally
   reducible, so derivation is limited to instances that do not cross that
   boundary.
+- HodaTime's `hour'`, `minute'`, and `second'` patterns update an intermediate
+  Haskell `TimeInfo` through lenses. iotaTime's ordinary time fields already
+  update its typed `TimeFields` accumulator, so separate primed adapters would
+  duplicate the same operation.
 - iotaTime keeps mutable fake clocks outside the supported core API;
   applications and test suites can implement them through `Clock`.
 

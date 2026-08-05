@@ -547,6 +547,12 @@ Use `parseInstant` for the typed `Either PatternError Instant` parsing boundary.
 
 `pairPattern` combines two independently refined patterns through projections and a constructor. `calendarDateTimePattern` uses it for any `CalendarPattern` date and local time; the standard `ps`, `po`, `pf`, `pF`, `pg`, and `pG` layouts mirror HodaTime. `offsetDateTimePattern` then combines any such local pattern with an offset pattern. `pOffsetDateTime` is the calendar-polymorphic numeric layout `yyyy-MM-ddTHH:mm:ss(+/-)HH:mm`.
 
+`parse` starts from each pattern's documented defaults. `parseWith` accepts an
+explicit typed field state instead, allowing partial patterns to inherit omitted
+fields from caller policy while still performing the same final refinement. For
+example, parsing `pmonthDay` with `MkDateFields 2024 1 1` uses 2024 as the
+otherwise omitted year.
+
 ## Locale API
 
 `Locale` stores Gregorian month and weekday names, AM/PM designators, and the operating system layout strings needed by later whole-layout pattern compilation. Its constructor is private. Month tables use `Vect 12 String` and weekday tables use `Vect 7 String`, so every locale is structurally complete.

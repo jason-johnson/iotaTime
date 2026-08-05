@@ -1,4 +1,9 @@
 {
+  "IotaTime.Pattern": [
+    { "title": "Core types", "names": ["Pattern", "PatternError", "LiteralPattern"] },
+    { "title": "Parsing and formatting", "names": ["parse", "parseWith", "format"] },
+    { "title": "Composition", "names": ["string", "char", "<%"] }
+  ],
   "IotaTime.Instant": [
     { "title": "Type and constants", "names": ["Instant", "epoch"] },
     { "title": "Construction and conversion", "names": ["fromNanosecondsSinceEpoch", "toNanosecondsSinceEpoch", "fromSecondsSinceUnixEpoch", "fromNanosecondsSinceUnixEpoch", "toNanosecondsSinceUnixEpoch"] },

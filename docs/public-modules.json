@@ -3,6 +3,7 @@
   "IotaTime.Duration",
   "IotaTime.DateTimeZone",
   "IotaTime.Instant",
+  "IotaTime.Clock",
   "IotaTime.Interval",
   "IotaTime.Offset",
   "IotaTime.OffsetDateTime",

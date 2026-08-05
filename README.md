@@ -59,11 +59,13 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 ## Project layout
 
 - `iotaTime.ipkg` — Idris 2 library package definition
+- `ROADMAP.md` — prioritized HodaTime compatibility gaps
 - `Makefile` — native support-library build and installation
 - `support/iotatime_windows.c` — Win32 registry FFI and non-Windows stub
 - `support/iotatime_unix.c` — POSIX locale FFI and Windows stub
 - `src/IotaTime.idr` — library entry module
 - `src/IotaTime/Instant.idr` — opaque points on the global nanosecond timeline
+- `src/IotaTime/Clock.idr` — injectable system and fixed clocks
 - `src/IotaTime/Duration.idr` — opaque fixed elapsed-time amounts
 - `src/IotaTime/DateTimeZone.idr` — validated fixed and transition-based zones
 - `src/IotaTime/Interval.idr` — proof-carrying half-open timeline intervals
@@ -171,7 +173,17 @@ elapsed = difference finish start
 
 The HodaTime names `fromNanoseconds` through `fromStandardWeeks`, plus `add` and `minus`, are canonical within `IotaTime.Duration`; `IotaTime.Instant.add` and `IotaTime.Instant.minus` perform fixed timeline arithmetic. Module qualification disambiguates names such as `Duration.fromHours` and `Offset.fromHours` when using the umbrella import.
 
-`fromStandardDays` and `fromStandardWeeks` mean exact 24-hour and seven-day amounts. Calendar-relative `days`, `weeks`, `months`, and `years` continue to construct target-indexed `Period` values instead. `now` reads the mandatory UTC system clock, and Unix conversion is available at whole-second and nanosecond precision.
+`fromStandardDays` and `fromStandardWeeks` mean exact 24-hour and seven-day amounts. Calendar-relative `days`, `weeks`, `months`, and `years` continue to construct target-indexed `Period` values instead. `now` reads the UTC system clock directly, while applications can accept any `Clock` implementation for deterministic behavior:
+
+```idris
+timestamp : Clock clock => clock -> IO Instant
+timestamp = getCurrentInstant
+
+deterministicClock : FixedClock
+deterministicClock = fixedClock epoch
+```
+
+`systemClock` provides the production implementation. Unix conversion is available at whole-second and nanosecond precision.
 
 The scalar representation is intentionally simple. A proof-oriented representation using an `Integer` day, `Fin 86400` second-of-day, and `Fin 1000000000` nanosecond remains a future benchmarking candidate if profiling shows a material benefit.
 

@@ -1,7 +1,7 @@
 module IotaTime.Instant
 
-import IotaTime.Clock
 import IotaTime.Duration
+import System.Clock
 
 %default total
 
@@ -120,8 +120,8 @@ difference left right = durationFromNanoseconds
 public export
 now : IO Instant
 now = do
-  current <- currentUnixNanoseconds
-  pure (fromNanosecondsSinceUnixEpoch current)
+  current <- clockTime UTC
+  pure (fromNanosecondsSinceUnixEpoch (toNano current))
 
 ||| The library epoch: March 1, 2000 at 00:00:00 UTC.
 public export

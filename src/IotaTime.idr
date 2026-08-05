@@ -3,6 +3,7 @@ module IotaTime
 import public IotaTime.Duration
 import public IotaTime.DateTimeZone
 import public IotaTime.Instant
+import public IotaTime.Clock
 import public IotaTime.Interval
 import public IotaTime.Offset
 import public IotaTime.OffsetDateTime

@@ -24,4 +24,11 @@ runtimeCases =
 
 export
 run : IO Bool
-run = runSuite "runtime behavior tests" runtimeCases
+run = do
+  let fixedInstant = fromNanosecondsSinceEpoch 42
+  observed <- getCurrentInstant (fixedClock fixedInstant)
+  runSuite "runtime behavior tests"
+    (runtimeCases ++
+      [ MkRuntimeCase "fixed clock returns its configured instant"
+          (observed == fixedInstant)
+      ])

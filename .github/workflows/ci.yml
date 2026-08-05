@@ -100,6 +100,19 @@ jobs:
       - name: Verify Idris 2
         run: idris2 --version
 
+      - name: Verify native-free package
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          make clean-support
+          idris2 --build iotaTime-pure.ipkg
+          idris2 --install iotaTime-pure.ipkg
+          test ! -e support/libiotatime_unix.so
+          test ! -e support/libiotatime_windows.so
+          test ! -e support/libiotatime_unix.dll
+          test ! -e support/libiotatime_windows.dll
+          idris2 --clean iotaTime-pure.ipkg
+
       - name: Build library
         run: idris2 --build iotaTime.ipkg
 
@@ -170,8 +183,10 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           package_version=$(sed -n 's/^version = //p' iotaTime.ipkg)
+          pure_package_version=$(sed -n 's/^version = //p' iotaTime-pure.ipkg)
           make_version=$(sed -n 's/^PACKAGE_VERSION := //p' Makefile)
           test "$version" = "$package_version"
+          test "$version" = "$pure_package_version"
           test "$version" = "$make_version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 

@@ -59,11 +59,13 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 ## Project layout
 
 - `iotaTime.ipkg` — Idris 2 library package definition
+- `iotaTime-pure.ipkg` — native-free package definition for core domain and provider APIs
 - `ROADMAP.md` — prioritized HodaTime compatibility gaps
 - `Makefile` — native support-library build and installation
 - `support/iotatime_windows.c` — Win32 registry FFI and non-Windows stub
 - `support/iotatime_unix.c` — POSIX locale FFI and Windows stub
 - `src/IotaTime.idr` — library entry module
+- `src/IotaTime/Pure.idr` — native-free library entry module
 - `src/IotaTime/Instant.idr` — opaque points on the global nanosecond timeline
 - `src/IotaTime/Clock.idr` — injectable system and fixed clocks
 - `src/IotaTime/Duration.idr` — opaque fixed elapsed-time amounts
@@ -116,7 +118,28 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 
 ## Build and test
 
-Building the package requires `make` and a C compiler. On Windows, use MinGW GCC so the support library can link against `advapi32`; the CI workflow installs this toolchain through MSYS2.
+Two package definitions serve different deployment needs:
+
+- `iotaTime-pure.ipkg` provides the proof-carrying domain types, calendars,
+  clocks, in-memory time zones, the explicit `TimeZoneProvider` contract, pure
+  Windows registry conversion, and native-free patterns. Import
+  `IotaTime.Pure`. Building and installing it does not run `make` or require a
+  C compiler. Locale-dependent patterns and automatic operating-system locale
+  or time-zone discovery are intentionally outside this package.
+- `iotaTime.ipkg` is the complete package and preserves the `IotaTime` API,
+  including operating-system locale acquisition and platform time-zone
+  discovery. It requires `make` and a C compiler. On Windows, use MinGW GCC so
+  the support library can link against `advapi32`; CI installs this toolchain
+  through MSYS2.
+
+Build the native-free package with:
+
+```bash
+idris2 --build iotaTime-pure.ipkg
+idris2 --install iotaTime-pure.ipkg
+```
+
+Build and test the complete package with:
 
 ```bash
 idris2 --build iotaTime.ipkg

@@ -1,5 +1,6 @@
 [
   "IotaTime",
+  "IotaTime.Pure",
   "IotaTime.Duration",
   "IotaTime.DateTimeZone",
   "IotaTime.Instant",

@@ -13,7 +13,7 @@ choices rather than compatibility defects.
 - [x] Add exact period-difference operations for dates, local times, and calendar date-times.
 - [x] Promote supported `OffsetDateTime` instant, offset, and calendar conversions.
 - [x] Promote supported `ZonedDateTime` zone conversion and fixed-duration arithmetic.
-- [ ] Decouple pure library use from mandatory native Unix or Windows support builds.
+- [x] Decouple pure library use from mandatory native Unix or Windows support builds.
 
 ## Medium priority
 

@@ -10,7 +10,7 @@ homepage = "https://github.com/jason-johnson/iotaTime"
 sourceloc = "https://github.com/jason-johnson/iotaTime"
 bugtracker = "https://github.com/jason-johnson/iotaTime/issues"
 
-depends = contrib
+depends = contrib, elab-util
 
 sourcedir = "src"
 

@@ -3,19 +3,16 @@ module IotaTime.Tzdb.Tzif
 import public Data.Bits
 import public IotaTime.DateTimeZone
 import Data.List
+import Derive.Prelude
+
+%language ElabReflection
 
 %default total
 
 public export
 data TzifVersion = Version1 | Version2 | Version3 | Version4
 
-public export
-Eq TzifVersion where
-  Version1 == Version1 = True
-  Version2 == Version2 = True
-  Version3 == Version3 = True
-  Version4 == Version4 = True
-  _ == _ = False
+%runElab derive `{TzifVersion} [Eq]
 
 public export
 data TzifError

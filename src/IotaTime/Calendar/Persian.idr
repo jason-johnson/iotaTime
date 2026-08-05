@@ -3,6 +3,9 @@ module IotaTime.Calendar.Persian
 import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
+import Derive.Prelude
+
+%language ElabReflection
 
 %default total
 
@@ -39,20 +42,7 @@ namespace PersianMonths
   Ord PersianMonth where
     compare left right = compare (monthNumber left) (monthNumber right)
 
-  public export
-  Show PersianMonth where
-    show Farvardin = "Farvardin"
-    show Ordibehesht = "Ordibehesht"
-    show Khordad = "Khordad"
-    show Tir = "Tir"
-    show Mordad = "Mordad"
-    show Shahrivar = "Shahrivar"
-    show Mehr = "Mehr"
-    show Aban = "Aban"
-    show Azar = "Azar"
-    show Dey = "Dey"
-    show Bahman = "Bahman"
-    show Esfand = "Esfand"
+  %runElab derive `{PersianMonth} [Show]
 
 namespace PersianWeekdays
   public export
@@ -77,15 +67,7 @@ namespace PersianWeekdays
   Ord PersianDayOfWeek where
     compare left right = compare (weekdayNumber left) (weekdayNumber right)
 
-  public export
-  Show PersianDayOfWeek where
-    show Sunday = "Sunday"
-    show Monday = "Monday"
-    show Tuesday = "Tuesday"
-    show Wednesday = "Wednesday"
-    show Thursday = "Thursday"
-    show Friday = "Friday"
-    show Saturday = "Saturday"
+  %runElab derive `{PersianDayOfWeek} [Show]
 
 monthFromNumber : Integer -> PersianMonth
 monthFromNumber 1 = PersianMonths.Farvardin

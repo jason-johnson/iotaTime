@@ -3,6 +3,9 @@ module IotaTime.Calendar.Coptic
 import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
+import Derive.Prelude
+
+%language ElabReflection
 
 %default total
 
@@ -40,21 +43,7 @@ namespace CopticMonths
   Ord CopticMonth where
     compare left right = compare (monthNumber left) (monthNumber right)
 
-  public export
-  Show CopticMonth where
-    show Thout = "Thout"
-    show Paopi = "Paopi"
-    show Hathor = "Hathor"
-    show Koiak = "Koiak"
-    show Tobi = "Tobi"
-    show Meshir = "Meshir"
-    show Paremhat = "Paremhat"
-    show Paremoude = "Paremoude"
-    show Pashons = "Pashons"
-    show Paoni = "Paoni"
-    show Epip = "Epip"
-    show Mesori = "Mesori"
-    show PiKogiEnavot = "PiKogiEnavot"
+  %runElab derive `{CopticMonth} [Show]
 
 namespace CopticWeekdays
   public export
@@ -79,15 +68,7 @@ namespace CopticWeekdays
   Ord CopticDayOfWeek where
     compare left right = compare (weekdayNumber left) (weekdayNumber right)
 
-  public export
-  Show CopticDayOfWeek where
-    show Sunday = "Sunday"
-    show Monday = "Monday"
-    show Tuesday = "Tuesday"
-    show Wednesday = "Wednesday"
-    show Thursday = "Thursday"
-    show Friday = "Friday"
-    show Saturday = "Saturday"
+  %runElab derive `{CopticDayOfWeek} [Show]
 
 monthFromNumber : Integer -> CopticMonth
 monthFromNumber 1 = CopticMonths.Thout

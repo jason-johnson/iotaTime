@@ -3,6 +3,9 @@ module IotaTime.Calendar.Islamic
 import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
+import Derive.Prelude
+
+%language ElabReflection
 
 %default total
 
@@ -86,20 +89,7 @@ namespace IslamicMonths
   Ord IslamicMonth where
     compare left right = compare (monthNumber left) (monthNumber right)
 
-  public export
-  Show IslamicMonth where
-    show Muharram = "Muharram"
-    show Safar = "Safar"
-    show RabiAlAwwal = "RabiAlAwwal"
-    show RabiAlThani = "RabiAlThani"
-    show JumadaAlAwwal = "JumadaAlAwwal"
-    show JumadaAlThani = "JumadaAlThani"
-    show Rajab = "Rajab"
-    show Shaban = "Shaban"
-    show Ramadan = "Ramadan"
-    show Shawwal = "Shawwal"
-    show DhulQadah = "DhulQadah"
-    show DhulHijjah = "DhulHijjah"
+  %runElab derive `{IslamicMonth} [Show]
 
 namespace IslamicWeekdays
   public export
@@ -124,15 +114,7 @@ namespace IslamicWeekdays
   Ord IslamicDayOfWeek where
     compare left right = compare (weekdayNumber left) (weekdayNumber right)
 
-  public export
-  Show IslamicDayOfWeek where
-    show Sunday = "Sunday"
-    show Monday = "Monday"
-    show Tuesday = "Tuesday"
-    show Wednesday = "Wednesday"
-    show Thursday = "Thursday"
-    show Friday = "Friday"
-    show Saturday = "Saturday"
+  %runElab derive `{IslamicDayOfWeek} [Show]
 
 monthFromNumber : Integer -> IslamicMonth
 monthFromNumber 1 = IslamicMonths.Muharram

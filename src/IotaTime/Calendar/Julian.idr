@@ -3,6 +3,9 @@ module IotaTime.Calendar.Julian
 import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
+import Derive.Prelude
+
+%language ElabReflection
 
 %default total
 
@@ -39,20 +42,7 @@ namespace JulianMonths
   Ord JulianMonth where
     compare left right = compare (monthNumber left) (monthNumber right)
 
-  public export
-  Show JulianMonth where
-    show January = "January"
-    show February = "February"
-    show March = "March"
-    show April = "April"
-    show May = "May"
-    show June = "June"
-    show July = "July"
-    show August = "August"
-    show September = "September"
-    show October = "October"
-    show November = "November"
-    show December = "December"
+  %runElab derive `{JulianMonth} [Show]
 
 namespace JulianWeekdays
   public export
@@ -76,15 +66,7 @@ namespace JulianWeekdays
   Ord JulianDayOfWeek where
     compare left right = compare (weekdayNumber left) (weekdayNumber right)
 
-  public export
-  Show JulianDayOfWeek where
-    show Sunday = "Sunday"
-    show Monday = "Monday"
-    show Tuesday = "Tuesday"
-    show Wednesday = "Wednesday"
-    show Thursday = "Thursday"
-    show Friday = "Friday"
-    show Saturday = "Saturday"
+  %runElab derive `{JulianDayOfWeek} [Show]
 
 monthFromNumber : Integer -> JulianMonth
 monthFromNumber 1 = JulianMonths.January

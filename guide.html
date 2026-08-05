@@ -15,7 +15,7 @@
 <main class="container guide"><h1>iotaTime guide</h1>
 <p>This guide complements the <a href="index.html">complete API index</a>. It starts with the distinction that drives the library, then follows a value from civil time to physical time and back. Every valid code example is mirrored by <code>GuideExamples</code> or <code>GuidedMeeting</code> in the <code>examples/</code> package and compiled in CI; the deliberately invalid date is covered by the compile-fail suite.</p>
 <h2>Why iotaTime exists</h2>
-<p>iotaTime is a proof-oriented Idris 2 port of HodaTime. It separates values that are merely <em>labels</em> from values that identify a point on the global timeline, and it moves calendar and clock invariants into types wherever Idris can prove them.</p>
+<p>iotaTime is a proof-oriented Idris 2 port of HodaTime (which, itself, was a Haskell port of Nodatime, which was a Csharp port of Java&#39;s famous Jodatime). It separates values that are merely <em>labels</em> from values that identify a point on the global timeline, and it moves calendar and clock invariants into types wherever Idris can prove them.</p>
 <p>A statically known valid date needs no runtime check:</p>
 <pre><code class="language-idris">leapDay : CalendarDate Gregorian
 leapDay = calendarDate 29 February 2020

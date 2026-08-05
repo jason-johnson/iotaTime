@@ -3,10 +3,12 @@ module Test.ZonedDateTime
 import IotaTime
 import Test.Support
 
-zoneCases : TimeZone -> List RuntimeCase
-zoneCases timeZoneValue =
+zoneCases : TimeZone -> TimeZone -> List RuntimeCase
+zoneCases utcZone timeZoneValue =
   let winter = IotaTime.ZonedDateTime.fromInstant {calendar = Gregorian}
         (fromSecondsSinceUnixEpoch 1704067200) timeZoneValue
+      beforeSpring = IotaTime.ZonedDateTime.fromInstant {calendar = Gregorian}
+        (fromSecondsSinceUnixEpoch 1710052200) timeZoneValue
       skipped = on (localTime 2 30 0 0) (calendarDate 10 March 2024)
       ambiguous = on (localTime 1 30 0 0) (calendarDate 3 November 2024)
       skippedGregorian = the (CalendarDateTime Gregorian) skipped
@@ -53,14 +55,47 @@ zoneCases timeZoneValue =
                   IotaTime.ZonedDateTime.zoneId changed == "America/New_York"
                 Left _ => False
             Left _ => False)
+      , MkRuntimeCase "zone conversion preserves instant and recomputes local time"
+          (case winter of
+            Right value => case IotaTime.ZonedDateTime.withZone utcZone value of
+              Right changed => IotaTime.ZonedDateTime.toInstant changed ==
+                IotaTime.ZonedDateTime.toInstant value &&
+                IotaTime.ZonedDateTime.zoneId changed == "UTC" &&
+                IotaTime.ZonedDateTime.hour changed == 0
+              Left _ => False
+            Left _ => False)
+      , MkRuntimeCase "fixed duration addition crosses the spring gap on the timeline"
+          (case beforeSpring of
+            Right value => case IotaTime.ZonedDateTime.add value
+              (IotaTime.Duration.fromHours 1) of
+                Right changed => IotaTime.ZonedDateTime.toInstant changed ==
+                  IotaTime.Instant.add (IotaTime.ZonedDateTime.toInstant value)
+                    (IotaTime.Duration.fromHours 1) &&
+                  IotaTime.ZonedDateTime.hour changed == 3 &&
+                  IotaTime.ZonedDateTime.minute changed == 30 &&
+                  IotaTime.ZonedDateTime.inDst changed
+                Left _ => False
+            Left _ => False)
+      , MkRuntimeCase "fixed duration subtraction reverses addition"
+          (case beforeSpring of
+            Right value => case IotaTime.ZonedDateTime.add value
+              (IotaTime.Duration.fromHours 1) of
+                Right changed => case IotaTime.ZonedDateTime.minus changed
+                  (IotaTime.Duration.fromHours 1) of
+                    Right restored => IotaTime.ZonedDateTime.toInstant restored ==
+                      IotaTime.ZonedDateTime.toInstant value
+                    Left _ => False
+                Left _ => False
+            Left _ => False)
       ]
 
 export
 run : IO Bool
 run = do
   loaded <- timeZone "America/New_York"
-  case loaded of
-    Left _ => runSuite "zoned date-time tests"
-      [MkRuntimeCase "America/New_York loads" False]
-    Right timeZoneValue => runSuite "zoned date-time tests"
-      (zoneCases timeZoneValue)
+  loadedUtc <- utc
+  case (loadedUtc, loaded) of
+    (Right utcZone, Right timeZoneValue) => runSuite "zoned date-time tests"
+      (zoneCases utcZone timeZoneValue)
+    _ => runSuite "zoned date-time tests"
+      [MkRuntimeCase "UTC and America/New_York load" False]

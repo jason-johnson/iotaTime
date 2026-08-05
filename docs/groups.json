@@ -34,7 +34,8 @@
     { "title": "Local mapping and resolution", "names": ["resolveLocal", "fromCalendarDateTimeAll", "ZonedDateTimeError", "fromCalendarDateTimeStrictly", "fromCalendarDateTimeLeniently"] },
     { "title": "Civil components", "names": ["toCalendarDateTime", "toCalendarDate", "toLocalTime", "year", "month", "day", "hour", "minute", "second", "nanosecond"] },
     { "title": "Timeline and zone information", "names": ["toInstant", "zoneId", "inDst", "zoneAbbreviation"] },
-    { "title": "Conversion", "names": ["withCalendar"] }
+    { "title": "Conversion", "names": ["withZone", "withCalendar"] },
+    { "title": "Fixed-duration arithmetic", "names": ["add", "minus"] }
   ],
   "IotaTime.Pattern.CalendarDate": [
     { "title": "Pattern state", "names": ["DateFields"] },

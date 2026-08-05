@@ -229,7 +229,7 @@ fromCalendarDateTimeLeniently local valueZone =
     Right (Just value) => Right (attachZone valueZone value)
 
 ||| Change zones while preserving the represented instant.
-export
+public export
 withZone : {calendar : Type} -> {auto cal : Calendar calendar} ->
            {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
            DateTimeZone -> ZonedDateTime calendar @{cal} ->
@@ -259,7 +259,7 @@ addZonedDuration amount value =
   inZone value.zonedZone (addDuration (zonedInstant value) amount)
 
 ||| Add fixed elapsed time, following HodaTime's value-first argument order.
-export
+public export
 add : {calendar : Type} -> {auto cal : Calendar calendar} ->
   {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
   ZonedDateTime calendar @{cal} -> Duration ->
@@ -276,7 +276,7 @@ subtractZonedDuration amount value =
   inZone value.zonedZone (subtractDuration (zonedInstant value) amount)
 
 ||| Subtract fixed elapsed time, following HodaTime's value-first argument order.
-export
+public export
 minus : {calendar : Type} -> {auto cal : Calendar calendar} ->
         {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
         ZonedDateTime calendar @{cal} -> Duration ->

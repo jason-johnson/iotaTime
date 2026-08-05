@@ -251,7 +251,9 @@ CI runs the complete runtime and compile-fail suites on Linux. A native `windows
 
 `ZonedDateTime calendar` stores a zone together with the local date-time and effective offset for one instant. Its constructor is private. `fromInstant` uses HodaTime's instant-first argument order. `fromCalendarDateTimeAll`, `fromCalendarDateTimeStrictly`, and `fromCalendarDateTimeLeniently` retain the recognizable HodaTime construction policies, with typed `Either` errors replacing exceptions or hidden partiality. `resolveLocal` is the fully explicit Idris mapping API.
 
-`toCalendarDateTime`, `toCalendarDate`, `toLocalTime`, `toInstant`, `inDst`, `zoneAbbreviation`, `zoneId`, and the direct date/time component functions match HodaTime's accessor vocabulary. `ZonedDateTime.withCalendar` preserves the instant and zone while changing the calendar representation, returning `Either` when the target calendar cannot represent the resulting local day.
+`toCalendarDateTime`, `toCalendarDate`, `toLocalTime`, `toInstant`, `inDst`, `zoneAbbreviation`, `zoneId`, and the direct date/time component functions match HodaTime's accessor vocabulary. `withZone` preserves the instant while changing the zone and recomputing its local representation. `ZonedDateTime.withCalendar` preserves the instant and zone while changing the calendar representation. Both return `Either` when the target representation lies outside the calendar's supported range.
+
+`ZonedDateTime.add` and `ZonedDateTime.minus` apply fixed `Duration` values on the global timeline and then re-evaluate the zone offset. They therefore cross daylight-saving gaps and overlaps by elapsed time rather than local clock arithmetic.
 
 Calendar-relative period arithmetic is intentionally absent: callers convert with `toCalendarDateTime`, apply the `Period`, then explicitly choose a local mapping policy. `ZonedDateTime` therefore does not implement `ApplyPeriod`.
 

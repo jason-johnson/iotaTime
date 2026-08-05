@@ -170,7 +170,8 @@ related declarations under curated headings.
 
 Owner-authored pull requests publish temporary API-documentation previews via
 GitHub Pages. Version tags publish source and documentation archives as a
-GitHub Release and submit the release commit to the Idris 2 `pack` collection;
+GitHub Release and submit the package's `main` branch to the Idris 2 `pack`
+HEAD collection;
 see `RELEASE.md` for the one-time repository setup.
 
 Zoned parsing accepts provider callbacks in any `Monad`, so applications may

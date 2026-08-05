@@ -45,7 +45,8 @@ The tag workflow waits for the full Linux and Windows matrix, verifies the tag
 against both version declarations, creates source and API-documentation
 archives, publishes the documentation at
 `https://jason-johnson.github.io/iotaTime/`, publishes a GitHub Release, and
-submits the immutable release commit to a branch in the `idris2-pack-db` fork.
+submits the package's `main` branch to `HEAD.toml` on a branch in the
+`idris2-pack-db` fork.
 Open the upstream pull request from the URL in the workflow summary.
 
 ## One-time publishing setup

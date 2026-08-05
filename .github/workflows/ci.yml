@@ -311,7 +311,7 @@ jobs:
           [db.iotaTime]
           type   = "github"
           url    = "https://github.com/jason-johnson/iotaTime"
-          commit = "$GITHUB_SHA"
+          commit = "main"
           ipkg   = "iotaTime.ipkg"
           test   = "test/iotaTime-test.ipkg"
           EOF

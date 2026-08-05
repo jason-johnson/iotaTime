@@ -48,6 +48,33 @@ export
 periodNanoseconds : Period target -> Integer
 periodNanoseconds (MkPeriod _ _ _ _ _ _ _ value) = value
 
+public export
+Eq (Period target) where
+  MkPeriod leftYears leftMonths leftWeeks leftDays
+    leftHours leftMinutes leftSeconds leftNanoseconds ==
+    MkPeriod rightYears rightMonths rightWeeks rightDays
+      rightHours rightMinutes rightSeconds rightNanoseconds =
+        leftYears == rightYears &&
+        leftMonths == rightMonths &&
+        leftWeeks == rightWeeks &&
+        leftDays == rightDays &&
+        leftHours == rightHours &&
+        leftMinutes == rightMinutes &&
+        leftSeconds == rightSeconds &&
+        leftNanoseconds == rightNanoseconds
+
+public export
+Show (Period target) where
+  show value = "period " ++
+    show (periodYears value) ++ " " ++
+    show (periodMonths value) ++ " " ++
+    show (periodWeeks value) ++ " " ++
+    show (periodDays value) ++ " " ++
+    show (periodHours value) ++ " " ++
+    show (periodMinutes value) ++ " " ++
+    show (periodSeconds value) ++ " " ++
+    show (periodNanoseconds value)
+
 emptyPeriod : Period target
 emptyPeriod = MkPeriod 0 0 0 0 0 0 0 0
 

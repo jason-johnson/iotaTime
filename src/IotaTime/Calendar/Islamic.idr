@@ -3,6 +3,9 @@ module IotaTime.Calendar.Islamic
 import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
+import Derive.Prelude
+
+%language ElabReflection
 
 %default total
 
@@ -86,20 +89,7 @@ namespace IslamicMonths
   Ord IslamicMonth where
     compare left right = compare (monthNumber left) (monthNumber right)
 
-  public export
-  Show IslamicMonth where
-    show Muharram = "Muharram"
-    show Safar = "Safar"
-    show RabiAlAwwal = "RabiAlAwwal"
-    show RabiAlThani = "RabiAlThani"
-    show JumadaAlAwwal = "JumadaAlAwwal"
-    show JumadaAlThani = "JumadaAlThani"
-    show Rajab = "Rajab"
-    show Shaban = "Shaban"
-    show Ramadan = "Ramadan"
-    show Shawwal = "Shawwal"
-    show DhulQadah = "DhulQadah"
-    show DhulHijjah = "DhulHijjah"
+  %runElab derive `{IslamicMonth} [Show]
 
 namespace IslamicWeekdays
   public export
@@ -124,15 +114,7 @@ namespace IslamicWeekdays
   Ord IslamicDayOfWeek where
     compare left right = compare (weekdayNumber left) (weekdayNumber right)
 
-  public export
-  Show IslamicDayOfWeek where
-    show Sunday = "Sunday"
-    show Monday = "Monday"
-    show Tuesday = "Tuesday"
-    show Wednesday = "Wednesday"
-    show Thursday = "Thursday"
-    show Friday = "Friday"
-    show Saturday = "Saturday"
+  %runElab derive `{IslamicDayOfWeek} [Show]
 
 monthFromNumber : Integer -> IslamicMonth
 monthFromNumber 1 = IslamicMonths.Muharram
@@ -148,7 +130,6 @@ monthFromNumber 10 = IslamicMonths.Shawwal
 monthFromNumber 11 = IslamicMonths.DhulQadah
 monthFromNumber _ = IslamicMonths.DhulHijjah
 
-public export
 islamicWeekdayFromDays : Integer -> IslamicDayOfWeek
 islamicWeekdayFromDays value = case (value + 3) `mod` 7 of
   0 => IslamicWeekdays.Sunday
@@ -164,15 +145,14 @@ record IslamicDate (pattern : IslamicLeapPattern) where
   constructor MkIslamicDate
   daysSinceEpoch : Integer
 
-export
+public export
 Eq (IslamicDate pattern) where
   left == right = left.daysSinceEpoch == right.daysSinceEpoch
 
-export
+public export
 Ord (IslamicDate pattern) where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
 
-public export
 islamicEpoch : Integer
 islamicEpoch = -503166
 
@@ -219,7 +199,6 @@ isValidIslamicDate valueDay valueMonth valueYear =
 monthOffset : IslamicMonth -> Integer
 monthOffset value = ((IslamicMonths.monthNumber value - 1) * 59 + 1) `div` 2
 
-public export
 islamicDaysFromCivil : {pattern : IslamicLeapPattern} ->
                        KnownIslamicLeapPattern pattern =>
                        Year -> IslamicMonth -> DayOfMonth -> Integer
@@ -372,6 +351,14 @@ public export
   dayOfWeek = islamicDayOfWeek
   next = nextIslamic {pattern}
   previous = previousIslamic {pattern}
+
+public export
+{pattern : IslamicLeapPattern} -> KnownIslamicLeapPattern pattern =>
+  Show (IslamicDate pattern) where
+  show date = case islamicCivilFromDays {pattern} date.daysSinceEpoch of
+    (valueYear, valueMonth, valueDay) =>
+      "islamicDate' " ++ show valueDay ++ " " ++
+      show valueMonth ++ " " ++ show valueYear
 
 public export
 {pattern : IslamicLeapPattern} -> HasCalendar (IslamicDate pattern) where

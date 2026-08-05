@@ -5,4 +5,4 @@ module ForgedDateTimeZone
 import IotaTime
 
 invalid : DateTimeZone
-invalid = MkDateTimeZone "Invalid" zeroOffset []
+invalid = MkDateTimeZone

@@ -16,9 +16,16 @@ public export
 ZonedDateTime : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 ZonedDateTime calendar @{cal} = ZonedDateTimeRep calendar cal
 
+public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  Eq (OffsetDateTime calendar @{cal}) =>
+  Eq (ZonedDateTimeRep calendar cal) where
+  left == right =
+    left.zonedValue == right.zonedValue && left.zonedZone == right.zonedZone
+
 ||| Display an instant in a zone using the zone's effective offset. Conversion
 ||| fails only when the resulting local day is outside the calendar's range.
-public export
+export
 inZone : {calendar : Type} -> {auto cal : Calendar calendar} ->
          {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
          DateTimeZone -> Instant ->
@@ -37,13 +44,13 @@ fromInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
               Either CalendarConversionError (ZonedDateTime calendar @{cal})
 fromInstant valueInstant valueZone = inZone valueZone valueInstant
 
-public export
+export
 zonedOffsetDateTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
                       ZonedDateTime calendar @{cal} ->
                       OffsetDateTime calendar @{cal}
 zonedOffsetDateTime = zonedValue
 
-public export
+export
 zonedLocalDateTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
                      ZonedDateTime calendar @{cal} ->
                      CalendarDateTime calendar @{cal}
@@ -101,12 +108,12 @@ nanosecond : {calendar : Type} -> {auto cal : Calendar calendar} ->
         ZonedDateTime calendar @{cal} -> Nanosecond
 nanosecond = IotaTime.LocalTime.nanosecond . toLocalTime
 
-public export
+export
 zonedOffset : {calendar : Type} -> {auto cal : Calendar calendar} ->
               ZonedDateTime calendar @{cal} -> Offset
 zonedOffset = offsetOf . zonedValue
 
-public export
+export
 zonedInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
                {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
                ZonedDateTime calendar @{cal} -> Instant
@@ -119,6 +126,26 @@ toInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
 toInstant = zonedInstant
 
 public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  HasCalendarDate (CalendarDate calendar @{cal}) =>
+  Eq (CalendarDate calendar @{cal}) =>
+  Ord (ZonedDateTimeRep calendar cal) where
+  compare left right = case compare
+    (zonedInstant left) (zonedInstant right) of
+      EQ => compare
+        (IotaTime.DateTimeZone.zoneId left.zonedZone)
+        (IotaTime.DateTimeZone.zoneId right.zonedZone)
+      ordering => ordering
+
+public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  HasCalendarDate (CalendarDate calendar @{cal}) =>
+  Show (ZonedDateTimeRep calendar cal) where
+  show value = "fromInstant (" ++
+    show (zonedInstant value) ++ ") (" ++
+    show value.zonedZone ++ ")"
+
+export
 zoneOf : {calendar : Type} -> {auto cal : Calendar calendar} ->
          ZonedDateTime calendar @{cal} -> DateTimeZone
 zoneOf = zonedZone
@@ -250,7 +277,7 @@ withCalendar {target} @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value 
     (zonedInstant @{sourceCal} @{sourceRep} value)
 
 ||| Add elapsed time on the global timeline, then re-evaluate the zone offset.
-public export
+export
 addZonedDuration : {calendar : Type} -> {auto cal : Calendar calendar} ->
                    {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
                    Duration -> ZonedDateTime calendar @{cal} ->
@@ -267,7 +294,7 @@ add : {calendar : Type} -> {auto cal : Calendar calendar} ->
 add value amount = addZonedDuration amount value
 
 ||| Subtract elapsed time on the global timeline, then re-evaluate the zone offset.
-public export
+export
 subtractZonedDuration : {calendar : Type} -> {auto cal : Calendar calendar} ->
                         {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
                         Duration -> ZonedDateTime calendar @{cal} ->

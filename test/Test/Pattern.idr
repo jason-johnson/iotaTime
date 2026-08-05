@@ -120,6 +120,13 @@ patternCases =
                 "2020 March" &&
                  parsesAs (pyearMonth {calendar = Gregorian}) "2020 March"
                      (calendarDate 1 March 2020))
+        , MkRuntimeCase "seeded parsing supplies omitted date fields"
+                        (case IotaTime.Pattern.parseWith
+                                (pmonthDay {calendar = Gregorian})
+                                (MkDateFields 2024 1 1) "March 03" of
+                            Right actual => calendarDays actual ==
+                                calendarDays (calendarDate 3 March 2024)
+                            Left _ => False)
     , MkRuntimeCase "pdaySpace formats padding and accepts common forms"
             (IotaTime.Pattern.format (pdaySpace {calendar = Gregorian})
                 (calendarDate 3 March 2020) == " 3" &&

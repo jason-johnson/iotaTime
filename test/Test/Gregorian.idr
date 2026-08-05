@@ -57,6 +57,10 @@ gregorianCases : List RuntimeCase
 gregorianCases =
     [ MkRuntimeCase "Gregorian epoch decodes to March 1 2000"
             (ymd (gregorianFromDays 0) == (2000, March, 1))
+    , MkRuntimeCase "Gregorian date show uses its public constructor"
+        (show (calendarDate 1 March 2000) == "calendarDate 1 March 2000")
+    , MkRuntimeCase "weekday occurrence values compare and display"
+        (First == First && First /= Last && show Fifth == "Fifth")
     , MkRuntimeCase "flat day conversion round-trips"
             (toDays {calendar = Gregorian} (gregorianFromDays 42) == 42)
         , MkRuntimeCase "valid day conversion round-trips from the Gregorian boundary"

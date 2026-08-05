@@ -3,6 +3,9 @@ module IotaTime.Calendar.Coptic
 import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
+import Derive.Prelude
+
+%language ElabReflection
 
 %default total
 
@@ -40,21 +43,7 @@ namespace CopticMonths
   Ord CopticMonth where
     compare left right = compare (monthNumber left) (monthNumber right)
 
-  public export
-  Show CopticMonth where
-    show Thout = "Thout"
-    show Paopi = "Paopi"
-    show Hathor = "Hathor"
-    show Koiak = "Koiak"
-    show Tobi = "Tobi"
-    show Meshir = "Meshir"
-    show Paremhat = "Paremhat"
-    show Paremoude = "Paremoude"
-    show Pashons = "Pashons"
-    show Paoni = "Paoni"
-    show Epip = "Epip"
-    show Mesori = "Mesori"
-    show PiKogiEnavot = "PiKogiEnavot"
+  %runElab derive `{CopticMonth} [Show]
 
 namespace CopticWeekdays
   public export
@@ -79,15 +68,7 @@ namespace CopticWeekdays
   Ord CopticDayOfWeek where
     compare left right = compare (weekdayNumber left) (weekdayNumber right)
 
-  public export
-  Show CopticDayOfWeek where
-    show Sunday = "Sunday"
-    show Monday = "Monday"
-    show Tuesday = "Tuesday"
-    show Wednesday = "Wednesday"
-    show Thursday = "Thursday"
-    show Friday = "Friday"
-    show Saturday = "Saturday"
+  %runElab derive `{CopticDayOfWeek} [Show]
 
 monthFromNumber : Integer -> CopticMonth
 monthFromNumber 1 = CopticMonths.Thout
@@ -104,7 +85,6 @@ monthFromNumber 11 = CopticMonths.Epip
 monthFromNumber 12 = CopticMonths.Mesori
 monthFromNumber _ = CopticMonths.PiKogiEnavot
 
-public export
 weekdayFromNumber : Integer -> CopticDayOfWeek
 weekdayFromNumber value = case value `mod` 7 of
   0 => CopticWeekdays.Sunday
@@ -120,15 +100,14 @@ record CopticDate where
   constructor MkCopticDate
   daysSinceEpoch : Integer
 
-export
+public export
 Eq CopticDate where
   left == right = left.daysSinceEpoch == right.daysSinceEpoch
 
-export
+public export
 Ord CopticDate where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
 
-public export
 copticEpoch : Integer
 copticEpoch = -626575
 
@@ -155,7 +134,6 @@ isValidCopticDate valueDay _ valueYear =
   let dayNumber = dayOfMonthValue valueDay
    in dayNumber >= 1 && dayNumber <= 30 && yearValue valueYear >= 1
 
-public export
 copticDaysFromCivil : Year -> CopticMonth -> DayOfMonth -> Integer
 copticDaysFromCivil valueYear valueMonth valueDay =
   copticEpoch + (yearValue valueYear - 1) * 365 +
@@ -227,7 +205,6 @@ applyCopticPeriod period =
   . shiftCopticMonths (periodMonths period)
   . shiftCopticYears (periodYears period)
 
-public export
 copticWeekdayFromDays : Integer -> CopticDayOfWeek
 copticWeekdayFromDays days = weekdayFromNumber (days + 3)
 
@@ -274,6 +251,13 @@ Calendar Coptic where
   dayOfWeek = copticDayOfWeek
   next = nextCoptic
   previous = previousCoptic
+
+public export
+Show CopticDate where
+  show date = case copticCivilFromDays date.daysSinceEpoch of
+    (valueYear, valueMonth, valueDay) =>
+      "copticDate " ++ show valueDay ++ " " ++
+      show valueMonth ++ " " ++ show valueYear
 
 public export
 HasCalendar CopticDate where

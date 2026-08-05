@@ -47,6 +47,15 @@ jobs:
           make -C /tmp/Idris2 install
           echo "$HOME/.idris2/bin" >> "$GITHUB_PATH"
 
+      - name: Install elab-util
+        if: github.event.action != 'closed'
+        run: |
+          git init /tmp/elab-util
+          git -C /tmp/elab-util remote add origin https://github.com/stefan-hoeck/idris2-elab-util.git
+          git -C /tmp/elab-util fetch --depth 1 origin 6786ac7ef9931b1c8321a83e007f36a66e139e86
+          git -C /tmp/elab-util checkout --detach FETCH_HEAD
+          idris2 --install /tmp/elab-util/elab-util.ipkg
+
       - name: Generate API documentation
         if: github.event.action != 'closed'
         run: |

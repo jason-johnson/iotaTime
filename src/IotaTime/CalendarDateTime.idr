@@ -6,6 +6,9 @@ import IotaTime.Period
 
 %default total
 
+nanosecondsPerDay : Integer
+nanosecondsPerDay = 86400 * 1000000000
+
 ||| A calendar date paired with a local time of day.
 public export
 record CalendarDateTimeRep (calendar : Type) (cal : Calendar calendar) where
@@ -17,6 +20,28 @@ record CalendarDateTimeRep (calendar : Type) (cal : Calendar calendar) where
 public export
 CalendarDateTime : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 CalendarDateTime calendar @{cal} = CalendarDateTimeRep calendar cal
+
+public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  Eq (CalendarDate calendar @{cal}) =>
+  Eq (CalendarDateTimeRep calendar cal) where
+  MkCalendarDateTime leftDate leftTime ==
+    MkCalendarDateTime rightDate rightTime =
+      leftDate == rightDate && leftTime == rightTime
+
+public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  Ord (CalendarDate calendar @{cal}) =>
+  Ord (CalendarDateTimeRep calendar cal) where
+  compare left right = case compare left.date right.date of
+    EQ => compare left.time right.time
+    ordering => ordering
+
+public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  Show (CalendarDate calendar @{cal}) =>
+  Show (CalendarDateTimeRep calendar cal) where
+  show value = "at (" ++ show value.date ++ ") (" ++ show value.time ++ ")"
 
 ||| Associate a local time with a date, using time-first argument order.
 public export
@@ -80,3 +105,14 @@ implementation {calendar : Type} -> {cal : Calendar calendar} ->
     let dateAfterPeriod = applyCalendarPeriod @{cal} period value.date
         (carry, timeAfterPeriod) = applyTimePeriodWithCarry period value.time
      in MkCalendarDateTime (shiftCalendarDays @{cal} carry dateAfterPeriod) timeAfterPeriod
+
+||| Compute the exact signed period from `start` to `end`, treating each civil
+||| calendar day as 24 hours.
+public export
+between : {calendar : Type} -> {auto cal : Calendar calendar} ->
+          (start : CalendarDateTime calendar @{cal}) ->
+          (end : CalendarDateTime calendar @{cal}) ->
+          Period (CalendarDateTime calendar @{cal})
+between @{cal} start end = nanoseconds
+  ((toDays @{cal} end.date - toDays @{cal} start.date) * nanosecondsPerDay +
+   toNanosecondsSinceMidnight end.time - toNanosecondsSinceMidnight start.time)

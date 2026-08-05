@@ -1,7 +1,7 @@
 module IotaTime.Instant
 
-import IotaTime.Clock
 import IotaTime.Duration
+import System.Clock
 
 %default total
 
@@ -54,7 +54,7 @@ toNanosecondsSinceEpoch : Instant -> Integer
 toNanosecondsSinceEpoch = storedNanoseconds
 
 ||| Backward-compatible name for `toNanosecondsSinceEpoch`.
-public export
+export
 ticks : Instant -> Integer
 ticks = toNanosecondsSinceEpoch
 
@@ -89,7 +89,7 @@ toNanosecondsSinceUnixEpoch value =
   value.storedNanoseconds + unixEpochOffsetNanoseconds
 
 ||| Add a fixed duration to an instant.
-public export
+export
 addDuration : Instant -> Duration -> Instant
 addDuration instant duration = MkInstant
   (instant.storedNanoseconds +
@@ -100,7 +100,7 @@ add : Instant -> Duration -> Instant
 add = addDuration
 
 ||| Subtract a fixed duration from an instant.
-public export
+export
 subtractDuration : Instant -> Duration -> Instant
 subtractDuration instant duration = MkInstant
   (instant.storedNanoseconds -
@@ -120,8 +120,8 @@ difference left right = durationFromNanoseconds
 public export
 now : IO Instant
 now = do
-  current <- currentUnixNanoseconds
-  pure (fromNanosecondsSinceUnixEpoch current)
+  current <- clockTime UTC
+  pure (fromNanosecondsSinceUnixEpoch (toNano current))
 
 ||| The library epoch: March 1, 2000 at 00:00:00 UTC.
 public export

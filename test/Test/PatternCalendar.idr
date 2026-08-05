@@ -55,8 +55,8 @@ offsetRoundTrips {calendar} value expected =
   IotaTime.Pattern.format (pOffsetDateTime {calendar}) value == expected &&
   case IotaTime.Pattern.parse (pOffsetDateTime {calendar}) expected of
     Left _ => False
-    Right actual => sameDateTime (localDateTime actual) (localDateTime value) &&
-      offsetOf actual == offsetOf value
+    Right actual => sameDateTime (toCalendarDateTime actual)
+      (toCalendarDateTime value) && offset actual == offset value
 
 patternCalendarCases : List RuntimeCase
 patternCalendarCases =
@@ -103,10 +103,10 @@ patternCalendarCases =
         "1731-13-06T01:02:03")
   , MkRuntimeCase "offset date-time patterns preserve non-Gregorian values"
       (offsetRoundTrips {calendar = Persian}
-        (atOffset
+        (fromCalendarDateTimeWithOffset
           (on (localTime 12 30 0 0)
             (persianDate 30 PersianMonths.Esfand 1403))
-          (offsetFromMinutes 210))
+          (IotaTime.Offset.fromMinutes 210))
         "1403-12-30T12:30:00+03:30")
   , MkRuntimeCase "calendar-specific refinement rejects invalid dates"
       (rejects {calendar = Julian} "1901-02-29" &&
@@ -116,15 +116,14 @@ patternCalendarCases =
        rejects {calendar = HebrewCivil} "5786-06-01")
   ]
 
-utcProvider : String -> IO (Either String TimeZone)
-utcProvider "UTC" = pure (Right (fixedDateTimeZone "UTC" zeroOffset))
-utcProvider name = pure (Left ("unknown zone: " ++ name))
-
-zonedCalendarCases : IO (List RuntimeCase)
-zonedCalendarCases = do
-  coptic <- parseStandardZonedDateTime {calendar = Coptic} utcProvider
+zonedCalendarCases : TimeZone -> IO (List RuntimeCase)
+zonedCalendarCases utcZone = do
+  let provider : String -> IO (Either String TimeZone)
+      provider "UTC" = pure (Right utcZone)
+      provider name = pure (Left ("unknown zone: " ++ name))
+  coptic <- parseStandardZonedDateTime {calendar = Coptic} provider
     fromCalendarDateTimeStrictly "1731-13-06T01:02:03 UTC"
-  hebrew <- parseStandardZonedDateTime {calendar = HebrewCivil} utcProvider
+  hebrew <- parseStandardZonedDateTime {calendar = HebrewCivil} provider
     fromCalendarDateTimeStrictly "5784-06-01T04:05:06 UTC"
   pure
     [ MkRuntimeCase "zoned patterns resolve Coptic month thirteen"
@@ -145,6 +144,12 @@ zonedCalendarCases = do
 export
 run : IO Bool
 run = do
-  zonedCases <- zonedCalendarCases
-  runSuite "calendar-polymorphic pattern tests"
-    (patternCalendarCases ++ zonedCases)
+  loadedUtc <- utc
+  case loadedUtc of
+    Left _ => runSuite "calendar-polymorphic pattern tests"
+      (patternCalendarCases ++
+        [MkRuntimeCase "UTC loads for zoned calendar tests" False])
+    Right utcZone => do
+      zonedCases <- zonedCalendarCases utcZone
+      runSuite "calendar-polymorphic pattern tests"
+        (patternCalendarCases ++ zonedCases)

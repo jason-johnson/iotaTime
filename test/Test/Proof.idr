@@ -1,5 +1,6 @@
 module Test.Proof
 
+import Data.So
 import IotaTime
 
 data CalendarCapability = CalendarOnly
@@ -25,23 +26,24 @@ mixedPeriod : Period MixedCapability
 mixedPeriod = months 2 <+> minutes 20
 
 public export
-zeroTickRoundTrip : ticks (fromNanosecondsSinceEpoch 0) = 0
+zeroTickRoundTrip : toNanosecondsSinceEpoch (fromNanosecondsSinceEpoch 0) = 0
 zeroTickRoundTrip = instantNanosecondsRoundTrip 0
 
 public export
-negativeTickRoundTrip : ticks (fromNanosecondsSinceEpoch (-1)) = -1
+negativeTickRoundTrip : toNanosecondsSinceEpoch (fromNanosecondsSinceEpoch (-1)) = -1
 negativeTickRoundTrip = instantNanosecondsRoundTrip (-1)
 
 public export
 largeTickRoundTrip :
-	ticks (fromNanosecondsSinceEpoch 999999999999999999999999999999) =
+	toNanosecondsSinceEpoch (fromNanosecondsSinceEpoch 999999999999999999999999999999) =
 		999999999999999999999999999999
 largeTickRoundTrip =
 	instantNanosecondsRoundTrip 999999999999999999999999999999
 
 public export
 roundTripConstructor :
-	fromNanosecondsSinceEpoch (ticks (fromNanosecondsSinceEpoch 42)) =
+	fromNanosecondsSinceEpoch
+		(toNanosecondsSinceEpoch (fromNanosecondsSinceEpoch 42)) =
 		fromNanosecondsSinceEpoch 42
 roundTripConstructor =
 	cong fromNanosecondsSinceEpoch (instantNanosecondsRoundTrip 42)
@@ -61,3 +63,9 @@ julianCenturyLeap = Refl
 public export
 hebrewLeapCycle : isHebrewLeapYear 5784 = True
 hebrewLeapCycle = Refl
+
+public export
+periodEqualityReduces : So
+	(the (Period CalendarCapability) (months 2) ==
+	 the (Period CalendarCapability) (months 2))
+periodEqualityReduces = Oh

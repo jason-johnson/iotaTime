@@ -1,16 +1,29 @@
 # Release checklist
 
-1. Update `version` in `iotaTime.ipkg` and `PACKAGE_VERSION` in `Makefile` together.
-2. Run a clean library build and install:
+1. Update `version` in both package definitions and `PACKAGE_VERSION` in
+   `Makefile` together.
+2. Build the native-free package with support libraries absent:
 
    ```bash
    make clean-support
+   idris2 --build iotaTime-pure.ipkg
+   idris2 --install iotaTime-pure.ipkg
+   test ! -e support/libiotatime_unix.so
+   test ! -e support/libiotatime_windows.so
+   test ! -e support/libiotatime_unix.dll
+   test ! -e support/libiotatime_windows.dll
+   idris2 --clean iotaTime-pure.ipkg
+   ```
+
+3. Run a clean complete-package build and install:
+
+   ```bash
    idris2 --build iotaTime.ipkg
    idris2 --install iotaTime.ipkg
    idris2 --clean iotaTime.ipkg
    ```
 
-3. Build installed-package consumers and run all checks:
+4. Build installed-package consumers and run all checks:
 
    ```bash
    idris2 --build test/iotaTime-test.ipkg
@@ -24,9 +37,9 @@
    git diff --check
    ```
 
-4. Confirm Linux full-suite and Windows registry jobs pass in CI.
-5. Review public API and README changes, then push a tag matching the package
-   version, for example `v0.1.0`.
+5. Confirm Linux full-suite and Windows registry jobs pass in CI.
+6. Review public API and README changes, then push a tag matching the package
+   version, for example `v0.2.0`.
 
 The tag workflow waits for the full Linux and Windows matrix, verifies the tag
 against both version declarations, creates source and API-documentation

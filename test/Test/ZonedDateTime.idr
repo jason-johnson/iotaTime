@@ -3,163 +3,138 @@ module Test.ZonedDateTime
 import IotaTime
 import Test.Support
 
-nanosecondsPerHour : Integer
-nanosecondsPerHour = 3600 * 1000000000
-
-springZone : DateTimeZone
-springZone = dateTimeZone "Test/Spring"
-  (transitionInfo zeroOffset False "STD")
-  [(0, transitionInfo (offsetFromHours 1) True "DST")]
-
-fallZone : DateTimeZone
-fallZone = dateTimeZone "Test/Fall"
-  (transitionInfo (offsetFromHours 1) True "DST")
-  [(0, transitionInfo zeroOffset False "STD")]
-
-localAt : Hour -> Minute -> CalendarDateTime Gregorian
-localAt valueHour valueMinute = on
-  (localTime valueHour valueMinute 0 0)
-  (calendarDate 1 March 2000)
-
-components : ZonedDateTime Gregorian ->
-  ((Year, Month, DayOfMonth), (Hour, Minute, Second), Integer)
-components value =
-  let local = IotaTime.ZonedDateTime.toCalendarDateTime value
-      date = datePart local
-      time = localTimeOfDay local
-   in case yearMonthDay {calendar = Gregorian} date of
-        (valueYear ** (valueMonth, valueDay)) =>
-          ((valueYear, valueMonth, valueDay),
-           (hour time, minute time, second time),
-           totalOffsetSeconds (zonedOffset value))
-
-zonedDateTimeCases : List RuntimeCase
-zonedDateTimeCases =
-  [ MkRuntimeCase "instant uses the zone offset effective at transition"
-      (case the (Either CalendarConversionError (ZonedDateTime Gregorian))
-        (IotaTime.ZonedDateTime.fromInstant epoch springZone) of
-          Right value => components value ==
-            ((2000, March, 1), (1, 0, 0), 3600)
-          Left _ => False)
-  , MkRuntimeCase "stored offset always agrees with the zone"
-      (case the (Either CalendarConversionError (ZonedDateTime Gregorian))
-        (inZone springZone (fromNanosecondsSinceEpoch (-1))) of
-          Right value => zonedOffset value ==
-            zoneOffsetAt (zoneOf value) (zonedInstant value)
-          Left _ => False)
-  , MkRuntimeCase "zoned metadata follows the active transition"
-      (case the (Either CalendarConversionError (ZonedDateTime Gregorian))
-        (IotaTime.ZonedDateTime.fromInstant epoch springZone) of
-          Right value => inDst value && zoneAbbreviation value == "DST" &&
-            IotaTime.ZonedDateTime.zoneId value == "Test/Spring"
-          Left _ => False)
-  , MkRuntimeCase "HodaTime component accessors remain available"
-      (case the (Either CalendarConversionError (ZonedDateTime Gregorian))
-        (IotaTime.ZonedDateTime.fromInstant epoch springZone) of
-          Right value =>
-            (IotaTime.ZonedDateTime.year value,
-             IotaTime.ZonedDateTime.month value,
-             IotaTime.ZonedDateTime.day value,
-             IotaTime.ZonedDateTime.hour value,
-             IotaTime.ZonedDateTime.minute value,
-             IotaTime.ZonedDateTime.second value,
-             IotaTime.ZonedDateTime.nanosecond value) ==
-            (2000, March, 1, 1, 0, 0, 0)
-          Left _ => False)
-  , MkRuntimeCase "changing zone preserves instant and shifts local time"
-      (case the (Either CalendarConversionError (ZonedDateTime Gregorian))
-        (inZone springZone epoch) of
-          Right original =>
-            case withZone (fixedDateTimeZone "UTC-2" (offsetFromHours (-2)))
-              original of
-                Right changed => zonedInstant changed == epoch &&
-                  components changed ==
-                    ((2000, February, 29), (22, 0, 0), -7200)
-                Left _ => False
-          Left _ => False)
-  , MkRuntimeCase "changing calendar preserves instant zone and offset"
-      (case the (Either CalendarConversionError (ZonedDateTime Gregorian))
-        (inZone springZone epoch) of
-          Right original =>
-            case the (Either CalendarConversionError (ZonedDateTime Julian))
-              (IotaTime.ZonedDateTime.withCalendar original) of
-                Right changed => zonedInstant changed == epoch &&
-                  zoneId (zoneOf changed) == "Test/Spring" &&
-                  zonedOffset changed == offsetFromHours 1
-                Left _ => False
-          Left _ => False)
-  , MkRuntimeCase "resolving a skipped local time stays explicit"
-      (case resolveLocal springZone (localAt 0 30) of
-          ZonedSkipped => True
-          _ => False)
-  , MkRuntimeCase "resolving an unambiguous local time attaches its zone"
-      (case resolveLocal springZone (localAt 1 30) of
-          ZonedUnambiguous value => zoneId (zoneOf value) == "Test/Spring" &&
-            zonedInstant value ==
-              fromNanosecondsSinceEpoch (nanosecondsPerHour `div` 2)
-          _ => False)
-  , MkRuntimeCase "resolving an overlap retains both zoned instants"
-      (case resolveLocal fallZone (localAt 0 30) of
-          ZonedAmbiguous earlier later [] =>
-            zonedInstant earlier < zonedInstant later &&
-            zonedOffset earlier == offsetFromHours 1 &&
-            zonedOffset later == zeroOffset
-          _ => False)
-        , MkRuntimeCase "all constructor returns both overlap mappings"
-          (case fromCalendarDateTimeAll (localAt 0 30) fallZone of
-            [earlier, later] => zonedInstant earlier < zonedInstant later
+zoneCases : TimeZone -> TimeZone -> List RuntimeCase
+zoneCases utcZone timeZoneValue =
+  let winter = IotaTime.ZonedDateTime.fromInstant {calendar = Gregorian}
+        (fromSecondsSinceUnixEpoch 1704067200) timeZoneValue
+      beforeSpring = IotaTime.ZonedDateTime.fromInstant {calendar = Gregorian}
+        (fromSecondsSinceUnixEpoch 1710052200) timeZoneValue
+      skipped = on (localTime 2 30 0 0) (calendarDate 10 March 2024)
+      ambiguous = on (localTime 1 30 0 0) (calendarDate 3 November 2024)
+      skippedGregorian = the (CalendarDateTime Gregorian) skipped
+      ambiguousGregorian = the (CalendarDateTime Gregorian) ambiguous
+   in [ MkRuntimeCase "instant conversion exposes local components"
+          (case winter of
+            Right value =>
+              IotaTime.ZonedDateTime.year value == 2023 &&
+              IotaTime.ZonedDateTime.month value == December &&
+              IotaTime.ZonedDateTime.day value == 31 &&
+              IotaTime.ZonedDateTime.hour value == 19 &&
+              IotaTime.ZonedDateTime.zoneId value == "America/New_York"
+            Left _ => False)
+      , MkRuntimeCase "instant conversion round-trips"
+          (case winter of
+            Right value => IotaTime.ZonedDateTime.toInstant value ==
+              fromSecondsSinceUnixEpoch 1704067200
+            Left _ => False)
+      , MkRuntimeCase "zoned equality retains zone identity"
+          (case (winter, IotaTime.ZonedDateTime.withZone utcZone =<< winter) of
+            (Right original, Right changed) =>
+              IotaTime.ZonedDateTime.toInstant original ==
+                IotaTime.ZonedDateTime.toInstant changed &&
+              original /= changed
             _ => False)
-        , MkRuntimeCase "strict constructor rejects a skipped local time"
-          (case fromCalendarDateTimeStrictly (localAt 0 30) springZone of
+      , MkRuntimeCase "zoned ordering uses zone ID after instant"
+          (case (winter, IotaTime.ZonedDateTime.withZone utcZone =<< winter) of
+            (Right original, Right changed) => original < changed
+            _ => False)
+      , MkRuntimeCase "zoned show reconstructs instant and zone"
+          (case IotaTime.ZonedDateTime.fromInstant {calendar = Gregorian}
+            epoch utcZone of
+              Right value => show value ==
+                "fromInstant (fromNanosecondsSinceEpoch 0) (<TimeZone UTC>)"
+              Left _ => False)
+      , MkRuntimeCase "strict construction rejects a skipped local time"
+          (case fromCalendarDateTimeStrictly skippedGregorian timeZoneValue of
             Left DateTimeDoesNotExist => True
             _ => False)
-        , MkRuntimeCase "strict constructor rejects an ambiguous local time"
-          (case fromCalendarDateTimeStrictly (localAt 0 30) fallZone of
+      , MkRuntimeCase "strict construction rejects an ambiguous local time"
+          (case fromCalendarDateTimeStrictly ambiguousGregorian timeZoneValue of
             Left DateTimeAmbiguous => True
             _ => False)
-        , MkRuntimeCase "lenient constructor shifts a skipped time by the gap"
-          (case fromCalendarDateTimeLeniently (localAt 0 30) springZone of
-            Right value => components value ==
-            ((2000, March, 1), (1, 30, 0), 3600)
+      , MkRuntimeCase "all construction retains both overlap mappings"
+          (case fromCalendarDateTimeAll ambiguousGregorian timeZoneValue of
+            [earlier, later] => IotaTime.ZonedDateTime.toInstant earlier <
+              IotaTime.ZonedDateTime.toInstant later
+            _ => False)
+      , MkRuntimeCase "lenient construction shifts a skipped local time"
+          (case fromCalendarDateTimeLeniently skippedGregorian timeZoneValue of
+            Right value => IotaTime.ZonedDateTime.hour value == 3 &&
+              IotaTime.ZonedDateTime.minute value == 30
             Left _ => False)
-        , MkRuntimeCase "lenient constructor chooses earliest ambiguity"
-          (case fromCalendarDateTimeLeniently (localAt 0 30) fallZone of
-            Right value => zonedOffset value == offsetFromHours 1
+      , MkRuntimeCase "calendar conversion preserves instant and zone"
+          (case winter of
+            Right value => case the
+              (Either CalendarConversionError (ZonedDateTime Julian))
+              (IotaTime.ZonedDateTime.withCalendar value) of
+                Right changed => IotaTime.ZonedDateTime.toInstant changed ==
+                  IotaTime.ZonedDateTime.toInstant value &&
+                  IotaTime.ZonedDateTime.zoneId changed == "America/New_York"
+                Left _ => False
             Left _ => False)
-  , MkRuntimeCase "elapsed hour crosses spring transition on timeline"
-      (case the (Either CalendarConversionError (ZonedDateTime Gregorian))
-        (inZone springZone
-          (fromNanosecondsSinceEpoch (negate (nanosecondsPerHour `div` 2)))) of
-          Right start =>
-            case IotaTime.ZonedDateTime.add start (durationFromHours 1) of
-              Right finish => components finish ==
-                ((2000, March, 1), (1, 30, 0), 3600) &&
-                difference (zonedInstant finish) (zonedInstant start) ==
-                  durationFromHours 1
+      , MkRuntimeCase "zone conversion preserves instant and recomputes local time"
+          (case winter of
+            Right value => case IotaTime.ZonedDateTime.withZone utcZone value of
+              Right changed => IotaTime.ZonedDateTime.toInstant changed ==
+                IotaTime.ZonedDateTime.toInstant value &&
+                IotaTime.ZonedDateTime.zoneId changed == "UTC" &&
+                IotaTime.ZonedDateTime.hour changed == 0
               Left _ => False
+            Left _ => False)
+      , MkRuntimeCase "fixed duration addition crosses the spring gap on the timeline"
+          (case beforeSpring of
+            Right value => case IotaTime.ZonedDateTime.add value
+              (IotaTime.Duration.fromHours 1) of
+                Right changed => IotaTime.ZonedDateTime.toInstant changed ==
+                  IotaTime.Instant.add (IotaTime.ZonedDateTime.toInstant value)
+                    (IotaTime.Duration.fromHours 1) &&
+                  IotaTime.ZonedDateTime.hour changed == 3 &&
+                  IotaTime.ZonedDateTime.minute changed == 30 &&
+                  IotaTime.ZonedDateTime.inDst changed
+                Left _ => False
+            Left _ => False)
+      , MkRuntimeCase "fixed duration subtraction reverses addition"
+          (case beforeSpring of
+            Right value => case IotaTime.ZonedDateTime.add value
+              (IotaTime.Duration.fromHours 1) of
+                Right changed => case IotaTime.ZonedDateTime.minus changed
+                  (IotaTime.Duration.fromHours 1) of
+                    Right restored => IotaTime.ZonedDateTime.toInstant restored ==
+                      IotaTime.ZonedDateTime.toInstant value
+                    Left _ => False
+                Left _ => False
+            Left _ => False)
+      ]
+
+zonedClockCases : TimeZone -> IO (List RuntimeCase)
+zonedClockCases utcZone = do
+  fake <- newMutableTestClock epoch
+  let clock = zonedClock {calendar = Gregorian} fake utcZone
+  initial <- getCurrentZonedDateTime clock
+  advanceTestClock fake (IotaTime.Duration.fromMinutes 90)
+  advanced <- getCurrentZonedDateTime clock
+  pure
+    [ MkRuntimeCase "zoned clock displays its current instant"
+        (case initial of
+          Right value => IotaTime.ZonedDateTime.toInstant value == epoch &&
+            IotaTime.ZonedDateTime.zoneId value == "UTC"
           Left _ => False)
-  , MkRuntimeCase "explicit local period workflow exposes spring gap"
-      (case the (Either CalendarConversionError (ZonedDateTime Gregorian))
-        (inZone springZone
-          (fromNanosecondsSinceEpoch (negate (nanosecondsPerHour `div` 2)))) of
-          Right start => case resolveLocal springZone
-            (applyPeriod (hours 1)
-              (IotaTime.ZonedDateTime.toCalendarDateTime start)) of
-            ZonedSkipped => True
-            _ => False
+    , MkRuntimeCase "zoned clock reflects fake clock advancement"
+        (case advanced of
+          Right value => IotaTime.ZonedDateTime.hour value == 1 &&
+            IotaTime.ZonedDateTime.minute value == 30
           Left _ => False)
-  , MkRuntimeCase "subtracting elapsed duration re-evaluates prior offset"
-      (case the (Either CalendarConversionError (ZonedDateTime Gregorian))
-        (inZone springZone
-          (fromNanosecondsSinceEpoch (nanosecondsPerHour `div` 2))) of
-          Right finish =>
-            case IotaTime.ZonedDateTime.minus finish (durationFromHours 1) of
-              Right start => components start ==
-                ((2000, February, 29), (23, 30, 0), 0)
-              Left _ => False
-          Left _ => False)
-  ]
+    ]
 
 export
 run : IO Bool
-run = runSuite "zoned date-time tests" zonedDateTimeCases
+run = do
+  loaded <- timeZone "America/New_York"
+  loadedUtc <- utc
+  case (loadedUtc, loaded) of
+    (Right utcZone, Right timeZoneValue) => do
+      clockCases <- zonedClockCases utcZone
+      runSuite "zoned date-time tests"
+        (zoneCases utcZone timeZoneValue ++ clockCases)
+    _ => runSuite "zoned date-time tests"
+      [MkRuntimeCase "UTC and America/New_York load" False]

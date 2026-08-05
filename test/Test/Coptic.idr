@@ -42,7 +42,11 @@ mixedCopticResult = applyPeriod (months 1 <+> hours 2)
 copticCases : List RuntimeCase
 copticCases =
   [ MkRuntimeCase "Coptic epoch is 1 Thout 1"
-      (cymd (copticFromDays (-626575)) == (1, CopticMonths.Thout, 1))
+    (cymd (copticDate 1 CopticMonths.Thout 1) ==
+      (1, CopticMonths.Thout, 1))
+  , MkRuntimeCase "Coptic date show uses its public constructor"
+      (show (copticDate 1 CopticMonths.Thout 1) ==
+        "copticDate 1 Thout 1")
   , MkRuntimeCase "Coptic civil conversion round-trips two leap cycles"
       (copticRoundTrips (-626575) (-623653))
   , MkRuntimeCase "Coptic epoch matches Julian August 29 284"
@@ -76,7 +80,8 @@ copticCases =
         (copticDate 6 CopticMonths.PiKogiEnavot 1731)) ==
         (1732, CopticMonths.PiKogiEnavot, 5))
   , MkRuntimeCase "Coptic epoch weekday is Friday"
-      (dayOfWeek {calendar = Coptic} (copticFromDays (-626575)) ==
+      (dayOfWeek {calendar = Coptic}
+        (copticDate 1 CopticMonths.Thout 1) ==
         CopticWeekdays.Friday)
   , MkRuntimeCase "first Monday of Thout 1716"
       (dayOfWeek {calendar = Coptic}

@@ -40,8 +40,15 @@ public export
 OffsetDateTime : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 OffsetDateTime calendar @{cal} = OffsetDateTimeRep calendar cal
 
-||| Associate a calendar-local date and time with its displacement from UTC.
 public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  Eq (CalendarDateTime calendar @{cal}) =>
+  Eq (OffsetDateTimeRep calendar cal) where
+  left == right =
+    left.localValue == right.localValue && left.offsetValue == right.offsetValue
+
+||| Associate a calendar-local date and time with its displacement from UTC.
+export
 atOffset : {calendar : Type} -> {auto cal : Calendar calendar} ->
            CalendarDateTime calendar @{cal} -> Offset ->
            OffsetDateTime calendar @{cal}
@@ -55,7 +62,7 @@ fromCalendarDateTimeWithOffset : {calendar : Type} ->
                                  OffsetDateTime calendar @{cal}
 fromCalendarDateTimeWithOffset = atOffset
 
-public export
+export
 localDateTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
                 OffsetDateTime calendar @{cal} ->
                 CalendarDateTime calendar @{cal}
@@ -67,7 +74,7 @@ toCalendarDateTime : {calendar : Type} -> {auto cal : Calendar calendar} ->
                      CalendarDateTime calendar @{cal}
 toCalendarDateTime = localDateTime
 
-public export
+export
 offsetOf : {calendar : Type} -> {auto cal : Calendar calendar} ->
            OffsetDateTime calendar @{cal} -> Offset
 offsetOf = offsetValue
@@ -100,9 +107,27 @@ toInstant @{cal} @{rep} value = fromNanosecondsSinceEpoch
    localNanoseconds (localTimeOfDay value.localValue) -
    totalOffsetSeconds value.offsetValue * nanosecondsPerSecond)
 
+public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  HasCalendarDate (CalendarDate calendar @{cal}) =>
+  Eq (CalendarDate calendar @{cal}) =>
+  Ord (OffsetDateTimeRep calendar cal) where
+  compare left right = case compare
+    (toInstant left) (toInstant right) of
+      EQ => compare left.offsetValue right.offsetValue
+      ordering => ordering
+
+public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  HasCalendarDate (CalendarDate calendar @{cal}) =>
+  Show (OffsetDateTimeRep calendar cal) where
+  show value = "fromInstantWithOffset (" ++
+    show (toInstant value) ++ ") (" ++
+    show value.offsetValue ++ ")"
+
 ||| Display an instant using a calendar and offset. Conversion can fail only
 ||| when the resulting local day lies outside the calendar's supported range.
-public export
+export
 fromInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
               {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
               Offset -> Instant ->

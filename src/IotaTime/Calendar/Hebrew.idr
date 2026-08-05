@@ -99,22 +99,26 @@ namespace HebrewMonths
     Ord (HebrewMonth numbering valueYear) where
     compare left right = compare (calendarIndex left) (calendarIndex right)
 
+  export
+  showMonth : HebrewMonth numbering valueYear -> String
+  showMonth Tishri = "Tishri"
+  showMonth Cheshvan = "Cheshvan"
+  showMonth Kislev = "Kislev"
+  showMonth Tevet = "Tevet"
+  showMonth Shevat = "Shevat"
+  showMonth AdarI = "AdarI"
+  showMonth Adar = "Adar"
+  showMonth Nisan = "Nisan"
+  showMonth Iyar = "Iyar"
+  showMonth Sivan = "Sivan"
+  showMonth Tammuz = "Tammuz"
+  showMonth Av = "Av"
+  showMonth Elul = "Elul"
+
   public export
   {numbering : HebrewNumbering} -> {valueYear : Year} ->
     Show (HebrewMonth numbering valueYear) where
-    show Tishri = "Tishri"
-    show Cheshvan = "Cheshvan"
-    show Kislev = "Kislev"
-    show Tevet = "Tevet"
-    show Shevat = "Shevat"
-    show AdarI = "AdarI"
-    show Adar = "Adar"
-    show Nisan = "Nisan"
-    show Iyar = "Iyar"
-    show Sivan = "Sivan"
-    show Tammuz = "Tammuz"
-    show Av = "Av"
-    show Elul = "Elul"
+    show = showMonth
 
 ||| A non-dependent Hebrew month name used at runtime refinement boundaries.
 public export
@@ -213,7 +217,6 @@ hebrewMonthNumber : {numbering : HebrewNumbering} -> {year : Year} ->
 hebrewMonthNumber value =
   (HebrewMonths.calendarIndex value - numberingStart {numbering} + 13) `mod` 13 + 1
 
-public export
 monthsInHebrewYear : Year -> Integer
 monthsInHebrewYear value = if isHebrewLeapYear value then 13 else 12
 
@@ -310,7 +313,6 @@ isValidHebrewDay valueDay _ HebrewMonths.Tammuz = valueDay <= 29
 isValidHebrewDay valueDay _ HebrewMonths.Elul = valueDay <= 29
 isValidHebrewDay valueDay _ _ = valueDay <= 30
 
-public export
 total
 daysBeforeHebrewMonth : Year -> Integer -> Integer
 daysBeforeHebrewMonth _ 0 = 0
@@ -333,7 +335,6 @@ daysBeforeHebrewMonth value target =
         12 => 266 + variableDays + adarIDays
         _ => 295 + variableDays + adarIDays
 
-public export
 total
 hebrewYearMonthDayToDays : {numbering : HebrewNumbering} ->
                            (valueYear : Year) -> HebrewMonth numbering valueYear ->
@@ -399,13 +400,19 @@ record HebrewDate (numbering : HebrewNumbering) where
   dateMonth : HebrewMonth numbering dateYear
   dateDay : DayOfMonth
 
-export
+public export
 Eq (HebrewDate numbering) where
   left == right = left.daysSinceEpoch == right.daysSinceEpoch
 
-export
+public export
 Ord (HebrewDate numbering) where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
+
+public export
+Show (HebrewDate numbering) where
+  show (MkHebrewDate _ valueYear valueMonth valueDay) =
+    "hebrewDate' " ++ show valueDay ++ " " ++
+    show valueYear ++ " " ++ HebrewMonths.showMonth valueMonth
 
 makeHebrewDate : {numbering : HebrewNumbering} -> Integer -> HebrewDate numbering
 makeHebrewDate days = case hebrewCivilFromDays {numbering} days of

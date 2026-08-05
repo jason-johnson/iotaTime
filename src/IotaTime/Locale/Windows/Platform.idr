@@ -119,7 +119,6 @@ translatePicture PictureText (Just (field, count)) (value :: rest) =
         else value :: translatePicture PictureText Nothing rest
 
 ||| Translate a Windows date/time picture into the supported strftime subset.
-export
 windowsPictureToStrftime : String -> String
 windowsPictureToStrftime =
   pack . translatePicture PictureText Nothing . unpack

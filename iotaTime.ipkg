@@ -1,6 +1,6 @@
 package iotaTime
 
-version = 0.1.0
+version = 0.2.0
 authors = "Jason Johnson"
 maintainers = "Jason Johnson"
 license = "BSD-3-Clause"
@@ -10,7 +10,7 @@ homepage = "https://github.com/jason-johnson/iotaTime"
 sourceloc = "https://github.com/jason-johnson/iotaTime"
 bugtracker = "https://github.com/jason-johnson/iotaTime/issues"
 
-depends = contrib
+depends = contrib, elab-util
 
 sourcedir = "src"
 
@@ -60,4 +60,5 @@ modules = IotaTime.Duration,
 		  IotaTime.Pattern.ZonedDateTime,
 		  IotaTime.Pattern.Locale,
 		  IotaTime.CalendarDateTime,
+		  IotaTime.Pure,
 		  IotaTime

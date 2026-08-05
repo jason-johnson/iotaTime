@@ -4,4 +4,4 @@ module OffsetHoursOutOfRange
 import IotaTime
 
 invalid : Offset
-invalid = offsetFromHours 19
+invalid = IotaTime.Offset.fromHours 19

@@ -3,6 +3,9 @@ module IotaTime.Interval
 import public Data.So
 import public IotaTime.Duration
 import public IotaTime.Instant
+import Derive.Prelude
+
+%language ElabReflection
 
 %default total
 
@@ -60,14 +63,52 @@ public export
 contains : Interval -> Instant -> Bool
 contains value instant = start value <= instant && instant < end value
 
+||| Whether the interval contains no instants.
+public export
+isEmpty : Interval -> Bool
+isEmpty value = start value == end value
+
+||| Whether two half-open intervals share at least one instant.
+public export
+overlaps : Interval -> Interval -> Bool
+overlaps left right = start left < end right && start right < end left
+
+||| Whether two non-overlapping intervals touch at one endpoint.
+public export
+isAdjacent : Interval -> Interval -> Bool
+isAdjacent left right = end left == start right || end right == start left
+
+||| Return the non-empty intersection of two intervals.
+public export
+intersection : Interval -> Interval -> Maybe Interval
+intersection left right =
+  let overlapStart = max (start left) (start right)
+      overlapEnd = min (end left) (end right)
+   in if overlapStart < overlapEnd
+        then Just (MkInterval overlapStart overlapEnd)
+        else Nothing
+
+||| Return the smallest interval containing both inputs when their union is
+||| connected. Empty intervals are absorbed by the other input.
+public export
+union : Interval -> Interval -> Maybe Interval
+union left right =
+  if isEmpty left
+    then Just right
+    else if isEmpty right
+      then Just left
+      else if overlaps left right || isAdjacent left right
+        then Just (MkInterval
+          (min (start left) (start right))
+          (max (end left) (end right)))
+        else Nothing
+
 ||| Return the nonnegative fixed duration between the endpoints.
 public export
 duration : Interval -> Duration
 duration value = difference (end value) (start value)
 
-public export
-Eq IntervalRep where
-  left == right = start left == start right && end left == end right
+%runElab derive `{IntervalRep} [Eq, Ord]
 
 public export
 Show IntervalRep where

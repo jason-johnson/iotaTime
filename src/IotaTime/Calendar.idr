@@ -2,10 +2,15 @@ module IotaTime.Calendar
 
 import public IotaTime.Calendar.Component
 import IotaTime.Period
+import Derive.Prelude
+
+%language ElabReflection
 
 ||| Selects an occurrence of a weekday within a month.
 public export
 data DayNth = First | Second | Third | Fourth | Fifth | Last
+
+%runElab derive `{DayNth} [Eq, Show]
 
 ||| A calendar conversion failed because the target calendar cannot represent
 ||| the source date's absolute day count.
@@ -81,6 +86,15 @@ export
 shiftCalendarDays : {calendar : Type} -> {auto cal : Calendar calendar} ->
                     Integer -> CalendarDate calendar @{cal} -> CalendarDate calendar @{cal}
 shiftCalendarDays @{cal} = shiftCalendarDays' @{cal}
+
+||| Compute the exact signed day period from `start` to `end`.
+public export
+between : {calendar : Type} -> {auto cal : Calendar calendar} ->
+          {auto target : HasCalendar (CalendarDate calendar @{cal})} ->
+          (start : CalendarDate calendar @{cal}) ->
+          (end : CalendarDate calendar @{cal}) ->
+          Period (CalendarDate calendar @{cal})
+between @{cal} start end = days (toDays @{cal} end - toDays @{cal} start)
 
 ||| Decompose a date while preserving the dependency between its year and month.
 public export

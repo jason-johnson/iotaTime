@@ -3,6 +3,9 @@ module IotaTime.Calendar.Gregorian
 import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
+import Derive.Prelude
+
+%language ElabReflection
 
 ||| The Gregorian calendar, supported from October 15, 1582 onward.
 public export
@@ -46,20 +49,7 @@ public export
 Ord Month where
   compare left right = compare (monthNumber left) (monthNumber right)
 
-public export
-Show Month where
-  show January = "January"
-  show February = "February"
-  show March = "March"
-  show April = "April"
-  show May = "May"
-  show June = "June"
-  show July = "July"
-  show August = "August"
-  show September = "September"
-  show October = "October"
-  show November = "November"
-  show December = "December"
+%runElab derive `{Month} [Show]
 
 public export
 data DayOfWeek = Sunday | Monday | Tuesday | Wednesday | Thursday | Friday | Saturday
@@ -82,26 +72,18 @@ public export
 Ord DayOfWeek where
   compare left right = compare (weekdayNumber left) (weekdayNumber right)
 
-public export
-Show DayOfWeek where
-  show Sunday = "Sunday"
-  show Monday = "Monday"
-  show Tuesday = "Tuesday"
-  show Wednesday = "Wednesday"
-  show Thursday = "Thursday"
-  show Friday = "Friday"
-  show Saturday = "Saturday"
+%runElab derive `{DayOfWeek} [Show]
 
 export
 record GregorianDate where
   constructor MkGregorianDate
   daysSinceEpoch : Integer
 
-export
+public export
 Eq GregorianDate where
   left == right = left.daysSinceEpoch == right.daysSinceEpoch
 
-export
+public export
 Ord GregorianDate where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
 
@@ -295,6 +277,13 @@ Calendar Gregorian where
   dayOfWeek = gregorianDayOfWeek
   next = nextGregorian
   previous = previousGregorian
+
+public export
+Show GregorianDate where
+  show date = case civilFromDays date.daysSinceEpoch of
+    (valueYear, valueMonth, valueDay) =>
+      "calendarDate " ++ show valueDay ++ " " ++
+      show valueMonth ++ " " ++ show valueYear
 
 ||| Construct a Gregorian date whose validity is known statically.
 ||| Use `refineGregorianDate` for values learned at runtime.

@@ -1,6 +1,6 @@
 module IotaTime.Tzdb.Windows
 
-import public IotaTime.Tzdb.Windows.Types
+import IotaTime.Tzdb.Windows.Types
 import Data.String
 
 %default total
@@ -219,8 +219,6 @@ windowsRule transition = do
       Left error => Left (WindowsRecurrenceError error)
       Right value => Right value
 
-||| Convert one recurring Windows TZI value into shared zone recurrence rules.
-export
 windowsZoneRecurrence : WindowsZoneRule ->
                         Either WindowsZoneError ZoneRecurrence
 windowsZoneRecurrence rule = do

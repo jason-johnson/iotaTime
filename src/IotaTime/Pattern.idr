@@ -45,7 +45,7 @@ public export
 char : Char -> LiteralPattern
 char value = MkLiteralPattern (pack [value])
 
-public export
+export
 literalField : Pattern state value -> String -> Pattern state value
 literalField template text = MkPattern
   template.initialState
@@ -55,7 +55,6 @@ literalField template text = MkPattern
     pure (Right id))
   (const text)
 
-public export
 appendLiteral : Pattern state value -> LiteralPattern -> Pattern state value
 appendLiteral pattern literal = MkPattern
   pattern.initialState
@@ -94,7 +93,7 @@ pairUpdate : (leftState -> leftState) -> (rightState -> rightState) ->
 pairUpdate updateLeft updateRight (leftState, rightState) =
   (updateLeft leftState, updateRight rightState)
 
-public export
+export
 pairPattern : (combined -> left) -> (combined -> right) ->
               (left -> right -> combined) ->
               Pattern leftState left -> Pattern rightState right ->
@@ -127,6 +126,10 @@ structuralError source position expected =
       actual :: _ => Left (UnexpectedCharacter (cast position) expected actual)
       [] => Left (UnexpectedEnd (cast position) expected)
 
+||| Parse an entire string using an explicit initial field state.
+|||
+||| This is useful for partial patterns whose omitted fields should come from
+||| caller policy rather than the pattern's built-in defaults.
 public export
 parseWith : Pattern state value -> state -> String -> Either PatternError value
 parseWith pattern start source =
@@ -184,7 +187,7 @@ numberPart width maximumWidth minimum maximum = do
     then Right value
     else Left (ValueOutOfRange (pack digits) minimum maximum (cast position)))
 
-public export
+export
 numberUpdatePart : (Integer -> state -> state) ->
                    (width : Nat) -> (maximumWidth : Nat) ->
                    (minimum : Integer) -> (maximum : Integer) ->
@@ -207,18 +210,18 @@ namedChoice [] = Parser.fail "named field"
 namedChoice ((name, value) :: rest) =
   (caseInsensitive name *> pure value) <|> namedChoice rest
 
-public export
+export
 namedUpdatePart : List (String, field) -> (field -> state -> state) ->
                   PatternParser (Either PatternError (state -> state))
 namedUpdatePart choices setter = map (Right . setter) (namedChoice choices)
 
-public export
+export
 namedConsumePart : List String ->
                    PatternParser (Either PatternError (state -> state))
 namedConsumePart names = map (const (Right id))
   (namedChoice (map (\name => (name, ())) names))
 
-public export
+export
 spaceNumberUpdatePart : (Integer -> state -> state) ->
                         (maximumWidth : Nat) ->
                         (minimum : Integer) -> (maximum : Integer) ->

@@ -1,0 +1,47 @@
+package iotaTime-pure
+
+version = 0.2.0
+authors = "Jason Johnson"
+maintainers = "Jason Johnson"
+license = "BSD-3-Clause"
+brief = "Native-free proof-oriented date, time, calendar, and timezone types for Idris 2"
+readme = "README.md"
+homepage = "https://github.com/jason-johnson/iotaTime"
+sourceloc = "https://github.com/jason-johnson/iotaTime"
+bugtracker = "https://github.com/jason-johnson/iotaTime/issues"
+
+depends = contrib, elab-util
+
+sourcedir = "src"
+
+modules = IotaTime.Duration,
+		  IotaTime.Instant,
+		  IotaTime.Interval,
+		  IotaTime.Offset,
+		  IotaTime.Period,
+		  IotaTime.Calendar.Component,
+		  IotaTime.Calendar,
+		  IotaTime.Calendar.Gregorian,
+		  IotaTime.Calendar.Iso,
+		  IotaTime.Calendar.Coptic,
+		  IotaTime.Calendar.Islamic,
+		  IotaTime.Calendar.Persian,
+		  IotaTime.Calendar.Julian,
+		  IotaTime.Calendar.Hebrew,
+		  IotaTime.Time.Component,
+		  IotaTime.LocalTime,
+		  IotaTime.CalendarDateTime,
+		  IotaTime.OffsetDateTime,
+		  IotaTime.DateTimeZone,
+		  IotaTime.ZonedDateTime,
+		  IotaTime.Clock,
+		  IotaTime.Tzdb.Tzif,
+		  IotaTime.Tzdb.Posix,
+		  IotaTime.Tzdb.Windows.Types,
+		  IotaTime.Tzdb.Windows,
+		  IotaTime.Tzdb.Provider,
+		  IotaTime.Pattern,
+		  IotaTime.Pattern.Calendar,
+		  IotaTime.Pattern.Duration,
+		  IotaTime.Pattern.Offset,
+		  IotaTime.Pure

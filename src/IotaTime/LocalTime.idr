@@ -25,6 +25,10 @@ public export
 Ord LocalTime where
   compare left right = compare left.nanosSinceMidnight right.nanosSinceMidnight
 
+export
+toNanosecondsSinceMidnight : LocalTime -> Integer
+toNanosecondsSinceMidnight = nanosSinceMidnight
+
 ||| Construct a local time from already refined components.
 public export
 localTime : Hour -> Minute -> Second -> Nanosecond -> LocalTime
@@ -52,6 +56,14 @@ second value = secondFromInteger (value.nanosSinceMidnight `div` nanosPerSecond 
 public export
 nanosecond : LocalTime -> Nanosecond
 nanosecond value = nanosecondFromInteger (value.nanosSinceMidnight `mod` nanosPerSecond)
+
+public export
+Show LocalTime where
+  show value = "localTime " ++
+    show (hour value) ++ " " ++
+    show (minute value) ++ " " ++
+    show (second value) ++ " " ++
+    show (nanosecond value)
 
 ||| Identifies which raw local-time component failed refinement.
 public export
@@ -89,3 +101,11 @@ HasTime LocalTime where
 public export
 ApplyPeriod LocalTime where
   applyPeriod period = snd . applyTimePeriodWithCarry period
+
+||| Compute the signed same-day period from `start` to `end`.
+||| No implicit midnight crossing is chosen: an earlier `end` produces a
+||| negative period.
+public export
+between : (start : LocalTime) -> (end : LocalTime) -> Period LocalTime
+between start end = nanoseconds
+  (toNanosecondsSinceMidnight end - toNanosecondsSinceMidnight start)

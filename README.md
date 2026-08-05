@@ -6,6 +6,31 @@ An Idris 2 time library based on Erik Naggum's "Long painful history of time".
 
 iotaTime is a port of HodaTime to Idris 2, but reproducing the Haskell API is only an intermediate step. The project exists to use dependent types to move calendar and time invariants out of runtime validation and into the type system.
 
+## Supported API
+
+The supported interface consists of declarations marked `public export` in
+the modules listed by `docs/public-modules.json`. It follows HodaTime's exposed
+modules, with additional proof predicates, erased-proof constructors, and
+typed runtime refiners where Idris can express a stronger boundary.
+
+Idris package files do not have Cabal's distinction between `exposed-modules`
+and `other-modules`. Implementation modules therefore use non-public imports
+and are omitted from generated API documentation. Some implementation records
+must use `public export` inside those modules so sibling modules can access
+their constructors and fields; importing such a module directly is unsupported.
+Tests for a release exercise the supported modules rather than those internal
+representations, parsers, or platform adapters.
+
+### Version 0.2 migration
+
+Version 0.2 narrows the supported API to HodaTime-compatible names plus
+iotaTime's proof predicates, erased-proof constructors, typed runtime
+refiners, and explicit provider boundaries. Earlier descriptive aliases and
+the custom timezone/TZif/POSIX/Windows assembly APIs are no longer re-exported
+from `IotaTime` or included in the generated public documentation. Use the
+canonical names shown below. Applications should load zones with `utc`,
+`timeZone`, or `localZone` rather than construct transition data directly.
+
 The final public API should follow these principles:
 
 - Domain values carry the proofs needed to establish their validity. A `CalendarDate Gregorian` must always be a valid Gregorian date; there must be no second, possibly-invalid form of the same public type.
@@ -34,11 +59,15 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 ## Project layout
 
 - `iotaTime.ipkg` — Idris 2 library package definition
+- `iotaTime-pure.ipkg` — native-free package definition for core domain and provider APIs
+- `ROADMAP.md` — prioritized HodaTime compatibility gaps
 - `Makefile` — native support-library build and installation
 - `support/iotatime_windows.c` — Win32 registry FFI and non-Windows stub
 - `support/iotatime_unix.c` — POSIX locale FFI and Windows stub
 - `src/IotaTime.idr` — library entry module
+- `src/IotaTime/Pure.idr` — native-free library entry module
 - `src/IotaTime/Instant.idr` — opaque points on the global nanosecond timeline
+- `src/IotaTime/Clock.idr` — injectable system and fixed clocks
 - `src/IotaTime/Duration.idr` — opaque fixed elapsed-time amounts
 - `src/IotaTime/DateTimeZone.idr` — validated fixed and transition-based zones
 - `src/IotaTime/Interval.idr` — proof-carrying half-open timeline intervals
@@ -89,7 +118,28 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 
 ## Build and test
 
-Building the package requires `make` and a C compiler. On Windows, use MinGW GCC so the support library can link against `advapi32`; the CI workflow installs this toolchain through MSYS2.
+Two package definitions serve different deployment needs:
+
+- `iotaTime-pure.ipkg` provides the proof-carrying domain types, calendars,
+  clocks, in-memory time zones, the explicit `TimeZoneProvider` contract, pure
+  Windows registry conversion, and native-free patterns. Import
+  `IotaTime.Pure`. Building and installing it does not run `make` or require a
+  C compiler. Locale-dependent patterns and automatic operating-system locale
+  or time-zone discovery are intentionally outside this package.
+- `iotaTime.ipkg` is the complete package and preserves the `IotaTime` API,
+  including operating-system locale acquisition and platform time-zone
+  discovery. It requires `make` and a C compiler. On Windows, use MinGW GCC so
+  the support library can link against `advapi32`; CI installs this toolchain
+  through MSYS2.
+
+Build the native-free package with:
+
+```bash
+idris2 --build iotaTime-pure.ipkg
+idris2 --install iotaTime-pure.ipkg
+```
+
+Build and test the complete package with:
 
 ```bash
 idris2 --build iotaTime.ipkg
@@ -144,11 +194,42 @@ elapsed : Duration
 elapsed = difference finish start
 ```
 
-The HodaTime names `fromNanoseconds` through `fromStandardWeeks`, plus `add` and `minus`, are canonical within `IotaTime.Duration`; `IotaTime.Instant.add` and `IotaTime.Instant.minus` perform fixed timeline arithmetic. The earlier descriptive names remain compatibility aliases. Module qualification disambiguates names such as `Duration.fromHours` and `Offset.fromHours` when using the umbrella import.
+The HodaTime names `fromNanoseconds` through `fromStandardWeeks`, plus `add` and `minus`, are canonical within `IotaTime.Duration`; `IotaTime.Instant.add` and `IotaTime.Instant.minus` perform fixed timeline arithmetic. Module qualification disambiguates names such as `Duration.fromHours` and `Offset.fromHours` when using the umbrella import.
 
-`fromStandardDays` and `fromStandardWeeks` mean exact 24-hour and seven-day amounts. Calendar-relative `days`, `weeks`, `months`, and `years` continue to construct target-indexed `Period` values instead. `now` reads the mandatory UTC system clock, and Unix conversion is available at whole-second and nanosecond precision.
+`fromStandardDays` and `fromStandardWeeks` mean exact 24-hour and seven-day amounts. Calendar-relative `days`, `weeks`, `months`, and `years` continue to construct target-indexed `Period` values instead. `now` reads the UTC system clock directly, while applications can accept any `Clock` implementation for deterministic behavior:
+
+```idris
+timestamp : Clock clock => clock -> IO Instant
+timestamp = getCurrentInstant
+
+deterministicClock : FixedClock
+deterministicClock = fixedClock epoch
+```
+
+`systemClock` provides the production implementation. Unix conversion is available at whole-second and nanosecond precision.
+
+Tests and applications that need controlled advancement can implement `Clock` with their own mutable state; iotaTime keeps that policy outside the supported library API. The test suite includes such an implementation. `zonedClock` pairs any `Clock` with a `TimeZone` and calendar, and `getCurrentZonedDateTime` returns its current zoned representation with a typed calendar-range error.
 
 The scalar representation is intentionally simple. A proof-oriented representation using an `Integer` day, `Fin 86400` second-of-day, and `Fin 1000000000` nanosecond remains a future benchmarking candidate if profiling shows a material benefit.
+
+## Equality, ordering, and display
+
+Opaque domain values provide the standard instances that have meaningful
+semantics. Calendar dates and `CalendarDateTime` values compare in civil order.
+`OffsetDateTime` values order by represented instant, using the offset to break
+ties, while `ZonedDateTime` values order by represented instant and then zone
+identifier. Equality for offset and zoned values retains their displayed offset
+or zone identity rather than collapsing every representation of one instant.
+Intervals order lexicographically by start and end, and periods compare all
+eight components but deliberately have no arbitrary ordering.
+
+Time zones compare for equality by identifier; locale equality compares all
+localized names and layouts. Their `Show` instances expose identity only.
+Other domain displays use supported constructor and observer names instead of
+raw fields, so debugging output does not create an API around hidden
+representations. `NFData` and `Hashable` equivalents are not provided because
+the Idris ecosystem has no demonstrated need that outweighs additional
+dependencies and a permanent hashing contract.
 
 ## Intervals
 
@@ -163,39 +244,35 @@ For arbitrary `Instant` endpoints learned at runtime, `refineInterval` returns `
 
 Static construction accepts scalar endpoints because `Instant` is intentionally opaque: Idris cannot reduce two arbitrary `Instant` values to synthesize their ordering proof outside the implementation module. Runtime refinement preserves that opacity without casts or unchecked constructors.
 
+`isEmpty`, `overlaps`, and `isAdjacent` expose half-open range relationships. `intersection` returns only a non-empty shared range, so adjacent intervals have no intersection. `union` returns the smallest connected interval for overlapping or adjacent inputs, absorbs empty intervals, and returns `Nothing` for separated ranges.
+
 ## Offsets
 
 `Offset` is an opaque signed whole-second displacement from UTC, bounded inclusively to plus or minus 18 hours. Statically known values use unit-specific proof-carrying constructors; out-of-range literals fail compilation:
 
 ```idris
 india : Offset
-india = offsetFromMinutes 330
+india = IotaTime.Offset.fromMinutes 330
 
 minimumOffset : Offset
-minimumOffset = offsetFromHours (-18)
+minimumOffset = IotaTime.Offset.fromHours (-18)
 ```
 
-The HodaTime names `empty`, `fromSeconds`, `fromMinutes`, `fromHours`, `seconds`, `minutes`, `hours`, `addClamped`, and `minusClamped` are available from `IotaTime.Offset`. Proof-carrying constructors reject statically known out-of-range values rather than reproducing HodaTime's constructor clamping. The earlier descriptive names remain compatibility aliases.
+The HodaTime names `empty`, `fromSeconds`, `fromMinutes`, `fromHours`, `seconds`, `minutes`, `hours`, `addClamped`, and `minusClamped` are available from `IotaTime.Offset`. Proof-carrying constructors reject statically known out-of-range values rather than reproducing HodaTime's constructor clamping.
 
-`refineOffsetSeconds` validates an arbitrary runtime total and returns `Either OffsetError Offset`. `totalOffsetSeconds` exposes the scalar value. The component accessors are sign-consistent, so `-01:30:45` yields `(-1, -30, -45)` and the components always reconstruct the total.
+`refineOffsetSeconds` validates an arbitrary runtime total and returns `Either OffsetError Offset`. The component accessors are sign-consistent, so `-01:30:45` yields `(-1, -30, -45)`.
 
-`addOffsetClamped` and `subtractOffsetClamped` preserve the bounded invariant by clamping at either 18-hour limit. `negateOffset` is exact because the bounds are symmetric. Offset arithmetic is separate from both fixed `Duration` arithmetic and calendar-relative `Period` application.
+`addClamped` and `minusClamped` preserve the bounded invariant by clamping at either 18-hour limit. Offset arithmetic is separate from both fixed `Duration` arithmetic and calendar-relative `Period` application.
 
 ## Offset date-times
 
-`OffsetDateTime calendar` associates a valid `CalendarDateTime calendar` with a valid `Offset`. The constructor remains private. HodaTime-compatible construction uses `fromCalendarDateTimeWithOffset` or `fromInstantWithOffset`; the latter returns `Either` when the requested calendar cannot represent the local result. `atOffset` remains a compatibility alias for local construction.
+`OffsetDateTime calendar` associates a valid `CalendarDateTime calendar` with a valid `Offset`. The constructor remains private. HodaTime-compatible construction uses `fromCalendarDateTimeWithOffset` or `fromInstantWithOffset`; the latter returns `Either` when the requested calendar cannot represent the local result.
 
-`toInstant` subtracts the offset from the local date-time to resolve one unique global instant. `toCalendarDateTime` and `offset` expose the HodaTime-compatible accessors.
-
-`withOffset` preserves the instant and shifts the local date and time, including across midnight. `OffsetDateTime.withCalendar` preserves the instant, local time, and offset while changing only the calendar representation of the date; it retains the same target-range validation as other calendar conversion APIs.
+`toCalendarDateTime`, `offset`, and `toInstant` expose the HodaTime-compatible observers. `withOffset` changes the displayed offset while preserving the represented instant, and `withCalendar` changes the calendar while preserving the local time, offset, and instant. Both transformations return `Either CalendarConversionError` when the target calendar cannot represent the result.
 
 ## Date-time zones
 
-`TimeZone` is the HodaTime-compatible name for the opaque in-memory zone model; `DateTimeZone` remains an alias. Each `TransitionInfo` carries its UTC offset, DST status, and abbreviation. `fixedDateTimeZone` creates one permanent transition state. `dateTimeZone` creates a zone from an initial state and a statically known list of `(nanosecondsSinceEpoch, TransitionInfo)` changes; an erased proof requires transition instants to be strictly increasing. `refineDateTimeZone` validates arbitrary `Instant` transition data at runtime and rejects duplicate or reversed transitions.
-
-`zoneOffsetAt` selects the offset effective at an instant, with a transition's new offset taking effect exactly at its instant. Finite zones retain their final transition state indefinitely. TZDB zones can additionally carry ordered fixed or recurring eras. Validated POSIX recurrence rules calculate future standard and daylight transitions after the final explicit TZif entry. `mapLocal` maps a `CalendarDateTime` explicitly to `Skipped`, `Unambiguous`, or `Ambiguous`. Ambiguous results are ordered by instant and retain every candidate, even for synthetic transition data that creates more than the usual two mappings.
-
-`parseTzif` is a pure, bounds-checked TZif v1-v4 decoder. It validates transition type and abbreviation indexes, offset bounds, section lengths, and footer framing. `parsePosixZone` validates fixed and recurring POSIX footer forms, including `Jn`, `n`, and `Mm.w.d` days and wall, standard, or UTC transition clocks. `timeZoneFromTzif` joins both trust boundaries and constructs a validated `TimeZone`.
+`TimeZone` is the HodaTime-compatible name for the opaque in-memory zone model; `DateTimeZone` remains an alias. Applications acquire zones through the platform provider rather than constructing transitions directly. The implementation uses bounds-checked TZif decoding, validated POSIX future rules, and native Windows registry data, but those parsers and assembly types are internal modules rather than supported consumer API.
 
 On Unix-like systems, the HodaTime-compatible names have typed effect signatures:
 
@@ -208,9 +285,7 @@ availableZones : IO (Either TzdbError (List String))
 
 `TZDIR` overrides `/usr/share/zoneinfo`; `TZ` overrides `/etc/localtime` for the local zone. Named zones cannot escape the TZDB root. `availableZones` reports files that successfully decode as TZif rather than relying on filename conventions.
 
-`TimeZoneProvider` isolates platform discovery. The `utcWith`, `timeZoneWith`, `localZoneWith`, and `availableZonesWith` variants accept an explicit provider; the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. `WindowsZoneRule` and `WindowsTransitionDate` model registry `REG_TZI_FORMAT` and `SYSTEMTIME` values. `parseWindowsTzi` decodes the exact 44-byte little-endian registry format, including signed bias fields, and rejects nonzero transition milliseconds rather than truncating them. `windowsTimeZone` validates Windows bias semantics, constructs fixed zones when both transition months are zero, and constructs recurring zones for paired transition dates. `WindowsDynamicRule` and `windowsDynamicTimeZone` convert strictly ordered Dynamic DST entries into year-bounded fixed or recurring eras, with the first entry unbounded to the past and the final entry remaining active indefinitely. A nonzero `SYSTEMTIME` year denotes an absolute one-time transition and is rejected explicitly rather than being misread as annual recurrence.
-
-`WindowsRegistryZone` is the platform-neutral snapshot of one registry key, including default and dated Dynamic DST byte values. `windowsRegistryTimeZone` converts that snapshot with errors attributed to the default value, a specific dynamic year, or final zone validation. `WindowsRegistrySnapshot` atomically carries the available zones and local Windows zone ID. `WindowsRegistrySource` is the minimal native I/O contract for acquiring that snapshot, and `windowsRegistryTimeZoneProvider` turns any such source into a complete provider with typed source, malformed-data, and unknown-zone failures.
+`TimeZoneProvider` isolates platform discovery. The `utcWith`, `timeZoneWith`, `localZoneWith`, and `availableZonesWith` variants accept an explicit provider; the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. On Windows, internal registry models decode `REG_TZI_FORMAT`, `SYSTEMTIME`, and Dynamic DST history with typed malformed-data and unknown-zone failures.
 
 On Windows, `systemTimeZoneProvider` uses `windowsNativeRegistrySource`. A small C support library calls `RegOpenKeyExW`, `RegEnumKeyExW`, and `RegQueryValueExW` from the native Win32 API. It reads the local zone, installed zone definitions, and Dynamic DST history without launching another process. Idris owns parsing, validation, recurrence construction, and all timezone calculations; the C boundary only acquires registry values. Native buffers are copied immediately and freed explicitly.
 
@@ -220,11 +295,13 @@ CI runs the complete runtime and compile-fail suites on Linux. A native `windows
 
 ## Zoned date-times
 
-`ZonedDateTime calendar` stores a zone together with an `OffsetDateTime` whose offset is guaranteed by construction to equal `zoneOffsetAt zone instant`. Its constructor is private. `fromInstant` uses HodaTime's instant-first argument order. `fromCalendarDateTimeAll`, `fromCalendarDateTimeStrictly`, and `fromCalendarDateTimeLeniently` retain the recognizable HodaTime construction policies, with typed `Either` errors replacing exceptions or hidden partiality. `resolveLocal` remains the fully explicit Idris mapping API.
+`ZonedDateTime calendar` stores a zone together with the local date-time and effective offset for one instant. Its constructor is private. `fromInstant` uses HodaTime's instant-first argument order. `fromCalendarDateTimeAll`, `fromCalendarDateTimeStrictly`, and `fromCalendarDateTimeLeniently` retain the recognizable HodaTime construction policies, with typed `Either` errors replacing exceptions or hidden partiality. `resolveLocal` is the fully explicit Idris mapping API.
 
-`toCalendarDateTime`, `toCalendarDate`, `toLocalTime`, `toInstant`, `inDst`, `zoneAbbreviation`, `zoneId`, and the direct date/time component functions match HodaTime's accessor vocabulary. `withZone` preserves the instant while deriving the new zone's effective offset and local fields. `ZonedDateTime.withCalendar` preserves the instant and zone while changing the calendar representation, returning `Either` when the target calendar cannot represent the resulting local day.
+`toCalendarDateTime`, `toCalendarDate`, `toLocalTime`, `toInstant`, `inDst`, `zoneAbbreviation`, `zoneId`, and the direct date/time component functions match HodaTime's accessor vocabulary. `withZone` preserves the instant while changing the zone and recomputing its local representation. `ZonedDateTime.withCalendar` preserves the instant and zone while changing the calendar representation. Both return `Either` when the target representation lies outside the calendar's supported range.
 
-`ZonedDateTime.add` and `ZonedDateTime.minus` apply fixed `Duration` values on the global timeline and re-evaluate the zone offset afterward, matching Noda Time semantics. Calendar-relative period arithmetic is intentionally absent: callers convert with `toCalendarDateTime`, apply the `Period`, then explicitly choose a local mapping policy. `ZonedDateTime` therefore does not implement `ApplyPeriod`.
+`ZonedDateTime.add` and `ZonedDateTime.minus` apply fixed `Duration` values on the global timeline and then re-evaluate the zone offset. They therefore cross daylight-saving gaps and overlaps by elapsed time rather than local clock arithmetic.
+
+Calendar-relative period arithmetic is intentionally absent: callers convert with `toCalendarDateTime`, apply the `Period`, then explicitly choose a local mapping policy. `ZonedDateTime` therefore does not implement `ApplyPeriod`.
 
 ## Gregorian calendar API
 
@@ -286,6 +363,8 @@ advanced = applyPeriod (months 1 <+> hours 2) lateDateTime
 ```
 
 Time-only periods wrap a `LocalTime` within its 24-hour day. On `CalendarDateTime`, date fields apply first from largest to smallest, then time fields apply and any positive or negative day carry adjusts the resulting date. `CalendarDate` supports only calendar units, `LocalTime` only time units, and `CalendarDateTime` both.
+
+Each of those value kinds provides a module-qualified `between start end`. `IotaTime.Calendar.between` returns an exact signed day period, `IotaTime.LocalTime.between` returns the signed same-day nanosecond difference, and `IotaTime.CalendarDateTime.between` combines absolute calendar days with nanosecond-precise local time. In every case, applying the result to `start` yields `end`. These canonical differences intentionally avoid policy-dependent decomposition into years and months, where end-of-month clamping can admit multiple answers.
 
 `on time date` constructs a calendar date-time with time-first argument order. The HodaTime-compatible `at date time` provides date-first order, while `atStartOfDay date` uses midnight.
 
@@ -486,6 +565,12 @@ Use `parseInstant` for the typed `Either PatternError Instant` parsing boundary.
 `pOffset` formats signed hours and minutes as `+02:00`; `pOffsetFull` includes seconds, `pOffsetZ` writes `Z` for UTC, and `pOffsetCompact` implements the `strftime` `%z` form such as `+0200`. Parsing reads the sign and all components as one quantity, then calls `refineOffsetSeconds`, so malformed components and values outside the supported plus-or-minus 18-hour range remain typed runtime failures.
 
 `pairPattern` combines two independently refined patterns through projections and a constructor. `calendarDateTimePattern` uses it for any `CalendarPattern` date and local time; the standard `ps`, `po`, `pf`, `pF`, `pg`, and `pG` layouts mirror HodaTime. `offsetDateTimePattern` then combines any such local pattern with an offset pattern. `pOffsetDateTime` is the calendar-polymorphic numeric layout `yyyy-MM-ddTHH:mm:ss(+/-)HH:mm`.
+
+`parse` starts from each pattern's documented defaults. `parseWith` accepts an
+explicit typed field state instead, allowing partial patterns to inherit omitted
+fields from caller policy while still performing the same final refinement. For
+example, parsing `pmonthDay` with `MkDateFields 2024 1 1` uses 2024 as the
+otherwise omitted year.
 
 ## Locale API
 

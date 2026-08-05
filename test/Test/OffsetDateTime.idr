@@ -4,90 +4,102 @@ import IotaTime
 import Test.Support
 
 gregorianComponents : OffsetDateTime Gregorian ->
-  ((Year, Month, DayOfMonth), (Hour, Minute, Second, Nanosecond), Integer)
+  ((Year, Month, DayOfMonth), (Hour, Minute, Second, Nanosecond), Offset)
 gregorianComponents value =
-  let local = localDateTime value
+  let local = toCalendarDateTime value
       date = datePart local
       time = localTimeOfDay local
    in case yearMonthDay {calendar = Gregorian} date of
         (valueYear ** (valueMonth, valueDay)) =>
           ((valueYear, valueMonth, valueDay),
            (hour time, minute time, second time, nanosecond time),
-           totalOffsetSeconds (offsetOf value))
-
-epochAtUtc : OffsetDateTime Gregorian
-epochAtUtc = atOffset
-  (on (localTime 0 0 0 0) (calendarDate 1 March 2000))
-  zeroOffset
-
-epochAtPlusOne : OffsetDateTime Gregorian
-epochAtPlusOne = atOffset
-  (on (localTime 1 0 0 0) (calendarDate 1 March 2000))
-  (offsetFromHours 1)
-
-gregorianBoundaryAtMaxOffset : OffsetDateTime Gregorian
-gregorianBoundaryAtMaxOffset = atOffset
-  (on (localTime 0 0 0 0) (calendarDate 15 October 1582))
-  (offsetFromHours 18)
+           offset value)
 
 offsetDateTimeCases : List RuntimeCase
 offsetDateTimeCases =
-  [ MkRuntimeCase "HodaTime local constructor and accessors remain available"
+  [ MkRuntimeCase "calendar date-time and offset construct a value"
       (let value = the (OffsetDateTime Gregorian)
             (fromCalendarDateTimeWithOffset
               (on (localTime 1 0 0 0) (calendarDate 1 March 2000))
-              (offsetFromHours 1)) in
-        gregorianComponents value == gregorianComponents epochAtPlusOne &&
-        IotaTime.OffsetDateTime.offset value == offsetFromHours 1)
-  , MkRuntimeCase "HodaTime instant-first offset constructor remains available"
+              (IotaTime.Offset.fromHours 1)) in
+        gregorianComponents value ==
+          ((2000, March, 1), (1, 0, 0, 0), IotaTime.Offset.fromHours 1))
+  , MkRuntimeCase "instant and positive offset construct local components"
       (case the (Either CalendarConversionError (OffsetDateTime Gregorian))
-        (fromInstantWithOffset epoch (offsetFromHours 1)) of
+        (fromInstantWithOffset (fromNanosecondsSinceEpoch 0)
+          (IotaTime.Offset.fromMinutes 90)) of
           Right value => gregorianComponents value ==
-            ((2000, March, 1), (1, 0, 0, 0), 3600)
-          Left _ => False)
-  , MkRuntimeCase "UTC calendar epoch resolves to the instant epoch"
-      (toInstant epochAtUtc == epoch)
-  , MkRuntimeCase "local time minus offset resolves to the instant epoch"
-      (toInstant epochAtPlusOne == epoch)
-  , MkRuntimeCase "instant displays at the requested positive offset"
-      (case the (Either CalendarConversionError (OffsetDateTime Gregorian))
-        (fromInstant (offsetFromMinutes 90) epoch) of
-          Right value => gregorianComponents value ==
-            ((2000, March, 1), (1, 30, 0, 0), 5400)
+            ((2000, March, 1), (1, 30, 0, 0),
+             IotaTime.Offset.fromMinutes 90)
           Left _ => False)
   , MkRuntimeCase "instant conversion handles a negative nanosecond"
       (case the (Either CalendarConversionError (OffsetDateTime Gregorian))
-        (fromInstant zeroOffset (fromNanosecondsSinceEpoch (-1))) of
+        (fromInstantWithOffset (fromNanosecondsSinceEpoch (-1)) empty) of
           Right value => gregorianComponents value ==
-            ((2000, February, 29), (23, 59, 59, 999999999), 0)
+            ((2000, February, 29), (23, 59, 59, 999999999), empty)
           Left _ => False)
-  , MkRuntimeCase "changing offset preserves the instant"
-      (case withOffset (offsetFromHours (-2)) epochAtPlusOne of
-          Right value => toInstant value == epoch
-          Left _ => False)
-  , MkRuntimeCase "changing offset shifts local time across midnight"
-      (case withOffset (offsetFromHours (-2)) epochAtPlusOne of
-          Right value => gregorianComponents value ==
-            ((2000, February, 29), (22, 0, 0, 0), -7200)
-          Left _ => False)
-  , MkRuntimeCase "instant round-trip is exact"
-      (case the (Either CalendarConversionError (OffsetDateTime Gregorian))
-        (fromInstant (offsetFromSeconds 5445)
-          (fromNanosecondsSinceEpoch 12345678901234567890)) of
-          Right value => toInstant value ==
-            fromNanosecondsSinceEpoch 12345678901234567890
-          Left _ => False)
-  , MkRuntimeCase "offset change rejects a local day before calendar range"
-      (case withOffset (offsetFromHours (-18))
-        gregorianBoundaryAtMaxOffset of
-          Left (TargetCalendarOutOfRange "Gregorian" _) => True
-          _ => False)
-  , MkRuntimeCase "calendar conversion preserves instant and offset"
-      (case the (Either CalendarConversionError (OffsetDateTime Julian))
-        (IotaTime.OffsetDateTime.withCalendar epochAtPlusOne) of
-          Right value => toInstant value == epoch &&
-            offsetOf value == offsetFromHours 1
-          Left _ => False)
+  , MkRuntimeCase "toCalendarDateTime returns the original local value"
+      (let local = on (localTime 23 59 58 7)
+            (calendarDate 31 December 2024)
+           value = the (OffsetDateTime Gregorian)
+             (fromCalendarDateTimeWithOffset local
+               (IotaTime.Offset.fromHours (-5)))
+        in gregorianComponents value ==
+          ((2024, December, 31), (23, 59, 58, 7),
+           IotaTime.Offset.fromHours (-5)))
+  , MkRuntimeCase "offset returns the constructor offset"
+      (let expected = IotaTime.Offset.fromSeconds 5445
+           value = the (OffsetDateTime Gregorian)
+             (fromCalendarDateTimeWithOffset
+               (on (localTime 0 0 0 0) (calendarDate 1 January 2025))
+               expected)
+        in offset value == expected)
+  , MkRuntimeCase "toInstant resolves local time using its offset"
+      (let value = the (OffsetDateTime Gregorian)
+            (fromCalendarDateTimeWithOffset
+              (on (localTime 1 30 0 0) (calendarDate 1 March 2000))
+              (IotaTime.Offset.fromMinutes 90))
+        in toInstant value == epoch)
+  , MkRuntimeCase "offset date-time equality retains the displayed offset"
+      (let utcValue = the (OffsetDateTime Gregorian)
+            (fromCalendarDateTimeWithOffset
+              (on (localTime 0 0 0 0) (calendarDate 1 March 2000)) empty)
+           shiftedValue = the (OffsetDateTime Gregorian)
+             (fromCalendarDateTimeWithOffset
+               (on (localTime 1 0 0 0) (calendarDate 1 March 2000))
+               (IotaTime.Offset.fromHours 1))
+        in toInstant utcValue == toInstant shiftedValue &&
+          utcValue /= shiftedValue && utcValue < shiftedValue)
+  , MkRuntimeCase "offset date-time show reconstructs instant and offset"
+      (show (the (OffsetDateTime Gregorian)
+        (fromCalendarDateTimeWithOffset
+          (on (localTime 1 30 0 0) (calendarDate 1 March 2000))
+          (IotaTime.Offset.fromMinutes 90))) ==
+        "fromInstantWithOffset (fromNanosecondsSinceEpoch 0) (offsetFromSeconds 5400)")
+  , MkRuntimeCase "withOffset preserves the represented instant"
+      (let original = the (OffsetDateTime Gregorian)
+            (fromCalendarDateTimeWithOffset
+              (on (localTime 0 0 0 0) (calendarDate 2 March 2000)) empty)
+        in case IotaTime.OffsetDateTime.withOffset
+          (IotaTime.Offset.fromHours 2) original of
+            Right converted =>
+              toInstant converted == toInstant original &&
+              gregorianComponents converted ==
+                ((2000, March, 2), (2, 0, 0, 0), IotaTime.Offset.fromHours 2)
+            Left _ => False)
+  , MkRuntimeCase "withCalendar preserves local time offset and instant"
+      (let original = the (OffsetDateTime Gregorian)
+            (fromCalendarDateTimeWithOffset
+              (on (localTime 12 34 56 7) (calendarDate 1 March 2000))
+              (IotaTime.Offset.fromHours 1))
+        in case the (Either CalendarConversionError (OffsetDateTime Julian))
+          (IotaTime.OffsetDateTime.withCalendar original) of
+            Right converted =>
+              toInstant converted == toInstant original &&
+              offset converted == offset original &&
+              localTimeOfDay (toCalendarDateTime converted) ==
+                localTimeOfDay (toCalendarDateTime original)
+            Left _ => False)
   ]
 
 export

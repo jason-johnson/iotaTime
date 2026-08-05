@@ -2,10 +2,15 @@ module IotaTime.Calendar
 
 import public IotaTime.Calendar.Component
 import IotaTime.Period
+import Derive.Prelude
+
+%language ElabReflection
 
 ||| Selects an occurrence of a weekday within a month.
 public export
 data DayNth = First | Second | Third | Fourth | Fifth | Last
+
+%runElab derive `{DayNth} [Eq, Show]
 
 ||| A calendar conversion failed because the target calendar cannot represent
 ||| the source date's absolute day count.

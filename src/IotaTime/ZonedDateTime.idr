@@ -16,6 +16,13 @@ public export
 ZonedDateTime : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 ZonedDateTime calendar @{cal} = ZonedDateTimeRep calendar cal
 
+public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  Eq (OffsetDateTime calendar @{cal}) =>
+  Eq (ZonedDateTimeRep calendar cal) where
+  left == right =
+    left.zonedValue == right.zonedValue && left.zonedZone == right.zonedZone
+
 ||| Display an instant in a zone using the zone's effective offset. Conversion
 ||| fails only when the resulting local day is outside the calendar's range.
 export
@@ -117,6 +124,26 @@ toInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
             {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
             ZonedDateTime calendar @{cal} -> Instant
 toInstant = zonedInstant
+
+public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  HasCalendarDate (CalendarDate calendar @{cal}) =>
+  Eq (CalendarDate calendar @{cal}) =>
+  Ord (ZonedDateTimeRep calendar cal) where
+  compare left right = case compare
+    (zonedInstant left) (zonedInstant right) of
+      EQ => compare
+        (IotaTime.DateTimeZone.zoneId left.zonedZone)
+        (IotaTime.DateTimeZone.zoneId right.zonedZone)
+      ordering => ordering
+
+public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  HasCalendarDate (CalendarDate calendar @{cal}) =>
+  Show (ZonedDateTimeRep calendar cal) where
+  show value = "fromInstant (" ++
+    show (zonedInstant value) ++ ") (" ++
+    show value.zonedZone ++ ")"
 
 export
 zoneOf : {calendar : Type} -> {auto cal : Calendar calendar} ->

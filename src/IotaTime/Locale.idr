@@ -5,6 +5,9 @@ import IotaTime.Locale.Unix.Platform
 import IotaTime.Locale.Windows.Platform
 import System
 import System.Info
+import Derive.Prelude
+
+%language ElabReflection
 
 %default total
 
@@ -72,6 +75,12 @@ rawTimeFormat = storedRawTimeFormat
 export
 rawDateTimeFormat : Locale -> String
 rawDateTimeFormat = storedRawDateTimeFormat
+
+%runElab derive `{Locale} [Eq]
+
+public export
+Show Locale where
+  show value = "<Locale " ++ show value.storedLocaleId ++ ">"
 
 ||| A failure to acquire locale data from the operating system.
 public export

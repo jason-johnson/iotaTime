@@ -21,6 +21,28 @@ public export
 CalendarDateTime : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 CalendarDateTime calendar @{cal} = CalendarDateTimeRep calendar cal
 
+public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  Eq (CalendarDate calendar @{cal}) =>
+  Eq (CalendarDateTimeRep calendar cal) where
+  MkCalendarDateTime leftDate leftTime ==
+    MkCalendarDateTime rightDate rightTime =
+      leftDate == rightDate && leftTime == rightTime
+
+public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  Ord (CalendarDate calendar @{cal}) =>
+  Ord (CalendarDateTimeRep calendar cal) where
+  compare left right = case compare left.date right.date of
+    EQ => compare left.time right.time
+    ordering => ordering
+
+public export
+{calendar : Type} -> {cal : Calendar calendar} ->
+  Show (CalendarDate calendar @{cal}) =>
+  Show (CalendarDateTimeRep calendar cal) where
+  show value = "at (" ++ show value.date ++ ") (" ++ show value.time ++ ")"
+
 ||| Associate a local time with a date, using time-first argument order.
 public export
 on : {calendar : Type} -> {auto cal : Calendar calendar} ->

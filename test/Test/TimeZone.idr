@@ -20,8 +20,12 @@ run = do
   runSuite "time-zone provider tests"
     [ MkRuntimeCase "system UTC zone is loaded"
         (case systemUtc of
-          Right value => zoneId value == "UTC"
+          Right value => zoneId value == "UTC" && show value == "<TimeZone UTC>"
           Left _ => False)
+    , MkRuntimeCase "time-zone equality uses the zone identifier"
+        (case (systemUtc, systemUtc) of
+          (Right left, Right right) => left == right
+          _ => False)
     , MkRuntimeCase "TZDB recurrence supplies standard time in 2100"
         (case systemNewYork of
           Right value => zoneHourAt value 4103697600 == Just 7

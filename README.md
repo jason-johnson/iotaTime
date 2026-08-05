@@ -212,6 +212,25 @@ Tests and applications that need controlled advancement can implement `Clock` wi
 
 The scalar representation is intentionally simple. A proof-oriented representation using an `Integer` day, `Fin 86400` second-of-day, and `Fin 1000000000` nanosecond remains a future benchmarking candidate if profiling shows a material benefit.
 
+## Equality, ordering, and display
+
+Opaque domain values provide the standard instances that have meaningful
+semantics. Calendar dates and `CalendarDateTime` values compare in civil order.
+`OffsetDateTime` values order by represented instant, using the offset to break
+ties, while `ZonedDateTime` values order by represented instant and then zone
+identifier. Equality for offset and zoned values retains their displayed offset
+or zone identity rather than collapsing every representation of one instant.
+Intervals order lexicographically by start and end, and periods compare all
+eight components but deliberately have no arbitrary ordering.
+
+Time zones compare for equality by identifier; locale equality compares all
+localized names and layouts. Their `Show` instances expose identity only.
+Other domain displays use supported constructor and observer names instead of
+raw fields, so debugging output does not create an API around hidden
+representations. `NFData` and `Hashable` equivalents are not provided because
+the Idris ecosystem has no demonstrated need that outweighs additional
+dependencies and a permanent hashing contract.
+
 ## Intervals
 
 `Interval` represents a half-open range `[start, end)` and always satisfies `start <= end`. Statically known epoch-relative nanosecond endpoints use `interval`; reversed literals fail compilation:

@@ -46,6 +46,9 @@ islamicCases =
   [ MkRuntimeCase "Islamic epoch is 1 Muharram 1"
       (iymd (islamicDate 1 IslamicMonths.Muharram 1) ==
         (1, IslamicMonths.Muharram, 1))
+  , MkRuntimeCase "Islamic date show retains its indexed constructor"
+      (show (islamicDate 1 IslamicMonths.Muharram 1) ==
+        "islamicDate' 1 Muharram 1")
   , MkRuntimeCase "Islamic conversion round-trips two 30-year cycles"
       (islamicRoundTrips (-503166) (-481904))
   , MkRuntimeCase "Islamic epoch matches Julian July 15 622"

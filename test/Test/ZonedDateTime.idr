@@ -27,6 +27,23 @@ zoneCases utcZone timeZoneValue =
             Right value => IotaTime.ZonedDateTime.toInstant value ==
               fromSecondsSinceUnixEpoch 1704067200
             Left _ => False)
+      , MkRuntimeCase "zoned equality retains zone identity"
+          (case (winter, IotaTime.ZonedDateTime.withZone utcZone =<< winter) of
+            (Right original, Right changed) =>
+              IotaTime.ZonedDateTime.toInstant original ==
+                IotaTime.ZonedDateTime.toInstant changed &&
+              original /= changed
+            _ => False)
+      , MkRuntimeCase "zoned ordering uses zone ID after instant"
+          (case (winter, IotaTime.ZonedDateTime.withZone utcZone =<< winter) of
+            (Right original, Right changed) => original < changed
+            _ => False)
+      , MkRuntimeCase "zoned show reconstructs instant and zone"
+          (case IotaTime.ZonedDateTime.fromInstant {calendar = Gregorian}
+            epoch utcZone of
+              Right value => show value ==
+                "fromInstant (fromNanosecondsSinceEpoch 0) (<TimeZone UTC>)"
+              Left _ => False)
       , MkRuntimeCase "strict construction rejects a skipped local time"
           (case fromCalendarDateTimeStrictly skippedGregorian timeZoneValue of
             Left DateTimeDoesNotExist => True

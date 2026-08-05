@@ -43,6 +43,9 @@ persianCases =
   [ MkRuntimeCase "Persian epoch is 1 Farvardin 1"
       (pymd (persianFromDays (-503284)) ==
         (1, PersianMonths.Farvardin, 1))
+  , MkRuntimeCase "Persian date show uses its public constructor"
+      (show (persianDate 1 PersianMonths.Farvardin 1) ==
+        "persianDate 1 Farvardin 1")
   , MkRuntimeCase "Persian conversion samples the complete supported range"
       (let first = toDays {calendar = Persian}
              (persianDate 1 PersianMonths.Farvardin 1)

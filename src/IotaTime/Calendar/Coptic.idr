@@ -100,11 +100,11 @@ record CopticDate where
   constructor MkCopticDate
   daysSinceEpoch : Integer
 
-export
+public export
 Eq CopticDate where
   left == right = left.daysSinceEpoch == right.daysSinceEpoch
 
-export
+public export
 Ord CopticDate where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
 
@@ -251,6 +251,13 @@ Calendar Coptic where
   dayOfWeek = copticDayOfWeek
   next = nextCoptic
   previous = previousCoptic
+
+public export
+Show CopticDate where
+  show date = case copticCivilFromDays date.daysSinceEpoch of
+    (valueYear, valueMonth, valueDay) =>
+      "copticDate " ++ show valueDay ++ " " ++
+      show valueMonth ++ " " ++ show valueYear
 
 public export
 HasCalendar CopticDate where

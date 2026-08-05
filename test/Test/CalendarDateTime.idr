@@ -46,6 +46,24 @@ calendarDateTimeCases =
   , MkRuntimeCase "atStartOfDay constructs midnight"
       (dateTimeComponents (atStartOfDay (calendarDate 1 March 2000)) ==
         ((2000, March, 1), (0, 0, 0, 0)))
+  , MkRuntimeCase "calendar date-time equality compares date and time"
+      (let value : CalendarDateTime Gregorian
+           value = on (localTime 4 30 2 7) (calendarDate 1 March 2000)
+        in value == value &&
+          value /= on (localTime 4 30 2 8) (calendarDate 1 March 2000))
+  , MkRuntimeCase "calendar date-time ordering is civil date then time"
+      (the (CalendarDateTime Gregorian)
+          (on (localTime 23 0 0 0) (calendarDate 1 March 2000)) <
+        the (CalendarDateTime Gregorian)
+          (on (localTime 0 0 0 0) (calendarDate 2 March 2000)) &&
+       the (CalendarDateTime Gregorian)
+          (on (localTime 4 30 2 7) (calendarDate 1 March 2000)) <
+        the (CalendarDateTime Gregorian)
+          (on (localTime 4 30 2 8) (calendarDate 1 March 2000)))
+  , MkRuntimeCase "calendar date-time show uses public constructors"
+      (show (the (CalendarDateTime Gregorian)
+        (on (localTime 4 30 2 7) (calendarDate 1 March 2000))) ==
+        "at (calendarDate 1 March 2000) (localTime 4 30 2 7)")
   , MkRuntimeCase "calendar periods apply to CalendarDateTime"
       (dateTimeComponents (applyPeriod (months 2) lateDateTime) ==
         ((2000, March, 31), (23, 30, 0, 0)))
@@ -63,6 +81,16 @@ calendarDateTimeCases =
       (dateTimeComponents (applyPeriod (years 1 <+> hours 24)
         (on (localTime 0 0 0 0) (calendarDate 28 February 1999))) ==
           ((2000, February, 29), (0, 0, 0, 0)))
+  , MkRuntimeCase "period equality compares every component"
+      (let value : Period (CalendarDateTime Gregorian)
+           value = years 1 <+> months 2 <+> weeks 3 <+> days 4 <+>
+             hours 5 <+> minutes 6 <+> seconds 7 <+> nanoseconds 8
+        in value == value && value /= (value <+> nanoseconds 1))
+  , MkRuntimeCase "period show exposes every component"
+      (let value : Period (CalendarDateTime Gregorian)
+           value = years 1 <+> months 2 <+> weeks 3 <+> days 4 <+>
+             hours 5 <+> minutes 6 <+> seconds 7 <+> nanoseconds 8
+        in show value == "period 1 2 3 4 5 6 7 8")
   , MkRuntimeCase "calendar date between applies back to its endpoint"
       (dateBetweenApplies (calendarDate 31 January 2000)
         (calendarDate 2 March 2000))

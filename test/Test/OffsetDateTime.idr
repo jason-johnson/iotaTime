@@ -60,6 +60,22 @@ offsetDateTimeCases =
               (on (localTime 1 30 0 0) (calendarDate 1 March 2000))
               (IotaTime.Offset.fromMinutes 90))
         in toInstant value == epoch)
+  , MkRuntimeCase "offset date-time equality retains the displayed offset"
+      (let utcValue = the (OffsetDateTime Gregorian)
+            (fromCalendarDateTimeWithOffset
+              (on (localTime 0 0 0 0) (calendarDate 1 March 2000)) empty)
+           shiftedValue = the (OffsetDateTime Gregorian)
+             (fromCalendarDateTimeWithOffset
+               (on (localTime 1 0 0 0) (calendarDate 1 March 2000))
+               (IotaTime.Offset.fromHours 1))
+        in toInstant utcValue == toInstant shiftedValue &&
+          utcValue /= shiftedValue && utcValue < shiftedValue)
+  , MkRuntimeCase "offset date-time show reconstructs instant and offset"
+      (show (the (OffsetDateTime Gregorian)
+        (fromCalendarDateTimeWithOffset
+          (on (localTime 1 30 0 0) (calendarDate 1 March 2000))
+          (IotaTime.Offset.fromMinutes 90))) ==
+        "fromInstantWithOffset (fromNanosecondsSinceEpoch 0) (offsetFromSeconds 5400)")
   , MkRuntimeCase "withOffset preserves the represented instant"
       (let original = the (OffsetDateTime Gregorian)
             (fromCalendarDateTimeWithOffset

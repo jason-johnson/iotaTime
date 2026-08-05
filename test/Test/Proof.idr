@@ -1,5 +1,6 @@
 module Test.Proof
 
+import Data.So
 import IotaTime
 
 data CalendarCapability = CalendarOnly
@@ -62,3 +63,9 @@ julianCenturyLeap = Refl
 public export
 hebrewLeapCycle : isHebrewLeapYear 5784 = True
 hebrewLeapCycle = Refl
+
+public export
+periodEqualityReduces : So
+	(the (Period CalendarCapability) (months 2) ==
+	 the (Period CalendarCapability) (months 2))
+periodEqualityReduces = Oh

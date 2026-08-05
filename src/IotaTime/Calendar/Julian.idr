@@ -97,11 +97,11 @@ record JulianDate where
   constructor MkJulianDate
   daysSinceEpoch : Integer
 
-export
+public export
 Eq JulianDate where
   left == right = left.daysSinceEpoch == right.daysSinceEpoch
 
-export
+public export
 Ord JulianDate where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
 
@@ -233,6 +233,13 @@ Calendar Julian where
   dayOfWeek = julianDayOfWeek
   next = nextJulian
   previous = previousJulian
+
+public export
+Show JulianDate where
+  show date = case julianCivilFromDays date.daysSinceEpoch of
+    (valueYear, valueMonth, valueDay) =>
+      "julianDate " ++ show valueDay ++ " " ++
+      show valueMonth ++ " " ++ show valueYear
 
 public export
 HasCalendar JulianDate where

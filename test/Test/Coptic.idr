@@ -44,6 +44,9 @@ copticCases =
   [ MkRuntimeCase "Coptic epoch is 1 Thout 1"
     (cymd (copticDate 1 CopticMonths.Thout 1) ==
       (1, CopticMonths.Thout, 1))
+  , MkRuntimeCase "Coptic date show uses its public constructor"
+      (show (copticDate 1 CopticMonths.Thout 1) ==
+        "copticDate 1 Thout 1")
   , MkRuntimeCase "Coptic civil conversion round-trips two leap cycles"
       (copticRoundTrips (-626575) (-623653))
   , MkRuntimeCase "Coptic epoch matches Julian August 29 284"

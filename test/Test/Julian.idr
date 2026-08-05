@@ -36,6 +36,9 @@ julianCases : List RuntimeCase
 julianCases =
   [ MkRuntimeCase "Julian epoch decodes to March 1 2000"
       (jymd (julianFromDays 0) == (2000, JulianMonths.March, 1))
+  , MkRuntimeCase "Julian date show uses its public constructor"
+      (show (julianDate 1 JulianMonths.March 2000) ==
+        "julianDate 1 March 2000")
   , MkRuntimeCase "Julian civil conversion round-trips across two leap cycles"
       (julianRoundTrips (-1461) 1461)
   , MkRuntimeCase "Julian introduction is January 1 year -44"

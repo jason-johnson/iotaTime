@@ -45,6 +45,8 @@ hebrewCases : List RuntimeCase
 hebrewCases =
   [ MkRuntimeCase "Hebrew epoch is 1 Tishri 1"
       (hymd (hebrewFromDays (-2103607)) == (1, TishriName, 1))
+  , MkRuntimeCase "Hebrew date show retains year-indexed month data"
+      (show civilNisan == "hebrewDate' 15 5784 Nisan")
   , MkRuntimeCase "shared day zero is 24 Adar I 5760"
       (hymd (hebrewFromDays 0) == (5760, AdarIName, 24))
   , MkRuntimeCase "Hebrew flat conversion round-trips around the shared epoch"

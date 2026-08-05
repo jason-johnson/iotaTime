@@ -57,6 +57,14 @@ public export
 nanosecond : LocalTime -> Nanosecond
 nanosecond value = nanosecondFromInteger (value.nanosSinceMidnight `mod` nanosPerSecond)
 
+public export
+Show LocalTime where
+  show value = "localTime " ++
+    show (hour value) ++ " " ++
+    show (minute value) ++ " " ++
+    show (second value) ++ " " ++
+    show (nanosecond value)
+
 ||| Identifies which raw local-time component failed refinement.
 public export
 data LocalTimeError

@@ -126,6 +126,16 @@ public export
 TimeZone : Type
 TimeZone = DateTimeZone
 
+public export
+Eq DateTimeZoneRep where
+  left == right = left.storedZoneId == right.storedZoneId
+
+public export
+Show DateTimeZoneRep where
+  show value = if value.storedZoneId == "UTC"
+    then "<TimeZone UTC>"
+    else "<TimeZone " ++ show value.storedZoneId ++ ">"
+
 export
 areZoneTransitionsAfter : Integer -> List (Integer, TransitionInfo) -> Bool
 areZoneTransitionsAfter previous [] = True

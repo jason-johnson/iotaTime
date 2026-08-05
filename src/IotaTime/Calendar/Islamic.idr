@@ -145,11 +145,11 @@ record IslamicDate (pattern : IslamicLeapPattern) where
   constructor MkIslamicDate
   daysSinceEpoch : Integer
 
-export
+public export
 Eq (IslamicDate pattern) where
   left == right = left.daysSinceEpoch == right.daysSinceEpoch
 
-export
+public export
 Ord (IslamicDate pattern) where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
 
@@ -351,6 +351,14 @@ public export
   dayOfWeek = islamicDayOfWeek
   next = nextIslamic {pattern}
   previous = previousIslamic {pattern}
+
+public export
+{pattern : IslamicLeapPattern} -> KnownIslamicLeapPattern pattern =>
+  Show (IslamicDate pattern) where
+  show date = case islamicCivilFromDays {pattern} date.daysSinceEpoch of
+    (valueYear, valueMonth, valueDay) =>
+      "islamicDate' " ++ show valueDay ++ " " ++
+      show valueMonth ++ " " ++ show valueYear
 
 public export
 {pattern : IslamicLeapPattern} -> HasCalendar (IslamicDate pattern) where

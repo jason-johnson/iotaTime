@@ -79,11 +79,11 @@ record GregorianDate where
   constructor MkGregorianDate
   daysSinceEpoch : Integer
 
-export
+public export
 Eq GregorianDate where
   left == right = left.daysSinceEpoch == right.daysSinceEpoch
 
-export
+public export
 Ord GregorianDate where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
 
@@ -277,6 +277,13 @@ Calendar Gregorian where
   dayOfWeek = gregorianDayOfWeek
   next = nextGregorian
   previous = previousGregorian
+
+public export
+Show GregorianDate where
+  show date = case civilFromDays date.daysSinceEpoch of
+    (valueYear, valueMonth, valueDay) =>
+      "calendarDate " ++ show valueDay ++ " " ++
+      show valueMonth ++ " " ++ show valueYear
 
 ||| Construct a Gregorian date whose validity is known statically.
 ||| Use `refineGregorianDate` for values learned at runtime.

@@ -1,3 +1,4 @@
+
 # Roadmap
 
 This roadmap compares iotaTime with HodaTime 1.1.0.0 in both directions. It
@@ -15,9 +16,11 @@ Features present in HodaTime that iotaTime should support.
 
 - [x] Audit and fill standard/custom pattern and locale coverage. `parseWith`
   supplies HodaTime `parse'`-style caller defaults through typed parser state.
-- [ ] Add appropriate `Eq`, `Ord`, and `Show` implementations for compound
-  values. HodaTime also provides `NFData` and `Hashable`; adopt Idris ecosystem
-  equivalents only where they have clear value and preserve proof reduction.
+- [x] Add appropriate `Eq`, `Ord`, and `Show` implementations for compound
+  values, including constructor-oriented displays that preserve opaque
+  representations. `NFData` and `Hashable` remain intentionally absent because
+  no Idris ecosystem use case currently justifies new dependencies or public
+  hashing contracts.
 - [x] Expose ISO week-date construction through the supported public surface.
 - [x] Promote `OffsetDateTime` instant, offset, and calendar conversions.
 - [x] Promote `ZonedDateTime` calendar conversion and local-time resolution

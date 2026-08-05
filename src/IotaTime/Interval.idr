@@ -3,6 +3,9 @@ module IotaTime.Interval
 import public Data.So
 import public IotaTime.Duration
 import public IotaTime.Instant
+import Derive.Prelude
+
+%language ElabReflection
 
 %default total
 
@@ -105,9 +108,7 @@ public export
 duration : Interval -> Duration
 duration value = difference (end value) (start value)
 
-public export
-Eq IntervalRep where
-  left == right = start left == start right && end left == end right
+%runElab derive `{IntervalRep} [Eq, Ord]
 
 public export
 Show IntervalRep where

@@ -79,6 +79,10 @@ localeCases =
   [ MkRuntimeCase "built-in locale identifiers are stable"
       (localeId enUS == "en_US" && localeId deDE == "de_DE" &&
        localeId jaJP == "ja_JP")
+  , MkRuntimeCase "locale equality compares localized data"
+      (enUS == enUS && enUS /= deDE)
+  , MkRuntimeCase "locale show exposes identity without raw layouts"
+      (show deDE == "<Locale \"de_DE\">")
   , MkRuntimeCase "German locale tables use Gregorian ordering"
       (index 2 (monthNames deDE) == "März" &&
        index 2 (dayNames deDE) == "Dienstag" &&

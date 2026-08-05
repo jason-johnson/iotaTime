@@ -39,6 +39,7 @@ proofsChecked =
   let _ = gregorianCenturyException in
   let _ = julianCenturyLeap in
   let _ = hebrewLeapCycle in
+  let _ = periodEqualityReduces in
   ()
 
 main : IO ()

@@ -99,11 +99,11 @@ record PersianDate where
   constructor MkPersianDate
   daysSinceEpoch : Integer
 
-export
+public export
 Eq PersianDate where
   left == right = left.daysSinceEpoch == right.daysSinceEpoch
 
-export
+public export
 Ord PersianDate where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
 
@@ -314,6 +314,13 @@ Calendar Persian where
   dayOfWeek = persianDayOfWeek
   next = nextPersian
   previous = previousPersian
+
+public export
+Show PersianDate where
+  show date = case persianCivilFromDays date.daysSinceEpoch of
+    (valueYear, valueMonth, valueDay) =>
+      "persianDate " ++ show valueDay ++ " " ++
+      show valueMonth ++ " " ++ show valueYear
 
 public export
 HasCalendar PersianDate where

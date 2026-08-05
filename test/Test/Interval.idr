@@ -34,6 +34,8 @@ intervalCases =
       (not (contains spanningZero (fromNanosecondsSinceEpoch 10)))
   , MkRuntimeCase "interval excludes values before its start"
       (not (contains spanningZero (fromNanosecondsSinceEpoch (-11))))
+    , MkRuntimeCase "interval ordering is lexicographic by endpoints"
+      (interval 0 9 < interval 0 10 && interval 0 10 < interval 1 2)
   , MkRuntimeCase "empty interval contains no instant"
       (not (contains emptyInterval (fromNanosecondsSinceEpoch 5)))
     , MkRuntimeCase "empty interval is identified"

@@ -24,6 +24,8 @@ localTimeCases : List RuntimeCase
 localTimeCases =
   [ MkRuntimeCase "local time exposes typed components"
       (timeComponents (localTime 23 59 58 999999999) == (23, 59, 58, 999999999))
+    , MkRuntimeCase "local time show reconstructs its components"
+            (show (localTime 4 30 2 7) == "localTime 4 30 2 7")
   , MkRuntimeCase "time-only periods wrap LocalTime"
       (timeComponents (applyPeriod (hours 2) (localTime 23 30 0 0)) == (1, 30, 0, 0))
   , MkRuntimeCase "negative subsecond periods wrap LocalTime"

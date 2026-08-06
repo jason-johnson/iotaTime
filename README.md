@@ -91,7 +91,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Calendar/Julian.idr` — proof-carrying Julian calendar
 - `src/IotaTime/Calendar/Coptic.idr` — proof-carrying Coptic calendar
 - `src/IotaTime/Calendar/Islamic.idr` — indexed tabular Islamic calendars
-- `src/IotaTime/Calendar/Persian.idr` — bounded astronomical Persian calendar
+- `src/IotaTime/Calendar/Persian.idr` — bounded astronomical and exact arithmetic Persian calendars
 - `src/IotaTime/Locale/Unix/Platform.idr` — native POSIX locale acquisition
 - `src/IotaTime/Locale/Windows/Platform.idr` — native Win32 locale acquisition
 - `src/IotaTime/Locale.idr` — opaque locale data, built-ins, and public acquisition
@@ -506,7 +506,7 @@ same leap-pattern index. Formatting and parsing support both epoch families.
 
 ## Persian calendar API
 
-`CalendarDate Persian` implements the official astronomical Solar Hijri calendar over Persian years 1 through 1500. The first six months have 31 days, the next five have 30, and Esfand has 29 or 30 according to the astronomical leap assignment.
+`CalendarDate Persian` implements the official astronomical Solar Hijri calendar over Persian years 1 through 1500. `PersianSimple` implements the legacy 33-year BCL cycle, and `PersianArithmetic` implements Birashk's nested 2820-year cycle; both arithmetic calendars support complete years 1 through 9377. The calendar type keeps all three rules distinct.
 
 ```idris
 nowruz : CalendarDate Persian
@@ -514,11 +514,14 @@ nowruz = persianDate 1 PersianMonths.Farvardin 1404
 
 leapDay : CalendarDate Persian
 leapDay = persianDate 30 PersianMonths.Esfand 1403
+
+arithmeticNowruz : CalendarDate PersianArithmetic
+arithmeticNowruz = arithmeticPersianDate 1 PersianMonths.Farvardin 1404
 ```
 
 The leap-year table is generated from HodaTime's Meeus equinox, equation-of-time, and Espenak-Meeus delta-T calculation for its vouched range. Embedding those results makes behavior deterministic across backends and keeps static proofs reducible without running floating-point astronomy during compilation or at runtime. In particular, astronomical Nowruz 1404 is March 21, 2025, unlike the arithmetic calendar's March 20 result.
 
-`persianDate`, `persianFromDays`, `persianFromNthDay`, and `persianFromWeekDate` require erased validity proofs. Their `refinePersian...` counterparts return `Either PersianDateError` for runtime values. Period arithmetic clamps at both supported-year boundaries.
+`persianDate`, `persianFromDays`, `persianFromNthDay`, and `persianFromWeekDate` retain the astronomical API and require erased validity proofs. `simplePersianDate` and `arithmeticPersianDate` provide rule-specific static construction; the generic arithmetic nth-weekday, week-date, day-count, and runtime refinement functions select their rule through the expected type or an explicit `{rule = ...}` argument. Period arithmetic clamps at each calendar's supported-year boundaries.
 
 ## Hebrew calendar API
 
@@ -548,7 +551,7 @@ The calendar implements the 19-year leap cycle, the Rosh Hashanah postponement r
 
 `Pattern state value` combines formatting with full-input parsing. Fields compose with `<+>`, and `<%` appends a literal produced by `char` or `string`. The parsing engine uses `Data.String.Parser` from Idris 2's `contrib` package, while the public boundary returns `Either PatternError value`; malformed fields, values outside their field ranges, invalid final dates, and trailing input remain distinct typed failures. Formatting is specialized to `value -> String`, which provides the pattern-specific composition supplied by Haskell's `Formatting` and `HoleyMonoid` machinery without introducing a general variadic formatting layer.
 
-`CalendarPattern calendar` supplies calendar-specific numeric projection, canonical month names, month limits, weekday numbering, and runtime date refinement. Instances cover Gregorian, Julian, Coptic, Persian, every indexed Islamic leap pattern, and both Hebrew numbering systems. Parsed year, month, and day fields therefore cross each calendar's existing typed refinement boundary rather than constructing a generic unchecked date.
+`CalendarPattern calendar` supplies calendar-specific numeric projection, canonical month names, month limits, weekday numbering, and runtime date refinement. Instances cover Gregorian, Julian, Coptic, all three Persian rules, every indexed Islamic leap pattern and epoch, and both Hebrew numbering systems. Parsed year, month, and day fields therefore cross each calendar's existing typed refinement boundary rather than constructing a generic unchecked date.
 
 The calendar-date layer provides the HodaTime-compatible numeric fields `pyear`, `pyyyy`, `pyy`, `pmonthNum`, `pMM`, `pday`, `pdd`, and `pdaySpace`. Canonical calendar names are available through `pMMM` and `pMMMM`; `pddd` and `pdddd` use weekday names. Parsing is case-insensitive, and weekday fields are consumed without redundantly validating the date. `pd` is the slash-separated short date, `pD` is the canonical long date, `pR` is the numeric round-trip pattern, and `pmonthDay` and `pyearMonth` provide partial layouts:
 

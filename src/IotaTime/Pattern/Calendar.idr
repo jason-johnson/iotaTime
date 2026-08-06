@@ -227,6 +227,29 @@ CalendarPattern Persian where
       Left _ => invalidDate "Persian"
       Right date => Right date
 
+public export
+{rule : PersianArithmeticRule} -> KnownPersianArithmeticRule rule =>
+  CalendarPattern (ArithmeticPersian rule) where
+  patternMonthLimit = 12
+  patternMonthNames =
+    [ "Farvardin", "Ordibehesht", "Khordad", "Tir", "Mordad", "Shahrivar"
+    , "Mehr", "Aban", "Azar", "Dey", "Bahman", "Esfand"
+    ]
+  patternMonthAbbreviations =
+    [ "Far", "Ord", "Kho", "Tir", "Mor", "Sha"
+    , "Meh", "Aba", "Aza", "Dey", "Bah", "Esf"
+    ]
+  patternMonthNumber date = PersianMonths.monthNumber
+    (month {calendar = ArithmeticPersian rule} date)
+  patternWeekdayNumber date = PersianWeekdays.weekdayNumber
+    (dayOfWeek {calendar = ArithmeticPersian rule} date)
+  refinePatternDate year month day = do
+    valueDay <- refineDay day
+    case refineArithmeticRulePersianDate {rule}
+      valueDay (persianMonth month) (yearFromInteger year) of
+        Left _ => invalidDate (arithmeticPersianName {rule})
+        Right date => Right date
+
 hebrewMonthName : {numbering : HebrewNumbering} ->
                   KnownHebrewNumbering numbering => Integer -> HebrewMonthName
 hebrewMonthName {numbering} value =

@@ -59,6 +59,14 @@
     { "title": "Static construction", "names": ["calendarDate", "gregorianFromDays", "fromNthDay", "fromWeekDate"] },
     { "title": "Runtime refinement", "names": ["GregorianDateError", "refineGregorianDate", "refineGregorianDays", "refineGregorianNthDay", "refineGregorianWeekDate"] }
   ],
+  "IotaTime.Calendar.Persian": [
+    { "title": "Calendar rules and components", "names": ["Persian", "PersianSimple", "PersianArithmetic", "PersianArithmeticRule", "ArithmeticPersian", "PersianMonth", "PersianDayOfWeek"] },
+    { "title": "Astronomical construction", "names": ["persianDate", "persianFromDays", "persianFromNthDay", "persianFromWeekDate"] },
+    { "title": "Astronomical runtime refinement", "names": ["PersianDateError", "refinePersianDate", "refinePersianDays", "refinePersianNthDay", "refinePersianWeekDate"] },
+    { "title": "Arithmetic construction", "names": ["simplePersianDate", "arithmeticPersianDate", "arithmeticRulePersianDate", "arithmeticPersianFromNthDay", "arithmeticPersianFromWeekDate"] },
+    { "title": "Arithmetic runtime refinement", "names": ["refineSimplePersianDate", "refineArithmeticPersianDate", "refineArithmeticRulePersianDate", "refineArithmeticPersianDays", "refineArithmeticPersianNthDay", "refineArithmeticPersianWeekDate"] },
+    { "title": "Arithmetic rules and bounds", "names": ["KnownPersianArithmeticRule", "minimumArithmeticPersianYear", "maximumArithmeticPersianYear", "isArithmeticPersianLeapYear", "arithmeticPersianNewYearDay", "maxArithmeticPersianDaysInMonth", "isValidArithmeticPersianDate", "isValidArithmeticPersianDays"] }
+  ],
   "IotaTime.LocalTime": [
     { "title": "Type and construction", "names": ["LocalTime", "localTime"] },
     { "title": "Components", "names": ["hour", "minute", "second", "nanosecond"] },

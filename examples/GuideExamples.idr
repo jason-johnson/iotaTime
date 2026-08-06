@@ -32,6 +32,17 @@ gregorianChristmas = calendarDate 25 December 2024
 julianChristmas : Either CalendarConversionError (CalendarDate Julian)
 julianChristmas = IotaTime.Calendar.withCalendar gregorianChristmas
 
+astronomicalNowruz1404 : CalendarDate Persian
+astronomicalNowruz1404 = persianDate 1 PersianMonths.Farvardin 1404
+
+arithmeticNowruz1404 : CalendarDate PersianArithmetic
+arithmeticNowruz1404 =
+  arithmeticPersianDate 1 PersianMonths.Farvardin 1404
+
+simplePersianRuntime : Either PersianDateError (CalendarDate PersianSimple)
+simplePersianRuntime =
+  refineSimplePersianDate 30 PersianMonths.Esfand 1404
+
 roundTripText : String
 roundTripText = format (pR {calendar = Gregorian}) (calendarDate 3 March 2020)
 

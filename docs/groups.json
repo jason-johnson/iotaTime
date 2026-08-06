@@ -38,9 +38,8 @@
     { "title": "Explicit providers", "names": ["utcWith", "timeZoneWith", "localZoneWith", "availableZonesWith", "metadataWith"] }
   ],
   "IotaTime.Tzdb.Metadata": [
-    { "title": "Metadata", "names": ["TzdbMetadata", "tzdbVersion", "cldrVersion"] },
-    { "title": "TZDB identity", "names": ["ZoneAlias", "zoneAliases", "canonicalZoneId", "parseTzdataIdentity"] },
-    { "title": "Windows and IANA mappings", "names": ["WindowsZoneMapping", "windowsZoneMappings", "ianaZoneIdsForWindows", "windowsZoneIdForIana"] }
+    { "title": "Metadata", "names": ["TzdbMetadata", "tzdbVersion"] },
+    { "title": "TZDB identity", "names": ["ZoneAlias", "zoneAliases", "canonicalZoneId", "parseTzdataIdentity"] }
   ],
   "IotaTime.Calendar": [
     { "title": "Calendar capability", "names": ["Calendar", "CalendarDate", "HasCalendarDate"] },

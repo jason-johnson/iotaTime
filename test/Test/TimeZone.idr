@@ -31,7 +31,7 @@ tzdataParserWorks : Bool
 tzdataParserWorks =
   let (version, aliases) = parseTzdataIdentity
         "# version 2026a\nL Test/Canonical Test/Alias\n"
-      metadata = MkTzdbMetadata version Nothing aliases []
+      metadata = MkTzdbMetadata version aliases
    in version == Just "2026a" &&
       canonicalZoneId metadata "Test/Alias" == "Test/Canonical" &&
       canonicalZoneId metadata "Test/Canonical" == "Test/Canonical"
@@ -146,28 +146,13 @@ run = do
           Left _ => False)
     , MkRuntimeCase "tzdata identity parser reads version and aliases"
         tzdataParserWorks
-    , MkRuntimeCase "system metadata exposes TZDB and CLDR versions"
+    , MkRuntimeCase "system metadata exposes a TZDB version"
         (case systemMetadata of
-          Right value => value.tzdbVersion /= Nothing &&
-            value.cldrVersion == Just "48"
+          Right value => value.tzdbVersion /= Nothing
           Left _ => False)
     , MkRuntimeCase "system metadata canonicalizes a TZDB alias"
         (case systemMetadata of
           Right value => canonicalZoneId value "US/Eastern" ==
             "America/New_York"
-          Left _ => False)
-    , MkRuntimeCase "Windows IDs resolve globally and by territory"
-        (case systemMetadata of
-          Right value =>
-            ianaZoneIdsForWindows value "Eastern Standard Time" "001" ==
-              ["America/New_York"] &&
-            elem "America/Detroit"
-              (ianaZoneIdsForWindows value "Eastern Standard Time" "US")
-          Left _ => False)
-    , MkRuntimeCase "IANA aliases resolve back to Windows IDs"
-        (case systemMetadata of
-          Right value =>
-            windowsZoneIdForIana value "US/Eastern" "US" ==
-              Just "Eastern Standard Time"
           Left _ => False)
     ]

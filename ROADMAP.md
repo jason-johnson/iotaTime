@@ -48,7 +48,7 @@ Features implemented in iotaTime that would strengthen HodaTime.
   abbreviation without exposing its zone representation.
 - [ ] Add TZDB version metadata, canonical identifiers, aliases, and
   IANA/Windows mappings. iotaTime reads TZDB identity data from the platform
-  provider and uses a pinned Unicode CLDR mapping table.
+  provider and uses Windows ICU APIs for IANA/Windows identifier conversion.
 
 ## Shared opportunities
 

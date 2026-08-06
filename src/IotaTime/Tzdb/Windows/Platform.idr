@@ -85,19 +85,19 @@ windowsRegistryLocalZone : WindowsRegistrySource ->
                            IO (Either TzdbError TimeZone)
 windowsRegistryLocalZone source = do
   loaded <- windowsRegistrySnapshot source
-  canonical <- case loaded of
-    Left _ => pure Nothing
-    Right snapshot => windowsToIanaZone snapshot.snapshotLocalZoneId
-  pure $ do
-    snapshot <- loaded
-    registry <- case findWindowsZone snapshot.snapshotLocalZoneId
-      snapshot.snapshotZones of
-        Nothing => Left (WindowsZoneNotFound snapshot.snapshotLocalZoneId)
-        Just value => Right value
+  case loaded of
+    Left error => pure (Left error)
+    Right snapshot => do
+      canonical <- windowsToIanaZone snapshot.snapshotLocalZoneId
       let valueId = case canonical of
-          Nothing => snapshot.snapshotLocalZoneId
-          Just value => value
-      mapLeft TzdbWindowsError (windowsRegistryTimeZoneAs valueId registry)
+            Nothing => snapshot.snapshotLocalZoneId
+            Just value => value
+      pure $ do
+        registry <- case findWindowsZone snapshot.snapshotLocalZoneId
+          snapshot.snapshotZones of
+            Nothing => Left (WindowsZoneNotFound snapshot.snapshotLocalZoneId)
+            Just value => Right value
+        mapLeft TzdbWindowsError (windowsRegistryTimeZoneAs valueId registry)
 
 windowsRegistryAvailableZones : WindowsRegistrySource ->
                                 IO (Either TzdbError (List String))

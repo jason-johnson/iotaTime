@@ -23,6 +23,7 @@ import public IotaTime.ZonedDateTime
 import public IotaTime.Clock
 import public IotaTime.Tzdb.Provider
 import public IotaTime.Pattern
+import public IotaTime.Pattern.Scalar
 import public IotaTime.Pattern.Calendar
 import public IotaTime.Pattern.Duration
 import public IotaTime.Pattern.Offset

@@ -24,6 +24,7 @@ run = do
     (Right utcZone, Right newYorkZone) => do
       let provider : String -> IO (Either String TimeZone)
           provider "UTC" = pure (Right utcZone)
+          provider "Eastern Standard Time" = pure (Right utcZone)
           provider "America/New_York" = pure (Right newYorkZone)
           provider name = pure (Left ("unknown zone: " ++ name))
       let pureProvider : String -> Either String (Either String TimeZone)
@@ -45,6 +46,9 @@ run = do
         "1970-01-01T00:00:00 UTC"
       nanos <- parseZonedDateTimeWith po provider strictResolver
         "2000-03-01T00:00:00.000000001 UTC"
+      quotedWindows <- parseZonedDateTimePatternWith ps pZoneIdQuoted
+        provider strictResolver
+        "1970-01-01T00:00:00 \"Eastern Standard Time\""
       runSuite "zoned date-time pattern tests"
         [ MkRuntimeCase "standard pattern formats a zoned value"
             (case formatted of
@@ -59,6 +63,16 @@ run = do
                 _ => False)
         , MkRuntimeCase "standard parser resolves UTC"
             (case parsedUtc of
+              Right value => IotaTime.ZonedDateTime.toInstant value ==
+                fromSecondsSinceUnixEpoch 0
+              Left _ => False)
+        , MkRuntimeCase "quoted formatter makes zone boundaries explicit"
+            (case formatted of
+              Right value => formatZonedDateTime pZonedDateTimeQuoted value ==
+                "1970-01-01T00:00:00 \"UTC\""
+              Left _ => False)
+        , MkRuntimeCase "quoted parser accepts Windows zone names"
+            (case quotedWindows of
               Right value => IotaTime.ZonedDateTime.toInstant value ==
                 fromSecondsSinceUnixEpoch 0
               Left _ => False)

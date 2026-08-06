@@ -96,6 +96,7 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Locale/Windows/Platform.idr` — native Win32 locale acquisition
 - `src/IotaTime/Locale.idr` — opaque locale data, built-ins, and public acquisition
 - `src/IotaTime/Pattern.idr` — composable typed parsing and formatting core
+- `src/IotaTime/Pattern/Scalar.idr` — lossless scalar patterns for explicit protocols
 - `src/IotaTime/Pattern/Calendar.idr` — calendar-specific pattern refinement capability
 - `src/IotaTime/Pattern/CalendarDate.idr` — calendar-polymorphic date patterns
 - `src/IotaTime/Pattern/LocalTime.idr` — local-time field and standard patterns
@@ -604,15 +605,48 @@ The optional sign belongs to the complete duration rather than an individual fie
 
 Use `parseInstant` for the typed `Either PatternError Instant` parsing boundary. Because `Instant` has an arbitrary-precision timeline while the proof-carrying Gregorian calendar begins on October 15, 1582, `formatInstant` returns `Either CalendarConversionError String`. An earlier instant therefore reports `TargetCalendarOutOfRange` rather than hiding a partial conversion inside the total `Pattern.format` API.
 
+For cross-machine formats, applications can explicitly choose lossless Pattern
+building blocks and agree on them at both ends. `pInstantNanoseconds` represents
+the full arbitrary-precision instant timeline, `pOffsetFull` preserves every
+supported whole-second offset, and `pCalendarDays {calendar = ...}` represents
+an absolute day in the statically selected calendar while validating that
+calendar's range. `pSignedInteger` is available for other arbitrary-precision
+protocol fields.
+
+```idris
+instantWire : Pattern Integer Instant
+instantWire = pInstantNanoseconds <% string "ns"
+
+offsetWire : Pattern Offset Offset
+offsetWire = pOffsetFull
+
+civilIslamicWire : Pattern Integer (CalendarDate CivilIslamicBcl)
+civilIslamicWire = pCalendarDays {calendar = CivilIslamicBcl}
+
+ianaZoneWire : Pattern String String
+ianaZoneWire = pZoneIdToken
+
+windowsZoneWire : Pattern String String
+windowsZoneWire = pZoneIdQuoted
+```
+
+These patterns respectively produce values such as `-42ns`, `+05:30:15`,
+`-503165`, `America/New_York`, and `"Eastern Standard Time"`. Calendar identity
+is deliberately carried by the selected Pattern type rather than repeated in
+the text: both peers must agree on `CivilIslamicBcl`, `Gregorian`, or another
+calendar in advance. Distinct Islamic epochs and leap patterns, and distinct
+Hebrew numbering systems, therefore cannot be decoded through the wrong
+statically selected calendar pattern.
+
 ## Zoned date-time patterns
 
-`pZonedDateTime` formats a zoned value in its calendar as a numeric local date-time followed by its zone ID, such as `2024-04-23T09:00:00 Europe/Zurich` or `1731-13-06T01:02:03 UTC`. `zonedDateTimePattern` adapts another calendar-polymorphic `CalendarDateTime` pattern and a zone-suffix renderer. Both produce the dedicated format-only `ZonedDateTimePattern`, so the pure `Pattern.parse` API cannot accidentally construct a zoned value without loading its rules or choosing a local-time resolution policy.
+`pZonedDateTime` formats a zoned value in its calendar as a numeric local date-time followed by its zone ID, such as `2024-04-23T09:00:00 Europe/Zurich` or `1731-13-06T01:02:03 UTC`. `pZonedDateTimeQuoted` uses quoted, escaped zone IDs so Windows identifiers containing spaces remain unambiguous. `zonedDateTimePattern` adapts another calendar-polymorphic `CalendarDateTime` pattern and a zone-suffix renderer. These produce the dedicated format-only `ZonedDateTimePattern`, so the pure `Pattern.parse` API cannot accidentally construct a zoned value without loading its rules or choosing a local-time resolution policy.
 
-`parseStandardZonedDateTime` parses the standard layout. The caller supplies an effectful zone provider and an explicit resolver such as `fromCalendarDateTimeStrictly` or `fromCalendarDateTimeLeniently`; `parseZonedDateTimeWith` provides the same mechanism for a custom local pattern. `ZonedDateTimePatternError` keeps structural parsing, provider lookup, and skipped or ambiguous time resolution failures distinct. The standard parser has a distinct name in the umbrella API because locale `%Z` parsing already uses `parseZonedDateTime`.
+`parseStandardZonedDateTime` parses the standard layout. The caller supplies an effectful zone provider and an explicit resolver such as `fromCalendarDateTimeStrictly` or `fromCalendarDateTimeLeniently`; `parseZonedDateTimeWith` provides the same mechanism for a custom local pattern. `parseZonedDateTimePatternWith` additionally accepts an explicit zone pattern: use `pZoneIdToken` for whitespace-free IANA IDs or `pZoneIdQuoted` for escaped IDs including Windows names. For example, `parseZonedDateTimePatternWith ps pZoneIdQuoted provider fromCalendarDateTimeStrictly "1970-01-01T00:00:00 \"Eastern Standard Time\""` parses a Windows-zoned value under the caller's provider and strict resolution policy. `ZonedDateTimePatternError` keeps structural parsing, provider lookup, and skipped or ambiguous time resolution failures distinct. The standard parser has a distinct name in the umbrella API because locale `%Z` parsing already uses `parseZonedDateTime`.
 
 ## Offset and date-time patterns
 
-`pOffset` formats signed hours and minutes as `+02:00`; `pOffsetFull` includes seconds, `pOffsetZ` writes `Z` for UTC, and `pOffsetCompact` implements the `strftime` `%z` form such as `+0200`. Parsing reads the sign and all components as one quantity, then calls `refineOffsetSeconds`, so malformed components and values outside the supported plus-or-minus 18-hour range remain typed runtime failures.
+`pOffset` formats signed hours and minutes as `+02:00`; `pOffsetFull` losslessly represents every supported whole-second offset, `pOffsetZ` writes `Z` for UTC, and `pOffsetCompact` implements the `strftime` `%z` form such as `+0200`. Parsing reads the sign and all components as one quantity, then calls `refineOffsetSeconds`, so malformed components and values outside the supported plus-or-minus 18-hour range remain typed runtime failures.
 
 `pairPattern` combines two independently refined patterns through projections and a constructor. `calendarDateTimePattern` uses it for any `CalendarPattern` date and local time; the standard `ps`, `po`, `pf`, `pF`, `pg`, and `pG` layouts mirror HodaTime. `offsetDateTimePattern` then combines any such local pattern with an offset pattern. `pOffsetDateTime` is the calendar-polymorphic numeric layout `yyyy-MM-ddTHH:mm:ss(+/-)HH:mm`.
 

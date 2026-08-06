@@ -148,6 +148,43 @@ public export
 parse : Pattern state value -> String -> Either PatternError value
 parse pattern = parseWith pattern pattern.initialState
 
+isPatternDecimalDigit : Char -> Bool
+isPatternDecimalDigit value = value >= '0' && value <= '9'
+
+patternDigitValue : Char -> Integer
+patternDigitValue value = cast value - cast '0'
+
+readUnsignedInteger : Integer -> Nat -> List Char ->
+                      Maybe (Integer, Nat)
+readUnsignedInteger found count (value :: remaining) =
+  if isPatternDecimalDigit value
+    then readUnsignedInteger
+      (found * 10 + patternDigitValue value) (S count) remaining
+    else if count == 0 then Nothing else Just (found, count)
+readUnsignedInteger found count [] =
+  if count == 0 then Nothing else Just (found, count)
+
+signedIntegerParser : PatternParser (Either PatternError (Integer -> Integer))
+signedIntegerParser = Parser.P (\state =>
+  let remaining = unpack
+        (strSubstr state.pos (state.maxPos - state.pos) state.input)
+      (negative, signWidth, digits) = case remaining of
+        '-' :: rest => (True, 1, rest)
+        rest => (False, 0, rest)
+   in case readUnsignedInteger 0 0 digits of
+        Nothing => pure (Parser.Fail state.pos "signed integer")
+        Just (magnitude, digitWidth) =>
+          let consumed = signWidth + digitWidth
+              value = if negative then negate magnitude else magnitude
+           in pure (Parser.OK (Right (const value))
+                ({ pos := state.pos + cast consumed } state)))
+
+||| An arbitrary-precision signed decimal integer. Formatting is canonical;
+||| parsing also accepts leading zeroes and negative zero.
+public export
+pSignedInteger : Pattern Integer Integer
+pSignedInteger = MkPattern 0 Right signedIntegerParser show
+
 decimalDigit : PatternParser Char
 decimalDigit = Parser.satisfy (\value => value >= '0' && value <= '9')
   <?> "digit"

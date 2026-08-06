@@ -22,6 +22,7 @@
   "IotaTime.Calendar.Hebrew",
   "IotaTime.Locale",
   "IotaTime.Pattern",
+  "IotaTime.Pattern.Scalar",
   "IotaTime.Pattern.CalendarDate",
   "IotaTime.Pattern.LocalTime",
   "IotaTime.Pattern.Offset",

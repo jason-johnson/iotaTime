@@ -44,6 +44,40 @@ customDatePattern =
    (pMM {calendar = Gregorian} <% char '/')) <+>
   pdd {calendar = Gregorian}
 
+signedIntegerWire : Pattern Integer Integer
+signedIntegerWire = pSignedInteger <% string "i"
+
+instantNanosecondWire : Pattern Integer Instant
+instantNanosecondWire = pInstantNanoseconds <% string "ns"
+
+offsetWire : Pattern Offset Offset
+offsetWire = pOffsetFull
+
+civilIslamicDayWire : Pattern Integer (CalendarDate CivilIslamicBcl)
+civilIslamicDayWire = pCalendarDays {calendar = CivilIslamicBcl}
+
+ianaZoneWire : Pattern String String
+ianaZoneWire = pZoneIdToken
+
+windowsZoneWire : Pattern String String
+windowsZoneWire = pZoneIdQuoted
+
+quotedZonedPattern :
+  ZonedDateTimePattern (DateFields, TimeFields) (ZonedDateTime Gregorian)
+quotedZonedPattern = zonedDateTimePattern {calendar = Gregorian} ps
+  (\value => " " ++ format pZoneIdQuoted (zoneId value))
+
+parseQuotedWindowsZone :
+  (String -> IO (Either error TimeZone)) ->
+  (CalendarDateTime Gregorian -> TimeZone ->
+    Either resolutionError (ZonedDateTime Gregorian)) ->
+  IO (Either (ZonedDateTimePatternError error resolutionError)
+    (ZonedDateTime Gregorian))
+parseQuotedWindowsZone provider resolver =
+  parseZonedDateTimePatternWith {calendar = Gregorian}
+    ps pZoneIdQuoted provider resolver
+    "1970-01-01T00:00:00 \"Eastern Standard Time\""
+
 germanDate : Either StrftimeError
   (Pattern DateFields (CalendarDate Gregorian))
 germanDate = localeDatePattern deDE

@@ -58,6 +58,56 @@ header nav .guide-link {
   font-weight: bold;
 }
 
+.module-cookbook {
+  max-width: 900px;
+  margin: 0 0 30px;
+  line-height: 1.6;
+}
+
+.module-cookbook h2 {
+  margin: 0 0 14px;
+  color: #173b35;
+  font-family: Georgia, serif;
+  font-size: 24px;
+  font-weight: normal;
+}
+
+.module-cookbook h3 {
+  margin: 24px 0 8px;
+  color: #173b35;
+  font-family: Georgia, serif;
+  font-size: 18px;
+  font-weight: normal;
+}
+
+.module-cookbook p {
+  margin: 8px 0;
+}
+
+.module-cookbook code {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #e8edec;
+  font-family: "Lucida Console", Monaco, monospace;
+  font-size: 0.9em;
+}
+
+.module-cookbook pre {
+  margin: 12px 0 18px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  border-left: 4px solid #287a68;
+  background: #172320;
+  color: #eef8f5;
+  line-height: 1.5;
+}
+
+.module-cookbook pre code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+}
+
 .api-toc {
   margin: 0 0 28px;
   padding: 14px 18px;

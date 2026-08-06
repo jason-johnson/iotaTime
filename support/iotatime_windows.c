@@ -92,6 +92,8 @@ static BOOL CALLBACK initialize_icu_zone_functions(PINIT_ONCE once,
                                                     PVOID parameter,
                                                     PVOID *context) {
     HMODULE module;
+    FARPROC iana_to_windows;
+    FARPROC windows_to_iana;
 
     (void)once;
     (void)parameter;
@@ -100,17 +102,16 @@ static BOOL CALLBACK initialize_icu_zone_functions(PINIT_ONCE once,
     if (module == NULL) {
         return TRUE;
     }
-    icu_zone_functions.iana_to_windows = (IcuGetWindowsTimeZoneId)
-        GetProcAddress(module, "ucal_getWindowsTimeZoneID");
-    icu_zone_functions.windows_to_iana = (IcuGetTimeZoneIdForWindowsId)
-        GetProcAddress(module, "ucal_getTimeZoneIDForWindowsID");
-    if (icu_zone_functions.iana_to_windows == NULL ||
-        icu_zone_functions.windows_to_iana == NULL) {
-        icu_zone_functions.iana_to_windows = NULL;
-        icu_zone_functions.windows_to_iana = NULL;
+    iana_to_windows = GetProcAddress(module, "ucal_getWindowsTimeZoneID");
+    windows_to_iana = GetProcAddress(module, "ucal_getTimeZoneIDForWindowsID");
+    if (iana_to_windows == NULL || windows_to_iana == NULL) {
         FreeLibrary(module);
         return TRUE;
     }
+    memcpy(&icu_zone_functions.iana_to_windows, &iana_to_windows,
+           sizeof(icu_zone_functions.iana_to_windows));
+    memcpy(&icu_zone_functions.windows_to_iana, &windows_to_iana,
+           sizeof(icu_zone_functions.windows_to_iana));
     icu_zone_functions.module = module;
     return TRUE;
 }

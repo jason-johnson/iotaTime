@@ -7,6 +7,7 @@ import IotaTime.Tzdb.Windows.Platform
 import public IotaTime.Tzdb.Provider
 import public Data.Buffer
 import public System.File.Buffer
+import System.File.ReadWrite
 import public System
 import public System.Directory
 import public System.Info
@@ -149,11 +150,21 @@ unixAvailableZones = do
     Left error => pure (Left (TzdbFileError (show error)))
     Right _ => map (Right . sort) (collectZonePath root "")
 
+unixMetadata : IO (Either TzdbError TzdbMetadata)
+unixMetadata = assert_total $ do
+  root <- zoneInfoRoot
+  loaded <- readFile (zonePath root "tzdata.zi")
+  pure $ case loaded of
+    Left error => Left (TzdbFileError (show error))
+    Right source =>
+      let (version, aliases) = parseTzdataIdentity source
+       in Right (MkTzdbMetadata version aliases)
+
 ||| The built-in Unix filesystem provider.
 public export
 unixTimeZoneProvider : TimeZoneProvider
 unixTimeZoneProvider = MkTimeZoneProvider unixUtc unixTimeZone
-  unixLocalZone unixAvailableZones
+  unixLocalZone unixAvailableZones unixMetadata
 
 ||| The provider selected for the current operating system.
 public export
@@ -182,6 +193,11 @@ public export
 availableZonesWith : TimeZoneProvider -> IO (Either TzdbError (List String))
 availableZonesWith = providerAvailableZones
 
+||| Query version and identifier metadata through an explicit provider.
+public export
+metadataWith : TimeZoneProvider -> IO (Either TzdbError TzdbMetadata)
+metadataWith = providerMetadata
+
 ||| Load UTC from the platform TZDB.
 public export
 utc : IO (Either TzdbError TimeZone)
@@ -201,3 +217,9 @@ localZone = localZoneWith systemTimeZoneProvider
 public export
 availableZones : IO (Either TzdbError (List String))
 availableZones = availableZonesWith systemTimeZoneProvider
+
+||| Query version, aliases, and Windows/IANA mappings from the platform
+||| provider.
+public export
+metadata : IO (Either TzdbError TzdbMetadata)
+metadata = metadataWith systemTimeZoneProvider

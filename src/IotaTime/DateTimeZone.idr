@@ -12,12 +12,22 @@ record TransitionInfo where
   constructor MkTransitionInfo
   storedUtcOffset : Offset
   storedInDst : Bool
+  storedSavings : Maybe Offset
   storedAbbreviation : String
 
 ||| Describe the zone state effective over a timeline segment.
 export
 transitionInfo : Offset -> Bool -> String -> TransitionInfo
-transitionInfo = MkTransitionInfo
+transitionInfo valueOffset inDst valueAbbreviation =
+  MkTransitionInfo valueOffset inDst
+    (if inDst then Nothing else Just empty) valueAbbreviation
+
+||| Describe zone state with an exact daylight-saving adjustment.
+export
+transitionInfoWithSavings : Offset -> Offset -> String -> TransitionInfo
+transitionInfoWithSavings valueOffset valueSavings valueAbbreviation =
+  MkTransitionInfo valueOffset (valueSavings /= empty)
+    (Just valueSavings) valueAbbreviation
 
 export
 utcOffset : TransitionInfo -> Offset
@@ -27,9 +37,48 @@ export
 isDaylightSavingTime : TransitionInfo -> Bool
 isDaylightSavingTime = storedInDst
 
+||| The daylight-saving adjustment, when the source data identifies it.
+export
+transitionSavings : TransitionInfo -> Maybe Offset
+transitionSavings = storedSavings
+
 export
 abbreviation : TransitionInfo -> String
 abbreviation = storedAbbreviation
+
+||| The zone state and timeline bounds effective at an instant. `Nothing`
+||| denotes an unbounded endpoint.
+export
+record ZoneInterval where
+  constructor MkZoneInterval
+  storedIntervalStart : Maybe Instant
+  storedIntervalEnd : Maybe Instant
+  storedIntervalInfo : TransitionInfo
+
+export
+intervalStart : ZoneInterval -> Maybe Instant
+intervalStart = storedIntervalStart
+
+export
+intervalEnd : ZoneInterval -> Maybe Instant
+intervalEnd = storedIntervalEnd
+
+export
+wallOffset : ZoneInterval -> Offset
+wallOffset = utcOffset . storedIntervalInfo
+
+||| The daylight-saving adjustment, when the zone source identifies it.
+export
+savings : ZoneInterval -> Maybe Offset
+savings = transitionSavings . storedIntervalInfo
+
+export
+intervalIsDaylightSavingTime : ZoneInterval -> Bool
+intervalIsDaylightSavingTime = isDaylightSavingTime . storedIntervalInfo
+
+export
+intervalAbbreviation : ZoneInterval -> String
+intervalAbbreviation = abbreviation . storedIntervalInfo
 
 export
 record ZoneTransition where
@@ -312,6 +361,37 @@ recurrenceEvents recurrence year =
     order first@(firstInstant, _) second@(secondInstant, _) =
       if firstInstant <= secondInstant then [first, second] else [second, first]
 
+recurringIntervalAt : ZoneRecurrence -> Maybe Instant -> Maybe Instant ->
+                      TransitionInfo -> Instant -> ZoneInterval
+recurringIntervalAt recurrence eraStart eraEnd initial query =
+  choose eraStart initial events
+  where
+    queryDay = toNanosecondsSinceEpoch query `div`
+      (recurrenceSecondsPerDay * recurrenceNanosecondsPerSecond)
+    queryYear = gregorianYearFromDays queryDay
+    events = recurrenceEvents recurrence (queryYear - 1) ++
+      recurrenceEvents recurrence queryYear ++
+      recurrenceEvents recurrence (queryYear + 1)
+
+    afterStart : Instant -> Bool
+    afterStart event = case eraStart of
+      Nothing => True
+      Just boundary => event > boundary
+
+    beforeEnd : Instant -> Bool
+    beforeEnd event = case eraEnd of
+      Nothing => True
+      Just boundary => event < boundary
+
+    choose : Maybe Instant -> TransitionInfo ->
+             List (Instant, TransitionInfo) -> ZoneInterval
+    choose start current [] = MkZoneInterval start eraEnd current
+    choose start current ((event, info) :: rest) =
+      if not (afterStart event) then choose start current rest
+      else if not (beforeEnd event) then MkZoneInterval start eraEnd current
+      else if event <= query then choose (Just event) info rest
+      else MkZoneInterval start (Just event) current
+
 recurringTransitionAt : ZoneRecurrence -> Maybe Instant -> TransitionInfo ->
                         Instant -> TransitionInfo
 recurringTransitionAt recurrence cutoff initial query =
@@ -414,37 +494,52 @@ refineRecurrenceErasDateTimeZone valueId specs =
       [] => Left MissingRecurrenceEra
       _ => Left RecurrenceErasNotStrictlyIncreasing
 
-activeRecurrenceEra : List RecurrenceEra -> TransitionInfo -> Instant ->
-                      TransitionInfo
-activeRecurrenceEra eras fallback query = case select Nothing eras of
-  Nothing => fallback
-  Just era => case era.eraRecurrence of
-    Nothing => era.eraInitialTransition
-    Just recurrence => recurringTransitionAt recurrence era.eraStart
-      era.eraInitialTransition query
+recurrenceIntervalAt : List RecurrenceEra -> Instant -> Maybe ZoneInterval
+recurrenceIntervalAt eras query = case select Nothing eras of
+  (Nothing, _) => Nothing
+  (Just era, nextStart) => case era.eraRecurrence of
+    Nothing => Just (MkZoneInterval era.eraStart nextStart
+      era.eraInitialTransition)
+    Just recurrence => Just (recurringIntervalAt recurrence era.eraStart
+      nextStart era.eraInitialTransition query)
   where
     startsBy : Maybe Instant -> Instant -> Bool
-    startsBy Nothing query = True
-    startsBy (Just start) query = start <= query
+    startsBy Nothing value = True
+    startsBy (Just start) value = start <= value
 
-    select : Maybe RecurrenceEra -> List RecurrenceEra -> Maybe RecurrenceEra
-    select selected [] = selected
+    select : Maybe RecurrenceEra -> List RecurrenceEra ->
+             (Maybe RecurrenceEra, Maybe Instant)
+    select selected [] = (selected, Nothing)
     select selected (era :: rest) =
       if startsBy era.eraStart query
         then select (Just era) rest
-        else selected
+        else (selected, era.eraStart)
+
+firstEraStart : List RecurrenceEra -> Maybe Instant
+firstEraStart [] = Nothing
+firstEraStart (era :: _) = era.eraStart
+
+||| Query the complete zone interval effective at an instant.
+export
+zoneIntervalAt : TimeZone -> Instant -> ZoneInterval
+zoneIntervalAt valueZone valueInstant = go Nothing
+  valueZone.initialTransition valueZone.transitions
+  where
+    go : Maybe Instant -> TransitionInfo -> List ZoneTransition -> ZoneInterval
+    go start current [] = case recurrenceIntervalAt
+      valueZone.recurrenceEras valueInstant of
+        Just interval => interval
+        Nothing => MkZoneInterval start
+          (firstEraStart valueZone.recurrenceEras) current
+    go start current (transition :: rest) =
+      if valueInstant < transition.transitionInstant
+        then MkZoneInterval start (Just transition.transitionInstant) current
+        else go (Just transition.transitionInstant) transition.transitionInfo rest
 
 export
 activeTransitionAt : TimeZone -> Instant -> TransitionInfo
-activeTransitionAt valueZone valueInstant = go
-  valueZone.initialTransition valueZone.transitions
-  where
-    go : TransitionInfo -> List ZoneTransition -> TransitionInfo
-    go current [] = activeRecurrenceEra valueZone.recurrenceEras current valueInstant
-    go current (transition :: rest) =
-      if valueInstant < transition.transitionInstant
-        then current
-        else go transition.transitionInfo rest
+activeTransitionAt valueZone valueInstant =
+  (zoneIntervalAt valueZone valueInstant).storedIntervalInfo
 
 export
 zoneOffsetAt : TimeZone -> Instant -> Offset

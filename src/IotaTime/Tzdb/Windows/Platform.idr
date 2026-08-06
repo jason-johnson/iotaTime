@@ -16,9 +16,31 @@ prim__windowsSnapshotString : AnyPtr -> String
 %foreign "C:iotatime_windows_snapshot_free, libiotatime_windows"
 prim__windowsSnapshotFree : AnyPtr -> PrimIO ()
 
+%foreign "C:iotatime_windows_iana_to_windows, libiotatime_windows"
+prim__windowsIanaToWindows : String -> PrimIO AnyPtr
+
+%foreign "C:iotatime_windows_windows_to_iana, libiotatime_windows"
+prim__windowsWindowsToIana : String -> PrimIO AnyPtr
+
 mapLeft : (left -> mapped) -> Either left right -> Either mapped right
 mapLeft convert (Left error) = Left (convert error)
 mapLeft convert (Right value) = Right value
+
+convertZoneId : (String -> PrimIO AnyPtr) -> String -> IO (Maybe String)
+convertZoneId convert value = do
+  pointer <- primIO (convert value)
+  if prim__nullAnyPtr pointer /= 0
+    then pure Nothing
+    else do
+      let converted = prim__windowsSnapshotString pointer
+      primIO (prim__windowsSnapshotFree pointer)
+      pure (Just converted)
+
+ianaToWindowsZone : String -> IO (Maybe String)
+ianaToWindowsZone = convertZoneId prim__windowsIanaToWindows
+
+windowsToIanaZone : String -> IO (Maybe String)
+windowsToIanaZone = convertZoneId prim__windowsWindowsToIana
 
 ||| Native Windows adapters provide one atomic registry snapshot containing
 ||| both the available zones and locally configured Windows zone identifier.
@@ -47,25 +69,35 @@ findWindowsZone name (zone :: rest) =
 windowsRegistryNamedZone : WindowsRegistrySource -> String ->
                            IO (Either TzdbError TimeZone)
 windowsRegistryNamedZone source name = do
+  converted <- ianaToWindowsZone name
   loaded <- windowsRegistryZones source
+  let registryName = case converted of
+        Nothing => name
+        Just value => value
   pure $ do
     zones <- loaded
-    registry <- case findWindowsZone name zones of
+    registry <- case findWindowsZone registryName zones of
       Nothing => Left (WindowsZoneNotFound name)
       Just value => Right value
-    mapLeft TzdbWindowsError (windowsRegistryTimeZone registry)
+    mapLeft TzdbWindowsError (windowsRegistryTimeZoneAs name registry)
 
 windowsRegistryLocalZone : WindowsRegistrySource ->
                            IO (Either TzdbError TimeZone)
 windowsRegistryLocalZone source = do
   loaded <- windowsRegistrySnapshot source
-  pure $ do
-    snapshot <- loaded
-    registry <- case findWindowsZone snapshot.snapshotLocalZoneId
-      snapshot.snapshotZones of
-        Nothing => Left (WindowsZoneNotFound snapshot.snapshotLocalZoneId)
-        Just value => Right value
-    mapLeft TzdbWindowsError (windowsRegistryTimeZone registry)
+  case loaded of
+    Left error => pure (Left error)
+    Right snapshot => do
+      canonical <- windowsToIanaZone snapshot.snapshotLocalZoneId
+      let valueId = case canonical of
+            Nothing => snapshot.snapshotLocalZoneId
+            Just value => value
+      pure $ do
+        registry <- case findWindowsZone snapshot.snapshotLocalZoneId
+          snapshot.snapshotZones of
+            Nothing => Left (WindowsZoneNotFound snapshot.snapshotLocalZoneId)
+            Just value => Right value
+        mapLeft TzdbWindowsError (windowsRegistryTimeZoneAs valueId registry)
 
 windowsRegistryAvailableZones : WindowsRegistrySource ->
                                 IO (Either TzdbError (List String))
@@ -81,6 +113,7 @@ windowsRegistryTimeZoneProvider source = MkTimeZoneProvider
   (windowsRegistryNamedZone source)
   (windowsRegistryLocalZone source)
   (windowsRegistryAvailableZones source)
+  (pure (Right (MkTzdbMetadata Nothing [])))
 
 protocolErrorMessage : WindowsRegistryProtocolError -> String
 protocolErrorMessage MissingLocalZoneId = "missing local Windows zone identifier"

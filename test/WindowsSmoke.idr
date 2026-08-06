@@ -25,7 +25,9 @@ main = do
   utcResult <- utc
   zonesResult <- availableZones
   easternResult <- timeZone "Eastern Standard Time"
+  ianaEasternResult <- timeZone "America/New_York"
   localResult <- localZone
+  metadataResult <- metadata
   missingResult <- timeZone "IotaTime Missing Zone"
   germanLocaleResult <- localeByName "de-DE"
   currentLocaleResult <- currentLocale
@@ -45,9 +47,20 @@ main = do
         zoneHourAt zone 1142856000 == Just 7 &&
         zoneHourAt zone 1174392000 == Just 8
       Left _ => False)
+  ianaPassed <- report "IANA names resolve through Windows ICU"
+    (case ianaEasternResult of
+      Right zone => zoneId zone == "America/New_York" &&
+        zoneHourAt zone 1142856000 == Just 7 &&
+        zoneHourAt zone 1174392000 == Just 8
+      Left _ => False)
   localPassed <- report "local Windows zone resolves"
     (case localResult of
       Right _ => True
+      Left _ => False)
+  metadataPassed <- report "Windows metadata does not invent TZDB identity"
+    (case metadataResult of
+      Right value => value.tzdbVersion == Nothing &&
+        null value.zoneAliases
       Left _ => False)
   missingPassed <- report "unknown Windows zone remains explicit"
     (case missingResult of
@@ -75,7 +88,9 @@ main = do
       _ => False)
 
   if allPassed
-    [ utcPassed, zonesPassed, dynamicPassed, localPassed, missingPassed
+    [ utcPassed, zonesPassed, dynamicPassed, ianaPassed, localPassed
+    , metadataPassed
+    , missingPassed
     , germanLocalePassed, currentLocalePassed, missingLocalePassed
     ]
     then putStrLn "All Windows registry smoke tests passed"

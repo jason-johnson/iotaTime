@@ -28,6 +28,19 @@
     { "title": "Endpoints and membership", "names": ["start", "end", "contains", "isEmpty", "duration"] },
     { "title": "Relationships and set operations", "names": ["overlaps", "isAdjacent", "intersection", "union"] }
   ],
+  "IotaTime.DateTimeZone": [
+    { "title": "Zone type and identity", "names": ["TimeZone", "DateTimeZone", "zoneId"] },
+    { "title": "Instant queries", "names": ["zoneOffsetAt", "ZoneInterval", "zoneIntervalAt", "intervalStart", "intervalEnd", "wallOffset", "savings", "intervalIsDaylightSavingTime", "intervalAbbreviation"] },
+    { "title": "Local mapping", "names": ["LocalMapping", "mapLocal"] }
+  ],
+  "IotaTime.Tzdb": [
+    { "title": "Platform provider", "names": ["TimeZoneProvider", "systemTimeZoneProvider", "utc", "timeZone", "localZone", "availableZones", "metadata"] },
+    { "title": "Explicit providers", "names": ["utcWith", "timeZoneWith", "localZoneWith", "availableZonesWith", "metadataWith"] }
+  ],
+  "IotaTime.Tzdb.Metadata": [
+    { "title": "Metadata", "names": ["TzdbMetadata", "tzdbVersion"] },
+    { "title": "TZDB identity", "names": ["ZoneAlias", "zoneAliases", "canonicalZoneId", "parseTzdataIdentity"] }
+  ],
   "IotaTime.Calendar": [
     { "title": "Calendar capability", "names": ["Calendar", "CalendarDate", "HasCalendarDate"] },
     { "title": "Date components", "names": ["year", "month", "day", "yearMonthDay"] },

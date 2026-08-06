@@ -1,6 +1,7 @@
 module IotaTime.Tzdb.Provider
 
 import public IotaTime.DateTimeZone
+import public IotaTime.Tzdb.Metadata
 import IotaTime.Tzdb.Posix
 import IotaTime.Tzdb.Tzif
 import IotaTime.Tzdb.Windows.Types
@@ -27,3 +28,4 @@ record TimeZoneProvider where
   providerTimeZone : String -> IO (Either TzdbError TimeZone)
   providerLocalZone : IO (Either TzdbError TimeZone)
   providerAvailableZones : IO (Either TzdbError (List String))
+  providerMetadata : IO (Either TzdbError TzdbMetadata)

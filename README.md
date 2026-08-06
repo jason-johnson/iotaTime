@@ -282,11 +282,30 @@ utc : IO (Either TzdbError TimeZone)
 timeZone : String -> IO (Either TzdbError TimeZone)
 localZone : IO (Either TzdbError TimeZone)
 availableZones : IO (Either TzdbError (List String))
+metadata : IO (Either TzdbError TzdbMetadata)
 ```
+
+`zoneOffsetAt` returns the wall offset effective at an instant.
+`zoneIntervalAt` additionally returns an opaque half-open timeline segment.
+`intervalStart` and `intervalEnd` use `Nothing` for an unbounded endpoint;
+`wallOffset`, `intervalIsDaylightSavingTime`, and `intervalAbbreviation`
+describe the effective state. `savings` returns `Just` the exact daylight
+adjustment when the source data identifies a standard offset, or `Nothing`
+for caller-supplied transition data that records only a daylight flag. TZIF,
+POSIX, Windows, and fixed-zone providers retain exact savings when they can be
+established from their source data.
+
+`metadata` reports the installed TZDB version and link aliases on Unix, and
+`canonicalZoneId` follows TZDB link chains. Windows registry providers report
+no TZDB version or aliases because the registry does not supply those facts.
+On Windows, `timeZone` accepts either a Windows identifier or an IANA
+identifier by converting through the platform ICU API at runtime; no mapping
+table is bundled. `localZone` uses the canonical IANA identifier when ICU can
+resolve it, while `availableZones` lists every installed Windows registry ID.
 
 `TZDIR` overrides `/usr/share/zoneinfo`; `TZ` overrides `/etc/localtime` for the local zone. Named zones cannot escape the TZDB root. `availableZones` reports files that successfully decode as TZif rather than relying on filename conventions.
 
-`TimeZoneProvider` isolates platform discovery. The `utcWith`, `timeZoneWith`, `localZoneWith`, and `availableZonesWith` variants accept an explicit provider; the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. On Windows, internal registry models decode `REG_TZI_FORMAT`, `SYSTEMTIME`, and Dynamic DST history with typed malformed-data and unknown-zone failures.
+`TimeZoneProvider` isolates platform discovery. The `utcWith`, `timeZoneWith`, `localZoneWith`, `availableZonesWith`, and `metadataWith` variants accept an explicit provider; the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. On Windows, internal registry models decode `REG_TZI_FORMAT`, `SYSTEMTIME`, and Dynamic DST history with typed malformed-data and unknown-zone failures; ICU supplies IANA/Windows identifier conversion.
 
 On Windows, `systemTimeZoneProvider` uses `windowsNativeRegistrySource`. A small C support library calls `RegOpenKeyExW`, `RegEnumKeyExW`, and `RegQueryValueExW` from the native Win32 API. It reads the local zone, installed zone definitions, and Dynamic DST history without launching another process. Idris owns parsing, validation, recurrence construction, and all timezone calculations; the C boundary only acquires registry values. Native buffers are copied immediately and freed explicitly.
 

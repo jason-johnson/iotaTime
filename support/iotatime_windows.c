@@ -23,6 +23,21 @@ typedef struct {
     char *items[IOTATIME_WINDOWS_LOCALE_ITEM_COUNT];
 } WindowsLocaleSnapshot;
 
+typedef int32_t (*IcuGetWindowsTimeZoneId)(const uint16_t *, int32_t,
+                                           uint16_t *, int32_t, int32_t *);
+typedef int32_t (*IcuGetTimeZoneIdForWindowsId)(const uint16_t *, int32_t,
+                                                const char *, uint16_t *,
+                                                int32_t, int32_t *);
+
+typedef struct {
+    HMODULE module;
+    IcuGetWindowsTimeZoneId iana_to_windows;
+    IcuGetTimeZoneIdForWindowsId windows_to_iana;
+} IcuZoneFunctions;
+
+static INIT_ONCE icu_zone_once = INIT_ONCE_STATIC_INIT;
+static IcuZoneFunctions icu_zone_functions = {0};
+
 static char *copy_string(const char *value) {
     size_t length = strlen(value);
     char *copy = (char *)malloc(length + 1);
@@ -71,6 +86,87 @@ static WCHAR *utf8_to_wide(const char *value) {
         return NULL;
     }
     return result;
+}
+
+static BOOL CALLBACK initialize_icu_zone_functions(PINIT_ONCE once,
+                                                    PVOID parameter,
+                                                    PVOID *context) {
+    HMODULE module;
+    FARPROC iana_to_windows;
+    FARPROC windows_to_iana;
+
+    (void)once;
+    (void)parameter;
+    (void)context;
+    module = LoadLibraryW(L"icu.dll");
+    if (module == NULL) {
+        return TRUE;
+    }
+    iana_to_windows = GetProcAddress(module, "ucal_getWindowsTimeZoneID");
+    windows_to_iana = GetProcAddress(module, "ucal_getTimeZoneIDForWindowsID");
+    if (iana_to_windows == NULL || windows_to_iana == NULL) {
+        FreeLibrary(module);
+        return TRUE;
+    }
+    memcpy(&icu_zone_functions.iana_to_windows, &iana_to_windows,
+           sizeof(icu_zone_functions.iana_to_windows));
+    memcpy(&icu_zone_functions.windows_to_iana, &windows_to_iana,
+           sizeof(icu_zone_functions.windows_to_iana));
+    icu_zone_functions.module = module;
+    return TRUE;
+}
+
+static void ensure_icu_zone_functions(void) {
+    InitOnceExecuteOnce(&icu_zone_once, initialize_icu_zone_functions,
+                        NULL, NULL);
+}
+
+IOTATIME_EXPORT void *iotatime_windows_iana_to_windows(const char *iana_id) {
+    WCHAR *input;
+    uint16_t output[128];
+    int32_t status = 0;
+    int32_t length;
+
+    ensure_icu_zone_functions();
+    if (icu_zone_functions.iana_to_windows == NULL) {
+        return NULL;
+    }
+    input = utf8_to_wide(iana_id);
+    if (input == NULL) {
+        return NULL;
+    }
+    length = icu_zone_functions.iana_to_windows((const uint16_t *)input, -1,
+                                                 output, 128, &status);
+    free(input);
+    if (status > 0 || length <= 0 || length >= 128) {
+        return NULL;
+    }
+    output[length] = 0;
+    return wide_to_utf8((const WCHAR *)output);
+}
+
+IOTATIME_EXPORT void *iotatime_windows_windows_to_iana(const char *windows_id) {
+    WCHAR *input;
+    uint16_t output[128];
+    int32_t status = 0;
+    int32_t length;
+
+    ensure_icu_zone_functions();
+    if (icu_zone_functions.windows_to_iana == NULL) {
+        return NULL;
+    }
+    input = utf8_to_wide(windows_id);
+    if (input == NULL) {
+        return NULL;
+    }
+    length = icu_zone_functions.windows_to_iana((const uint16_t *)input, -1,
+                                                 "001", output, 128, &status);
+    free(input);
+    if (status > 0 || length <= 0 || length >= 128) {
+        return NULL;
+    }
+    output[length] = 0;
+    return wide_to_utf8((const WCHAR *)output);
 }
 
 static char *locale_info_utf8(LPCWSTR locale_name, LCTYPE type) {
@@ -522,6 +618,16 @@ IOTATIME_EXPORT void *iotatime_windows_registry_snapshot(void) {
         memcpy(result, message, sizeof(message));
     }
     return result;
+}
+
+IOTATIME_EXPORT void *iotatime_windows_iana_to_windows(const char *iana_id) {
+    (void)iana_id;
+    return NULL;
+}
+
+IOTATIME_EXPORT void *iotatime_windows_windows_to_iana(const char *windows_id) {
+    (void)windows_id;
+    return NULL;
 }
 
 IOTATIME_EXPORT void *iotatime_windows_locale_snapshot(const char *name,

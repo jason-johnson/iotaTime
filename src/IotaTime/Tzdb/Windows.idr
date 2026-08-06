@@ -230,7 +230,8 @@ windowsZoneRecurrence rule = do
   end <- windowsRule rule.standardStart
   Right (zoneRecurrence
     (transitionInfo standardOffset False rule.standardName)
-    (transitionInfo daylightOffset True rule.daylightName)
+    (transitionInfoWithSavings daylightOffset
+      (minusClamped daylightOffset standardOffset) rule.daylightName)
     start end)
 
 ||| Validate Windows TZI data and construct an invariant-preserving zone.
@@ -345,15 +346,23 @@ parseDynamicTzi standardName daylightName ((year, bytes) :: rest) = do
 
 ||| Convert registry bytes captured by a native adapter into a validated zone.
 public export
-windowsRegistryTimeZone : WindowsRegistryZone ->
+windowsRegistryTimeZoneAs : String -> WindowsRegistryZone ->
                           Either WindowsRegistryError TimeZone
-windowsRegistryTimeZone registry = do
+windowsRegistryTimeZoneAs valueId registry = do
   defaultRule <- case parseWindowsTzi registry.registryStandardName
     registry.registryDaylightName registry.registryDefaultTzi of
       Left error => Left (InvalidDefaultTzi error)
       Right value => Right value
   dynamicRules <- parseDynamicTzi registry.registryStandardName
     registry.registryDaylightName registry.registryDynamicTzi
-  case windowsDynamicTimeZone registry.registryZoneId defaultRule dynamicRules of
+  case windowsDynamicTimeZone valueId defaultRule dynamicRules of
     Left error => Left (InvalidRegistryTimeZone error)
     Right value => Right value
+
+||| Convert registry bytes using the Windows registry identifier as zone
+||| identity.
+public export
+windowsRegistryTimeZone : WindowsRegistryZone ->
+                          Either WindowsRegistryError TimeZone
+windowsRegistryTimeZone registry =
+  windowsRegistryTimeZoneAs registry.registryZoneId registry

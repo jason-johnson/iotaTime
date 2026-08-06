@@ -475,7 +475,12 @@ leapDay = copticDate 6 CopticMonths.PiKogiEnavot 1731
 
 ## Islamic calendar API
 
-`CalendarDate (Islamic pattern)` implements the tabular Islamic calendar with the astronomical epoch, 1 Muharram 1 = July 18, 622 proleptic Gregorian. Odd months have 30 days, even months have 29, and Dhul Hijjah gains day 30 in a leap year.
+`CalendarDate (Islamic pattern)` implements the tabular Islamic calendar with
+the astronomical epoch, 1 Muharram 1 = July 18, 622 proleptic Gregorian.
+`CalendarDate (CivilIslamic pattern)` selects the civil epoch one day later,
+July 19, 622. The epoch is part of the calendar type, so astronomical and civil
+dates cannot be mixed accidentally. Odd months have 30 days, even months have
+29, and Dhul Hijjah gains day 30 in a leap year.
 
 The leap pattern is part of the calendar type. `IslamicBcl` and `IslamicBase16` use the Base16 pattern compatible with .NET and NodaTime; `IslamicBase15`, `IslamicIndian`, and `IslamicHabashAlHasib` select the other common 30-year patterns. Values from different patterns have different types and cannot be mixed.
 
@@ -486,9 +491,17 @@ defaultLeapDay = islamicDate 30 IslamicMonths.DhulHijjah 16
 base15LeapDay : CalendarDate IslamicBase15
 base15LeapDay = islamicDate' {pattern = Base15}
 	30 IslamicMonths.DhulHijjah 15
+
+civilNewYear : CalendarDate CivilIslamicBcl
+civilNewYear = civilIslamicDate 1 IslamicMonths.Muharram 1443
 ```
 
 The unprimed constructors and refinements use `IslamicBcl`. Primed forms such as `islamicDate'`, `islamicFromNthDay'`, and `refineIslamicDate'` select a pattern through the expected type or an explicit `{pattern = ...}` argument. Static invalid dates require impossible erased proofs; runtime inputs return `Either IslamicDateError`.
+
+The `civilIslamic...` constructors and refiners mirror the astronomical API,
+including day-count, nth-weekday, and week-date construction. Aliases such as
+`CivilIslamicBase15`, `CivilIslamicBase16`, and `CivilIslamicBcl` retain the
+same leap-pattern index. Formatting and parsing support both epoch families.
 
 ## Persian calendar API
 

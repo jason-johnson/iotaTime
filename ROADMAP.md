@@ -37,6 +37,9 @@ Features implemented in iotaTime that would strengthen HodaTime.
   intersection, and connected union operations.
 - [ ] Add unbounded half-open intervals with optional endpoints, bounded
   conversions, relationships, set operations, and finite duration queries.
+- [ ] Add a civil-epoch tabular Islamic variant while retaining leap-pattern
+  types. iotaTime indexes the epoch in the calendar type so astronomical and
+  civil dates cannot be mixed accidentally.
 - [ ] Add injectable system and fixed clocks, with zoned-clock adapters, so
   application code does not need to call the process clock directly.
 - [ ] Add an explicit time-zone provider contract for deterministic tests,
@@ -57,9 +60,8 @@ Features implemented in iotaTime that would strengthen HodaTime.
 Features absent from both libraries that may belong in both after their
 semantics and data sources are specified.
 
-- [ ] Add a civil-epoch tabular Islamic variant while retaining leap-pattern
-  types, and add Persian variants only where their supported ranges can be
-  vouched for explicitly.
+- [ ] Add Persian variants only where their supported ranges can be vouched
+  for explicitly.
 - [ ] Design configurable years/months period-difference decomposition. Exact
   day/nanosecond differences already avoid end-of-month ambiguity; calendar
   decomposition requires an explicit rounding and clamping policy.

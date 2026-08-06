@@ -170,6 +170,30 @@ public export
         Left _ => invalidDate "Islamic"
         Right date => Right date
 
+public export
+{pattern : IslamicLeapPattern} -> KnownIslamicLeapPattern pattern =>
+  CalendarPattern (CivilIslamic pattern) where
+  patternMonthLimit = 12
+  patternMonthNames =
+    [ "Muharram", "Safar", "RabiAlAwwal", "RabiAlThani"
+    , "JumadaAlAwwal", "JumadaAlThani", "Rajab", "Shaban"
+    , "Ramadan", "Shawwal", "DhulQadah", "DhulHijjah"
+    ]
+  patternMonthAbbreviations =
+    [ "Muh", "Saf", "RaA", "RaT", "JuA", "JuT"
+    , "Raj", "Sha", "Ram", "Shw", "DhQ", "DhH"
+    ]
+  patternMonthNumber date = IslamicMonths.monthNumber
+    (month {calendar = CivilIslamic pattern} date)
+  patternWeekdayNumber date = IslamicWeekdays.weekdayNumber
+    (dayOfWeek {calendar = CivilIslamic pattern} date)
+  refinePatternDate year month day = do
+    valueDay <- refineDay day
+    case refineCivilIslamicDate' {pattern} valueDay (islamicMonth month)
+      (yearFromInteger year) of
+        Left _ => invalidDate "Civil Islamic"
+        Right date => Right date
+
 persianMonth : Integer -> PersianMonth
 persianMonth 1 = PersianMonths.Farvardin
 persianMonth 2 = PersianMonths.Ordibehesht

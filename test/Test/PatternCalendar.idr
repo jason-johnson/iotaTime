@@ -73,6 +73,10 @@ patternCalendarCases =
       (roundTrips {calendar = IslamicBase15}
         (islamicDate' {pattern = Base15}
           30 IslamicMonths.DhulHijjah 15) "0015-12-30")
+  , MkRuntimeCase "civil Islamic patterns retain epoch and leap indexes"
+      (roundTrips {calendar = CivilIslamicBase15}
+        (civilIslamicDate' {pattern = Base15}
+          30 IslamicMonths.DhulHijjah 15) "0015-12-30")
   , MkRuntimeCase "Persian numeric date pattern round-trips"
       (roundTrips {calendar = Persian}
         (persianDate 30 PersianMonths.Esfand 1403) "1403-12-30")
@@ -90,6 +94,9 @@ patternCalendarCases =
        namedRoundTrips {calendar = IslamicBase15}
         (islamicDate' {pattern = Base15} 1 IslamicMonths.Ramadan 1443)
         "1443-Ramadan-01" &&
+       namedRoundTrips {calendar = CivilIslamicBase15}
+        (civilIslamicDate' {pattern = Base15}
+          1 IslamicMonths.Ramadan 1443) "1443-Ramadan-01" &&
        namedRoundTrips {calendar = HebrewCivil}
         (hebrewDate 1 5784 HebrewMonths.AdarI) "5784-AdarI-01")
   , MkRuntimeCase "calendar date-time patterns round-trip non-Gregorian values"

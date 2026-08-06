@@ -30,9 +30,10 @@ Features present in HodaTime that iotaTime should support.
 
 Features implemented in iotaTime that would strengthen HodaTime.
 
-- [ ] Add exact `between` operations for dates, local times, and calendar
-  date-times. The current iotaTime API returns canonical day/nanosecond periods
-  that apply back to the end value without choosing a years/months policy.
+- [ ] Add exact and calendar-aware `between` operations for dates, plus exact
+  local-time and calendar-date-time differences. iotaTime's date API supports
+  explicit day-only differences and largest-first years/months/days
+  decomposition with non-overshooting, clamped month arithmetic.
 - [ ] Add validated half-open intervals plus emptiness, overlap, adjacency,
   intersection, and connected union operations.
 - [ ] Add unbounded half-open intervals with optional endpoints, bounded
@@ -63,11 +64,6 @@ Features implemented in iotaTime that would strengthen HodaTime.
 Features absent from both libraries that may belong in both after their
 semantics and data sources are specified.
 
-- [ ] Design configurable years/months period-difference decomposition. Exact
-  day/nanosecond differences already avoid ambiguity. A calendar difference
-  must decide, for example, whether 31 January to 31 March is "2 months" or a
-  number of days, and what "1 month" means when the target month has no day 31.
-  Any future API therefore needs an explicit rounding and end-of-month policy.
 - [ ] Add caching and richer discovery controls to time-zone providers where
   profiling or deployment requirements justify them.
 

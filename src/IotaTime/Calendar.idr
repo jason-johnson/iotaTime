@@ -17,6 +17,26 @@ data DayNth = First | Second | Third | Fourth | Fifth | Last
 public export
 data CalendarConversionError = TargetCalendarOutOfRange String Integer
 
+||| Calendar units used when decomposing the difference between two dates.
+public export
+data DateDifferenceUnits = DaysOnly | YearsMonthsDays
+
+||| Month arithmetic used while decomposing a calendar difference.
+public export
+data MonthArithmeticPolicy = ClampToMonth
+
+||| Controls how a difference between calendar dates is decomposed.
+public export
+record DateDifferencePolicy where
+  constructor MkDateDifferencePolicy
+  units : DateDifferenceUnits
+  monthArithmetic : MonthArithmeticPolicy
+
+||| The standard largest-first, non-overshooting calendar decomposition.
+public export
+nodaTimePolicy : DateDifferencePolicy
+nodaTimePolicy = MkDateDifferencePolicy YearsMonthsDays ClampToMonth
+
 ||| Capabilities and dependent representations required of a calendar.
 ||| `MonthRep` may depend on the year, allowing calendars such as Hebrew to
 ||| make leap-only months unrepresentable in common years.
@@ -89,12 +109,95 @@ shiftCalendarDays @{cal} = shiftCalendarDays' @{cal}
 
 ||| Compute the exact signed day period from `start` to `end`.
 public export
+betweenDays : {calendar : Type} -> {auto cal : Calendar calendar} ->
+              {auto target : HasCalendar (CalendarDate calendar @{cal})} ->
+              (start : CalendarDate calendar @{cal}) ->
+              (end : CalendarDate calendar @{cal}) ->
+              Period (CalendarDate calendar @{cal})
+betweenDays @{cal} start end = days (toDays @{cal} end - toDays @{cal} start)
+
+yearsBetween : {calendar : Type} -> {auto cal : Calendar calendar} ->
+               {auto target : HasCalendar (CalendarDate calendar @{cal})} ->
+               CalendarDate calendar @{cal} -> CalendarDate calendar @{cal} -> Integer
+yearsBetween @{cal} start end =
+  let estimate = yearValue (year @{cal} end) - yearValue (year @{cal} start)
+      estimatedDate = applyCalendarPeriod @{cal}
+        (years {target = CalendarDate calendar @{cal}} estimate) start
+      estimatedDays = toDays @{cal} estimatedDate
+      startDays = toDays @{cal} start
+      endDays = toDays @{cal} end
+   in if startDays <= endDays
+        then if estimatedDays <= endDays then estimate else estimate - 1
+        else if estimatedDays >= endDays then estimate else estimate + 1
+
+monthsBetween : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                {auto target : HasCalendar (CalendarDate calendar @{cal})} ->
+                CalendarDate calendar @{cal} -> CalendarDate calendar @{cal} -> Integer
+monthsBetween @{cal} start end =
+  let startDays = toDays @{cal} start
+      endDays = toDays @{cal} end
+      fuel = cast (abs (endDays - startDays) + 1)
+   in if startDays <= endDays
+        then forward fuel 0
+        else backward fuel 0
+  where
+    forward : Nat -> Integer -> Integer
+    forward Z count = count
+    forward (S fuel) count =
+      let candidate = count + 1
+          candidateDays = toDays @{cal}
+            (applyCalendarPeriod @{cal}
+              (months {target = CalendarDate calendar @{cal}} candidate) start)
+       in if candidateDays <= toDays @{cal} end
+            then if candidateDays == toDays @{cal} end
+              then candidate
+              else forward fuel candidate
+            else count
+
+    backward : Nat -> Integer -> Integer
+    backward Z count = count
+    backward (S fuel) count =
+      let candidate = count - 1
+          candidateDays = toDays @{cal}
+            (applyCalendarPeriod @{cal}
+              (months {target = CalendarDate calendar @{cal}} candidate) start)
+       in if candidateDays >= toDays @{cal} end
+            then if candidateDays == toDays @{cal} end
+              then candidate
+              else backward fuel candidate
+            else count
+
+||| Decompose the signed difference from `start` to `end` according to `policy`.
+||| Calendar units are selected largest-first without passing the endpoint.
+public export
+betweenWith : {calendar : Type} -> {auto cal : Calendar calendar} ->
+              {auto target : HasCalendar (CalendarDate calendar @{cal})} ->
+              DateDifferencePolicy ->
+              (start : CalendarDate calendar @{cal}) ->
+              (end : CalendarDate calendar @{cal}) ->
+              Period (CalendarDate calendar @{cal})
+betweenWith @{cal} (MkDateDifferencePolicy DaysOnly _) start end =
+  betweenDays @{cal} start end
+betweenWith @{cal} (MkDateDifferencePolicy YearsMonthsDays ClampToMonth) start end =
+  let yearCount = yearsBetween @{cal} start end
+      afterYears = applyCalendarPeriod @{cal}
+        (years {target = CalendarDate calendar @{cal}} yearCount) start
+      monthCount = monthsBetween @{cal} afterYears end
+      afterMonths = applyCalendarPeriod @{cal}
+        (months {target = CalendarDate calendar @{cal}} monthCount) afterYears
+      dayCount = toDays @{cal} end - toDays @{cal} afterMonths
+   in years {target = CalendarDate calendar @{cal}} yearCount <+>
+      months {target = CalendarDate calendar @{cal}} monthCount <+>
+      days {target = CalendarDate calendar @{cal}} dayCount
+
+||| Decompose the signed calendar difference using `nodaTimePolicy`.
+public export
 between : {calendar : Type} -> {auto cal : Calendar calendar} ->
           {auto target : HasCalendar (CalendarDate calendar @{cal})} ->
           (start : CalendarDate calendar @{cal}) ->
           (end : CalendarDate calendar @{cal}) ->
           Period (CalendarDate calendar @{cal})
-between @{cal} start end = days (toDays @{cal} end - toDays @{cal} start)
+between @{cal} = betweenWith @{cal} nodaTimePolicy
 
 ||| Decompose a date while preserving the dependency between its year and month.
 public export

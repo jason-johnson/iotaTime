@@ -26,6 +26,19 @@ endOfMonth = at (calendarDate 31 January 2000) late
 advanced : CalendarDateTime Gregorian
 advanced = applyPeriod (months 1 <+> hours 2) endOfMonth
 
+calendarDifference : Period (CalendarDate Gregorian)
+calendarDifference = IotaTime.Calendar.between {calendar = Gregorian}
+  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+
+exactDayDifference : Period (CalendarDate Gregorian)
+exactDayDifference = IotaTime.Calendar.betweenDays {calendar = Gregorian}
+  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+
+explicitDayDifference : Period (CalendarDate Gregorian)
+explicitDayDifference = IotaTime.Calendar.betweenWith {calendar = Gregorian}
+  (MkDateDifferencePolicy DaysOnly ClampToMonth)
+  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+
 gregorianChristmas : CalendarDate Gregorian
 gregorianChristmas = calendarDate 25 December 2024
 

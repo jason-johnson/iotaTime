@@ -51,7 +51,8 @@
   "IotaTime.Calendar": [
     { "title": "Calendar capability", "names": ["Calendar", "CalendarDate", "HasCalendarDate"] },
     { "title": "Date components", "names": ["year", "month", "day", "yearMonthDay"] },
-    { "title": "Conversion and arithmetic", "names": ["withCalendar", "between"] }
+    { "title": "Difference policy", "names": ["DateDifferenceUnits", "MonthArithmeticPolicy", "DateDifferencePolicy", "nodaTimePolicy"] },
+    { "title": "Conversion and arithmetic", "names": ["withCalendar", "between", "betweenWith", "betweenDays"] }
   ],
   "IotaTime.Calendar.Gregorian": [
     { "title": "Calendar and components", "names": ["Gregorian", "Month", "monthNumber", "DayOfWeek", "weekdayNumber"] },

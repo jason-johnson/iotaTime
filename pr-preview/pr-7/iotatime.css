@@ -1,0 +1,191 @@
+body {
+  color: #20252b;
+  background: #f7f8fa;
+}
+
+header {
+  border-bottom-color: #287a68;
+  background: #173b35;
+}
+
+header nav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+header nav .guide-link {
+  color: #d8fff4;
+  font-weight: bold;
+}
+
+.container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 28px 64px;
+}
+
+#module-header,
+.docs-hero {
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #c7d3d0;
+}
+
+.docs-hero h1,
+#module-header h1 {
+  margin-bottom: 10px;
+  font-family: Georgia, serif;
+  font-size: 28px;
+  font-weight: normal;
+}
+
+.docs-hero p,
+#module-header pre {
+  color: #4a5a57;
+  line-height: 1.55;
+}
+
+.docs-callout {
+  margin: 18px 0 26px;
+  padding: 16px 18px;
+  border-left: 4px solid #287a68;
+  background: #eaf4f1;
+}
+
+.docs-callout a {
+  color: #126554;
+  font-weight: bold;
+}
+
+.api-toc {
+  margin: 0 0 28px;
+  padding: 14px 18px;
+  border: 1px solid #cbd7d4;
+  background: white;
+}
+
+.api-toc strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.api-toc ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 18px;
+}
+
+.api-toc a {
+  color: #126554;
+}
+
+.api-group {
+  margin-top: 30px;
+}
+
+.api-group > h2 {
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #83ad9f;
+  color: #173b35;
+  font-family: Georgia, serif;
+  font-size: 20px;
+  font-weight: normal;
+}
+
+.decls > dt {
+  border-color: #d1d9d7;
+  background: #f0f4f3;
+}
+
+.guide {
+  font-family: Georgia, serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.guide h1,
+.guide h2,
+.guide h3 {
+  color: #173b35;
+  font-weight: normal;
+}
+
+.guide h1 {
+  font-size: 34px;
+}
+
+.guide h2 {
+  margin-top: 38px;
+  padding-bottom: 7px;
+  border-bottom: 2px solid #83ad9f;
+  font-size: 25px;
+}
+
+.guide h3 {
+  margin-top: 28px;
+  font-size: 20px;
+}
+
+.guide p,
+.guide ul,
+.guide ol {
+  max-width: 850px;
+  margin: 12px 0;
+}
+
+.guide ul,
+.guide ol {
+  padding-left: 28px;
+}
+
+.guide li {
+  margin: 5px 0;
+}
+
+.guide code {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #e8edec;
+  font-family: "Lucida Console", Monaco, monospace;
+  font-size: 0.9em;
+}
+
+.guide pre {
+  display: block;
+  max-width: 100%;
+  margin: 18px 0;
+  padding: 16px;
+  overflow-x: auto;
+  border-left: 4px solid #287a68;
+  background: #172320;
+  color: #eef8f5;
+  line-height: 1.5;
+}
+
+.guide pre code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.guide table {
+  width: 100%;
+  max-width: 900px;
+  border-collapse: collapse;
+  background: white;
+}
+
+.guide th,
+.guide td {
+  padding: 9px 11px;
+  border: 1px solid #ccd5d3;
+  text-align: left;
+  vertical-align: top;
+}
+
+.guide a {
+  color: #126554;
+  text-decoration: underline;
+}

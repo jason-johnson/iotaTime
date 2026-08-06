@@ -247,6 +247,23 @@ Static construction accepts scalar endpoints because `Instant` is intentionally 
 
 `isEmpty`, `overlaps`, and `isAdjacent` expose half-open range relationships. `intersection` returns only a non-empty shared range, so adjacent intervals have no intersection. `union` returns the smallest connected interval for overlapping or adjacent inputs, absorbs empty intervals, and returns `Nothing` for separated ranges.
 
+`UnboundedInterval` extends the same half-open model with an optional start,
+end, or both. `Nothing` denotes negative infinity in `unboundedStart` and
+positive infinity in `unboundedEnd`. Statically known optional nanosecond
+bounds use `unboundedInterval`; arbitrary optional `Instant` bounds use
+`refineUnboundedInterval`:
+
+```idris
+future : UnboundedInterval
+future = unboundedInterval (Just 0) Nothing
+```
+
+`toUnboundedInterval` embeds every bounded interval, while
+`toBoundedInterval` succeeds only when both bounds are finite. The prefixed
+membership, relationship, intersection, and connected-union operations retain
+the bounded API's semantics. `unboundedDuration` likewise returns a duration
+only for two finite endpoints.
+
 ## Offsets
 
 `Offset` is an opaque signed whole-second displacement from UTC, bounded inclusively to plus or minus 18 hours. Statically known values use unit-specific proof-carrying constructors; out-of-range literals fail compilation:

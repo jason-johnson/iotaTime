@@ -21,6 +21,21 @@ adjacentInterval = interval 10 20
 separateInterval : Interval
 separateInterval = interval 11 20
 
+allTime : UnboundedInterval
+allTime = unboundedInterval Nothing Nothing
+
+fromZero : UnboundedInterval
+fromZero = unboundedInterval (Just 0) Nothing
+
+untilTen : UnboundedInterval
+untilTen = unboundedInterval Nothing (Just 10)
+
+finiteUnbounded : UnboundedInterval
+finiteUnbounded = unboundedInterval (Just 0) (Just 10)
+
+emptyUnbounded : UnboundedInterval
+emptyUnbounded = unboundedInterval (Just 0) (Just 0)
+
 intervalCases : List RuntimeCase
 intervalCases =
   [ MkRuntimeCase "static interval preserves its endpoints"
@@ -43,6 +58,9 @@ intervalCases =
     , MkRuntimeCase "overlap follows half-open endpoint semantics"
       (overlaps leftInterval overlappingInterval &&
       not (overlaps leftInterval adjacentInterval))
+    , MkRuntimeCase "empty intervals never overlap"
+      (not (overlaps emptyInterval leftInterval) &&
+      not (overlaps leftInterval emptyInterval))
     , MkRuntimeCase "adjacent intervals touch without overlapping"
       (isAdjacent leftInterval adjacentInterval &&
       not (isAdjacent leftInterval separateInterval))
@@ -83,6 +101,61 @@ intervalCases =
           (-999999999999999999999999999999)
           999999999999999999999999999999) ==
         IotaTime.Duration.fromNanoseconds 1999999999999999999999999999998)
+  , MkRuntimeCase "fully unbounded interval contains every tested instant"
+      (unboundedContains allTime
+        (fromNanosecondsSinceEpoch (-999999999999999999999999999999)) &&
+      unboundedContains allTime
+        (fromNanosecondsSinceEpoch 999999999999999999999999999999))
+  , MkRuntimeCase "finite unbounded bounds retain half-open semantics"
+      (unboundedContains finiteUnbounded epoch &&
+      unboundedContains finiteUnbounded (fromNanosecondsSinceEpoch 9) &&
+      not (unboundedContains finiteUnbounded
+        (fromNanosecondsSinceEpoch 10)))
+  , MkRuntimeCase "one-sided intervals enforce only their finite bound"
+      (not (unboundedContains fromZero (fromNanosecondsSinceEpoch (-1))) &&
+      unboundedContains fromZero epoch &&
+      unboundedContains untilTen (fromNanosecondsSinceEpoch (-100)) &&
+      not (unboundedContains untilTen (fromNanosecondsSinceEpoch 10)))
+  , MkRuntimeCase "only equal finite bounds form an empty interval"
+      (unboundedIsEmpty emptyUnbounded &&
+      not (unboundedIsEmpty allTime) &&
+      not (unboundedIsEmpty fromZero))
+  , MkRuntimeCase "bounded and unbounded interval conversions round trip"
+      (toBoundedInterval (toUnboundedInterval leftInterval) ==
+        Just leftInterval &&
+      toBoundedInterval allTime == Nothing)
+  , MkRuntimeCase "unbounded intersection selects the tighter bounds"
+      (unboundedIntersection fromZero untilTen == Just finiteUnbounded)
+  , MkRuntimeCase "unbounded union extends through infinite bounds"
+      (unboundedUnion fromZero untilTen == Just allTime)
+  , MkRuntimeCase "unbounded adjacency uses finite touching endpoints"
+      (let untilZero = unboundedInterval Nothing (Just 0)
+        in unboundedIsAdjacent untilZero fromZero &&
+          unboundedIsAdjacent fromZero untilZero &&
+      not (unboundedOverlaps
+        untilZero fromZero))
+  , MkRuntimeCase "empty unbounded intervals never overlap"
+      (not (unboundedOverlaps emptyUnbounded finiteUnbounded) &&
+      not (unboundedOverlaps finiteUnbounded emptyUnbounded))
+  , MkRuntimeCase "unbounded ordering uses endpoint infinity semantics"
+      (untilTen < allTime && allTime < finiteUnbounded &&
+      finiteUnbounded < fromZero)
+  , MkRuntimeCase "separated unbounded intervals have no connected union"
+      (let untilZero = unboundedInterval Nothing (Just 0)
+           afterOne = unboundedInterval (Just 1) Nothing
+        in unboundedIntersection untilZero afterOne == Nothing &&
+          unboundedUnion untilZero afterOne == Nothing)
+  , MkRuntimeCase "unbounded duration exists only for finite endpoints"
+      (unboundedDuration finiteUnbounded ==
+        Just (IotaTime.Duration.fromNanoseconds 10) &&
+      unboundedDuration allTime == Nothing)
+  , MkRuntimeCase "dynamic reversed unbounded endpoints are rejected"
+      (let later = fromNanosecondsSinceEpoch 30
+           earlier = fromNanosecondsSinceEpoch 20
+        in case refineUnboundedInterval (Just later) (Just earlier) of
+             Left (ReversedInterval actualStart actualEnd) =>
+               actualStart == later && actualEnd == earlier
+             Right _ => False)
   ]
 
 export

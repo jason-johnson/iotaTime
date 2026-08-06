@@ -35,6 +35,8 @@ Features implemented in iotaTime that would strengthen HodaTime.
   that apply back to the end value without choosing a years/months policy.
 - [ ] Add validated half-open intervals plus emptiness, overlap, adjacency,
   intersection, and connected union operations.
+- [ ] Add unbounded half-open intervals with optional endpoints, bounded
+  conversions, relationships, set operations, and finite duration queries.
 - [ ] Add injectable system and fixed clocks, with zoned-clock adapters, so
   application code does not need to call the process clock directly.
 - [ ] Add an explicit time-zone provider contract for deterministic tests,
@@ -58,8 +60,6 @@ semantics and data sources are specified.
 - [ ] Add a civil-epoch tabular Islamic variant while retaining leap-pattern
   types, and add Persian variants only where their supported ranges can be
   vouched for explicitly.
-- [ ] Add an unbounded interval representation and define its relationship to
-  the existing bounded half-open interval.
 - [ ] Design configurable years/months period-difference decomposition. Exact
   day/nanosecond differences already avoid end-of-month ambiguity; calendar
   decomposition requires an explicit rounding and clamping policy.

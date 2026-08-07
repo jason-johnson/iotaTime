@@ -34,6 +34,9 @@ function declarationName(moduleName, id) {
 
 function addSharedNavigation($, root) {
   const nav = $("header nav").first();
+  if (nav.length > 0 && nav.find(".cookbooks-link").length === 0) {
+    nav.prepend(`<a class="cookbooks-link" href="${root}cookbooks.html">Cookbooks</a>`);
+  }
   if (nav.length > 0 && nav.find(".guide-link").length === 0) {
     nav.prepend(`<a class="guide-link" href="${root}guide.html">Guide</a>`);
   }
@@ -166,11 +169,53 @@ function guidePage(markdown) {
 <body>
 <header>
   <strong>iotaTime</strong>
-  <nav><a class="guide-link" href="guide.html">Guide</a><a href="index.html">API index</a></nav>
+  <nav><a class="guide-link" href="guide.html">Guide</a><a class="cookbooks-link" href="cookbooks.html">Cookbooks</a><a href="index.html">API index</a></nav>
 </header>
 <main class="container guide">${body}</main>
 </body>
 </html>`;
+}
+
+function cookbooksPage(cookbooks) {
+  const $ = load(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iotaTime Cookbooks</title>
+  <link rel="stylesheet" type="text/css" href="default.css">
+  <link rel="stylesheet" type="text/css" href="iotatime.css">
+</head>
+<body>
+<header>
+  <strong>iotaTime</strong>
+  <nav><a href="index.html">API index</a></nav>
+</header>
+<main class="container guide cookbook-index">
+  <h1>Cookbooks</h1>
+  <p>Task-oriented examples live with the API modules that own them.</p>
+  <ul class="cookbook-list"></ul>
+</main>
+</body>
+</html>`);
+  addSharedNavigation($, "");
+
+  const list = $(".cookbook-list");
+  for (const [moduleName, markdown] of cookbooks) {
+    const item = $("<li></li>");
+    const link = $("<a></a>")
+      .attr("href", `docs/${moduleName}.html`)
+      .text(moduleName);
+    const recipes = marked.lexer(markdown)
+      .filter((token) => token.type === "heading" && token.depth === 3)
+      .map((token) => token.text);
+    item.append(link);
+    if (recipes.length > 0) {
+      item.append($("<span></span>").text(recipes.join("; ")));
+    }
+    list.append(item);
+  }
+  return $.html();
 }
 
 async function validateLocalLinks(filePath) {
@@ -244,7 +289,11 @@ const guide = await readFile(path.join(scriptDirectory, "guide.md"), "utf8");
 const guidePath = path.join(outputDirectory, "guide.html");
 await writeFile(guidePath, guidePage(guide));
 
+const cookbooksPath = path.join(outputDirectory, "cookbooks.html");
+await writeFile(cookbooksPath, cookbooksPage(cookbooks));
+
 await validateLocalLinks(indexPath);
 await validateLocalLinks(guidePath);
+await validateLocalLinks(cookbooksPath);
 
 console.log(`Enhanced documentation in ${outputDirectory}`);

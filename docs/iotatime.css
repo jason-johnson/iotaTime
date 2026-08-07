@@ -194,6 +194,34 @@ header nav .guide-link {
   margin: 5px 0;
 }
 
+.cookbook-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 0 32px;
+  padding: 0;
+  list-style: none;
+}
+
+.cookbook-list li {
+  padding: 18px 0;
+  border-bottom: 1px solid #c7d3d0;
+}
+
+.cookbook-list a {
+  display: block;
+  margin-bottom: 5px;
+  color: #126554;
+  font-family: "Lucida Console", Monaco, monospace;
+  font-weight: bold;
+}
+
+.cookbook-list span {
+  display: block;
+  color: #4a5a57;
+  font-family: Georgia, serif;
+  line-height: 1.5;
+}
+
 .guide code {
   padding: 1px 4px;
   border-radius: 3px;

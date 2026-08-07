@@ -57,7 +57,9 @@ function groupModulePage(html, moduleName, configuredGroups, cookbook) {
     section.html(marked.parse(cookbook));
     const typeName = moduleName.split(".").at(-1);
     const heading = section.children("h2").first();
-    heading.text(`Using ${typeName}`);
+    if (heading.text().trim() === "Cookbook") {
+      heading.text(`Using ${typeName}`);
+    }
 
     const recipes = section.children("h3");
     if (recipes.length > 1) {

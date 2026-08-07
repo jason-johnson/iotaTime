@@ -5,6 +5,9 @@ import IotaTime
 leapDay : CalendarDate Gregorian
 leapDay = calendarDate 29 February 2020
 
+runtimeLeapDay : Either GregorianDateError (CalendarDate Gregorian)
+runtimeLeapDay = refineGregorianDate 29 February 2020
+
 start : Instant
 start = fromSecondsSinceUnixEpoch 0
 

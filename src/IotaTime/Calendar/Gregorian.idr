@@ -335,12 +335,15 @@ nthDayOfMonth nth target valueMonth valueYear =
       lastDate = MkGregorianDate (daysFromCivil valueYear valueMonth monthLength)
       lastOffset = (weekdayNumber (gregorianDayOfWeek lastDate) - weekdayNumber target) `mod` 7
       dayNumber = case nth of
+        FourthToLast => dayOfMonthValue monthLength - lastOffset - 21
+        ThirdToLast => dayOfMonthValue monthLength - lastOffset - 14
+        SecondToLast => dayOfMonthValue monthLength - lastOffset - 7
+        Last => dayOfMonthValue monthLength - lastOffset
         First => 1 + firstOffset
         Second => 8 + firstOffset
         Third => 15 + firstOffset
         Fourth => 22 + firstOffset
         Fifth => 29 + firstOffset
-        Last => dayOfMonthValue monthLength - lastOffset
    in dayOfMonthFromInteger dayNumber
 
 public export

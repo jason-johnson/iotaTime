@@ -680,12 +680,15 @@ nthHebrewDayOfMonth nth target valueYear valueMonth =
         ((lastDays + 3) `mod` 7 -
          HebrewWeekdays.weekdayNumber target) `mod` 7
       dayNumber = case nth of
+        FourthToLast => dayOfMonthValue monthLength - lastOffset - 21
+        ThirdToLast => dayOfMonthValue monthLength - lastOffset - 14
+        SecondToLast => dayOfMonthValue monthLength - lastOffset - 7
+        Last => dayOfMonthValue monthLength - lastOffset
         First => 1 + firstOffset
         Second => 8 + firstOffset
         Third => 15 + firstOffset
         Fourth => 22 + firstOffset
         Fifth => 29 + firstOffset
-        Last => dayOfMonthValue monthLength - lastOffset
    in dayOfMonthFromInteger dayNumber
 
 public export
@@ -697,6 +700,9 @@ isValidHebrewNthDay Second _ valueYear _ = yearValue valueYear >= 1
 isValidHebrewNthDay Third _ valueYear _ = yearValue valueYear >= 1
 isValidHebrewNthDay Fourth _ valueYear _ = yearValue valueYear >= 1
 isValidHebrewNthDay Last _ valueYear _ = yearValue valueYear >= 1
+isValidHebrewNthDay SecondToLast _ valueYear _ = yearValue valueYear >= 1
+isValidHebrewNthDay ThirdToLast _ valueYear _ = yearValue valueYear >= 1
+isValidHebrewNthDay FourthToLast _ valueYear _ = yearValue valueYear >= 1
 isValidHebrewNthDay Fifth target valueYear valueMonth =
   yearValue valueYear >= 1 &&
   dayOfMonthValue (nthHebrewDayOfMonth Fifth target valueYear valueMonth) <=

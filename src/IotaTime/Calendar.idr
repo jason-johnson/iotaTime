@@ -8,7 +8,16 @@ import Derive.Prelude
 
 ||| Selects an occurrence of a weekday within a month.
 public export
-data DayNth = First | Second | Third | Fourth | Fifth | Last
+data DayNth
+  = FourthToLast
+  | ThirdToLast
+  | SecondToLast
+  | Last
+  | First
+  | Second
+  | Third
+  | Fourth
+  | Fifth
 
 %runElab derive `{DayNth} [Eq, Show]
 

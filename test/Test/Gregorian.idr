@@ -172,6 +172,17 @@ gregorianCases =
                 calendarDate 15 October 1582)
         , MkRuntimeCase "third Monday of January 2000"
             (ymd (fromNthDay Third Monday January 2000) == (2000, January, 17))
+        , MkRuntimeCase "last Monday includes a matching final day"
+            (ymd (fromNthDay Last Monday January 2000) == (2000, January, 31))
+        , MkRuntimeCase "second-to-last Monday counts backward from month end"
+            (ymd (fromNthDay SecondToLast Monday January 2000) ==
+                (2000, January, 24))
+        , MkRuntimeCase "third-to-last Monday counts backward from month end"
+            (ymd (fromNthDay ThirdToLast Monday January 2000) ==
+                (2000, January, 17))
+        , MkRuntimeCase "fourth-to-last Monday counts backward from month end"
+            (ymd (fromNthDay FourthToLast Monday January 2000) ==
+                (2000, January, 10))
         , MkRuntimeCase "last weekday includes a matching final day"
             (ymd (fromNthDay Last Sunday December 2000) == (2000, December, 31))
         , MkRuntimeCase "dynamic fifth weekday is rejected when absent"

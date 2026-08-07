@@ -1,7 +1,12 @@
 # Release checklist
 
-1. Update `version` in both package definitions and `PACKAGE_VERSION` in
-   `Makefile` together.
+1. Set and verify the package version in both package definitions and the
+   support-library install path with one command:
+
+   ```bash
+   scripts/sync-version.sh --set X.Y.Z
+   scripts/sync-version.sh --check X.Y.Z
+   ```
 2. Build the native-free package with support libraries absent:
 
    ```bash
@@ -39,7 +44,8 @@
 
 5. Confirm Linux full-suite and Windows registry jobs pass in CI.
 6. Review public API and README changes, then push a tag matching the package
-   version, for example `v0.2.0`.
+   version, for example `vX.Y.Z`. The tag workflow calls
+   `scripts/sync-version.sh --check` with the tag version before publishing.
 
 The tag workflow waits for the full Linux and Windows matrix, verifies the tag
 against both version declarations, creates source and API-documentation

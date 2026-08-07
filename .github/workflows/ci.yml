@@ -32,6 +32,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify package version declarations
+        shell: bash
+        run: scripts/sync-version.sh --check
+
       - name: Install Idris 2 build dependencies
         if: runner.os == 'Linux'
         shell: bash
@@ -203,12 +207,7 @@ jobs:
         shell: bash
         run: |
           version="${GITHUB_REF_NAME#v}"
-          package_version=$(sed -n 's/^version = //p' iotaTime.ipkg)
-          pure_package_version=$(sed -n 's/^version = //p' iotaTime-pure.ipkg)
-          make_version=$(sed -n 's/^PACKAGE_VERSION := //p' Makefile)
-          test "$version" = "$package_version"
-          test "$version" = "$pure_package_version"
-          test "$version" = "$make_version"
+          scripts/sync-version.sh --check "$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Install Idris 2 build dependencies

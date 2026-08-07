@@ -152,6 +152,15 @@ idris2 --build examples/iotaTime-examples.ipkg
 ./examples/build/exec/iotaTime-zoned-meeting
 ```
 
+Package versions are synchronized across `iotaTime.ipkg`,
+`iotaTime-pure.ipkg`, and the support-library path in `Makefile`. Set all three
+for a release and verify them with:
+
+```bash
+scripts/sync-version.sh --set X.Y.Z
+scripts/sync-version.sh --check X.Y.Z
+```
+
 The example loads `Europe/Zurich` through the system provider, parses `2024-04-23T09:00:00 Europe/Zurich` with strict local-time resolution, and formats the resolved value back through `pZonedDateTime`.
 
 ## API documentation

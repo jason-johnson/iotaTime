@@ -37,9 +37,7 @@ jobs:
           curl --fail --location --silent --show-error \
             "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/iotaTime-${version}-docs.tar.gz" \
             | tar -xz -C build/docs
-          test -f build/docs/cookbooks.html
-          test -f build/docs/index.html
-          grep -q 'class="module-cookbook"' build/docs/docs/IotaTime.Pattern.html
+          node docs/validate-docs.mjs build/docs
 
       - name: Publish release documentation
         uses: JamesIves/github-pages-deploy-action@v4

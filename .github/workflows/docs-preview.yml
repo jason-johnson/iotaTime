@@ -66,10 +66,7 @@ jobs:
           npm ci --prefix docs
           idris2 --mkdoc iotaTime.ipkg
           node docs/enhance-docs.mjs build/docs
-          test -f build/docs/cookbooks.html
-          test -f build/docs/guide.html
-          test -f build/docs/index.html
-          grep -q 'class="module-cookbook"' build/docs/docs/IotaTime.Pattern.html
+          node docs/validate-docs.mjs build/docs
 
       - name: Publish preview
         id: preview

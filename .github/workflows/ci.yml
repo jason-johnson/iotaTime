@@ -251,8 +251,7 @@ jobs:
           npm ci --prefix docs
           idris2 --mkdoc iotaTime.ipkg
           node docs/enhance-docs.mjs build/docs
-          test -f build/docs/cookbooks.html
-          grep -q 'class="module-cookbook"' build/docs/docs/IotaTime.Pattern.html
+          node docs/validate-docs.mjs build/docs
           mkdir release
           git archive \
             --format=tar.gz \

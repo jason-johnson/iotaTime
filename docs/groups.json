@@ -41,8 +41,13 @@
     { "title": "Local mapping", "names": ["LocalMapping", "mapLocal"] }
   ],
   "IotaTime.Tzdb": [
-    { "title": "Platform provider", "names": ["TimeZoneProvider", "systemTimeZoneProvider", "utc", "timeZone", "localZone", "availableZones", "metadata"] },
-    { "title": "Explicit providers", "names": ["utcWith", "timeZoneWith", "localZoneWith", "availableZonesWith", "metadataWith"] }
+    { "title": "Platform provider", "names": ["systemTimeZoneProvider", "utc", "timeZone", "localZone", "availableZones", "metadata"] },
+    { "title": "Explicit providers", "names": ["utcWith", "timeZoneWith", "localZoneWith", "availableZonesWith", "metadataWith"] },
+    { "title": "Windows snapshots", "names": ["windowsSnapshotTimeZoneProvider"] }
+  ],
+  "IotaTime.Tzdb.Provider": [
+    { "title": "Provider contract", "names": ["TzdbError", "TimeZoneProvider"] },
+    { "title": "Opt-in caching", "names": ["TimeZoneCachePolicy", "defaultTimeZoneCachePolicy", "cachedTimeZoneProvider"] }
   ],
   "IotaTime.Tzdb.Metadata": [
     { "title": "Metadata", "names": ["TzdbMetadata", "tzdbVersion"] },

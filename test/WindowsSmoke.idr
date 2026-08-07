@@ -29,6 +29,7 @@ main = do
   localResult <- localZone
   metadataResult <- metadata
   missingResult <- timeZone "IotaTime Missing Zone"
+  snapshotProviderResult <- windowsSnapshotTimeZoneProvider
   germanLocaleResult <- localeByName "de-DE"
   currentLocaleResult <- currentLocale
   missingLocaleResult <- localeByName "iotatime-LOCALE-DOES-NOT-EXIST"
@@ -66,6 +67,18 @@ main = do
     (case missingResult of
       Left (WindowsZoneNotFound "IotaTime Missing Zone") => True
       _ => False)
+  snapshotPassed <- case snapshotProviderResult of
+    Left _ => report "snapshot provider shares one valid registry view" False
+    Right provider => do
+      snapshotZones <- availableZonesWith provider
+      snapshotEastern <- timeZoneWith provider "America/New_York"
+      snapshotLocal <- localZoneWith provider
+      report "snapshot provider shares one valid registry view"
+        (case (snapshotZones, snapshotEastern, snapshotLocal) of
+          (Right zones, Right eastern, Right _) =>
+            elem "Eastern Standard Time" zones &&
+            zoneId eastern == "America/New_York"
+          _ => False)
   germanLocalePassed <- report "de-DE locale loads and compiles its date layout"
     (case germanLocaleResult of
       Left _ => False
@@ -90,7 +103,7 @@ main = do
   if allPassed
     [ utcPassed, zonesPassed, dynamicPassed, ianaPassed, localPassed
     , metadataPassed
-    , missingPassed
+    , missingPassed, snapshotPassed
     , germanLocalePassed, currentLocalePassed, missingLocalePassed
     ]
     then putStrLn "All Windows registry smoke tests passed"

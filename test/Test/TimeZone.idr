@@ -1,7 +1,10 @@
 module Test.TimeZone
 
 import IotaTime
+import IotaTime.Tzdb.Windows.Platform
+import IotaTime.Tzdb.Windows.Types
 import Test.Support
+import Data.IORef
 
 zoneHourAt : TimeZone -> Integer -> Maybe Hour
 zoneHourAt zone seconds = case IotaTime.ZonedDateTime.fromInstant
@@ -36,6 +39,99 @@ tzdataParserWorks =
       canonicalZoneId metadata "Test/Alias" == "Test/Canonical" &&
       canonicalZoneId metadata "Test/Canonical" == "Test/Canonical"
 
+counted : IORef Integer -> IO value -> IO value
+counted reference action = do
+  count <- readIORef reference
+  writeIORef reference (count + 1)
+  action
+
+hasZoneId : String -> Either TzdbError TimeZone -> Bool
+hasZoneId expected (Right zone) = zoneId zone == expected
+hasZoneId expected (Left _) = False
+
+isMissingZone : String -> Either TzdbError TimeZone -> Bool
+isMissingZone expected (Left (WindowsZoneNotFound actual)) = expected == actual
+isMissingZone expected _ = False
+
+hasAvailableZones : List String -> Either TzdbError (List String) -> Bool
+hasAvailableZones expected (Right actual) = expected == actual
+hasAvailableZones expected (Left _) = False
+
+hasTzdbVersion : Maybe String -> Either TzdbError TzdbMetadata -> Bool
+hasTzdbVersion expected (Right actual) = actual.tzdbVersion == expected
+hasTzdbVersion expected (Left _) = False
+
+cachePolicyWorks : IO Bool
+cachePolicyWorks = do
+  namedCount <- newIORef 0
+  localCount <- newIORef 0
+  availableCount <- newIORef 0
+  metadataCount <- newIORef 0
+  let base = MkTimeZoneProvider
+        (pure (Right (fixedDateTimeZone "UTC" zeroOffset)))
+        (\name => counted namedCount $ pure $
+          if name == "Missing"
+            then Left (WindowsZoneNotFound name)
+            else Right (fixedDateTimeZone name zeroOffset))
+        (counted localCount $
+          pure (Right (fixedDateTimeZone "Local" zeroOffset)))
+        (counted availableCount $ pure (Right ["Test/A", "Test/B"]))
+        (counted metadataCount $
+          pure (Right (MkTzdbMetadata (Just "test") [])))
+  cached <- cachedTimeZoneProvider defaultTimeZoneCachePolicy base
+  firstA <- timeZoneWith cached "Test/A"
+  secondA <- timeZoneWith cached "Test/A"
+  firstB <- timeZoneWith cached "Test/B"
+  firstMissing <- timeZoneWith cached "Missing"
+  secondMissing <- timeZoneWith cached "Missing"
+  firstLocal <- localZoneWith cached
+  secondLocal <- localZoneWith cached
+  firstAvailable <- availableZonesWith cached
+  secondAvailable <- availableZonesWith cached
+  firstMetadata <- metadataWith cached
+  secondMetadata <- metadataWith cached
+  cachedLocal <- cachedTimeZoneProvider
+    (MkTimeZoneCachePolicy False False False True) base
+  thirdLocal <- localZoneWith cachedLocal
+  fourthLocal <- localZoneWith cachedLocal
+  namedCalls <- readIORef namedCount
+  localCalls <- readIORef localCount
+  availableCalls <- readIORef availableCount
+  metadataCalls <- readIORef metadataCount
+  pure $
+    hasZoneId "Test/A" firstA && hasZoneId "Test/A" secondA &&
+    hasZoneId "Test/B" firstB &&
+    isMissingZone "Missing" firstMissing &&
+    isMissingZone "Missing" secondMissing &&
+    hasZoneId "Local" firstLocal && hasZoneId "Local" secondLocal &&
+    hasZoneId "Local" thirdLocal && hasZoneId "Local" fourthLocal &&
+    hasAvailableZones ["Test/A", "Test/B"] firstAvailable &&
+    hasAvailableZones ["Test/A", "Test/B"] secondAvailable &&
+    hasTzdbVersion (Just "test") firstMetadata &&
+    hasTzdbVersion (Just "test") secondMetadata &&
+    namedCalls == 4 && localCalls == 3 &&
+    availableCalls == 1 && metadataCalls == 1
+
+windowsSnapshotReadsOnce : IO Bool
+windowsSnapshotReadsOnce = do
+  sourceCount <- newIORef 0
+  let snapshot = MkWindowsRegistrySnapshot "Missing Local" []
+      source = MkWindowsRegistrySource
+        (counted sourceCount (pure (Right snapshot)))
+  loaded <- windowsRegistrySnapshotProvider source
+  case loaded of
+    Left _ => pure False
+    Right provider => do
+      firstAvailable <- availableZonesWith provider
+      secondAvailable <- availableZonesWith provider
+      local <- localZoneWith provider
+      reads <- readIORef sourceCount
+      pure $
+        hasAvailableZones [] firstAvailable &&
+        hasAvailableZones [] secondAvailable &&
+        isMissingZone "Missing Local" local &&
+        reads == 1
+
 export
 run : IO Bool
 run = do
@@ -45,6 +141,8 @@ run = do
   systemLocal <- localZone
   listedZones <- availableZones
   systemMetadata <- metadata
+  cachePassed <- cachePolicyWorks
+  snapshotPassed <- windowsSnapshotReadsOnce
   runSuite "time-zone provider tests"
     [ MkRuntimeCase "system UTC zone is loaded"
         (case systemUtc of
@@ -155,4 +253,8 @@ run = do
           Right value => canonicalZoneId value "US/Eastern" ==
             "America/New_York"
           Left _ => False)
+    , MkRuntimeCase "opt-in provider caching retains only successful stable queries"
+        cachePassed
+    , MkRuntimeCase "Windows snapshot providers read their registry source once"
+      snapshotPassed
     ]

@@ -56,6 +56,18 @@ simplePersianRuntime : Either PersianDateError (CalendarDate PersianSimple)
 simplePersianRuntime =
   refineSimplePersianDate 30 PersianMonths.Esfand 1404
 
+cachedProvider : IO TimeZoneProvider
+cachedProvider = cachedTimeZoneProvider
+  defaultTimeZoneCachePolicy systemTimeZoneProvider
+
+cachedZurich : IO (Either TzdbError TimeZone)
+cachedZurich = do
+  provider <- cachedProvider
+  timeZoneWith provider "Europe/Zurich"
+
+windowsSnapshotProvider : IO (Either TzdbError TimeZoneProvider)
+windowsSnapshotProvider = windowsSnapshotTimeZoneProvider
+
 roundTripText : String
 roundTripText = format (pR {calendar = Gregorian}) (calendarDate 3 March 2020)
 

@@ -45,6 +45,9 @@ Features implemented in iotaTime that would strengthen HodaTime.
   application code does not need to call the process clock directly.
 - [ ] Add an explicit time-zone provider contract for deterministic tests,
   embedded data, databases, and non-system zone sources.
+- [ ] Add opt-in successful-result provider caching and immutable Windows
+  registry snapshot providers. iotaTime keeps cache ownership and freshness
+  policy explicit rather than imposing a global cache.
 - [ ] Add `OffsetDateTime.withOffset` and `ZonedDateTime.withZone` operations
   that preserve the represented instant.
 - [ ] Add fixed-duration `ZonedDateTime` arithmetic that advances the timeline
@@ -64,8 +67,8 @@ Features implemented in iotaTime that would strengthen HodaTime.
 Features absent from both libraries that may belong in both after their
 semantics and data sources are specified.
 
-- [ ] Add caching and richer discovery controls to time-zone providers where
-  profiling or deployment requirements justify them.
+- [ ] Add richer discovery controls to time-zone providers where profiling or
+  deployment requirements justify them.
 
 ## Intentional differences
 

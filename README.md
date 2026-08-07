@@ -325,7 +325,17 @@ resolve it, while `availableZones` lists every installed Windows registry ID.
 
 `TimeZoneProvider` isolates platform discovery. The `utcWith`, `timeZoneWith`, `localZoneWith`, `availableZonesWith`, and `metadataWith` variants accept an explicit provider; the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. On Windows, internal registry models decode `REG_TZI_FORMAT`, `SYSTEMTIME`, and Dynamic DST history with typed malformed-data and unknown-zone failures; ICU supplies IANA/Windows identifier conversion.
 
+Provider caching is explicit and caller-owned. `cachedTimeZoneProvider policy provider` returns a new provider with mutex-protected caches for the successful operations selected by `TimeZoneCachePolicy`; failures are retried rather than retained. `defaultTimeZoneCachePolicy` caches named zones, enumeration, and metadata, but leaves the local zone live so changes to `TZ`, `/etc/localtime`, or Windows configuration remain observable. Constructing another wrapper discards the old cache without introducing global mutable state.
+
+```idris
+cachedProvider : IO TimeZoneProvider
+cachedProvider = cachedTimeZoneProvider
+	defaultTimeZoneCachePolicy systemTimeZoneProvider
+```
+
 On Windows, `systemTimeZoneProvider` uses `windowsNativeRegistrySource`. A small C support library calls `RegOpenKeyExW`, `RegEnumKeyExW`, and `RegQueryValueExW` from the native Win32 API. It reads the local zone, installed zone definitions, and Dynamic DST history without launching another process. Idris owns parsing, validation, recurrence construction, and all timezone calculations; the C boundary only acquires registry values. Native buffers are copied immediately and freed explicitly.
+
+`windowsSnapshotTimeZoneProvider` reads and parses that registry source once, returning an immutable provider whose named lookup, local lookup, and enumeration share one consistent snapshot. Constructing another snapshot provider is the explicit refresh operation. This avoids imposing snapshot lifetime or memory costs on applications that prefer the live `systemTimeZoneProvider`.
 
 `iotaTime.ipkg` builds and installs `libiotatime_windows` through package hooks. Windows receives the Win32 implementation; other systems receive a small explicit unsupported-platform stub so the same package remains buildable everywhere. Idris copies the support library into downstream Chez executables through its normal C FFI packaging. This is platform dispatch, not source-level conditional compilation: `System.Info.isWindows` selects the Windows or Unix provider, and only the selected provider performs platform I/O.
 

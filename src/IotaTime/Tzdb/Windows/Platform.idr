@@ -115,6 +115,18 @@ windowsRegistryTimeZoneProvider source = MkTimeZoneProvider
   (windowsRegistryAvailableZones source)
   (pure (Right (MkTzdbMetadata Nothing [])))
 
+||| Read a registry source once and return a provider with a consistent,
+||| immutable view of its zones and local-zone identifier.
+public export
+windowsRegistrySnapshotProvider : WindowsRegistrySource ->
+                                  IO (Either TzdbError TimeZoneProvider)
+windowsRegistrySnapshotProvider source = do
+  loaded <- windowsRegistrySnapshot source
+  pure $ map
+    (\snapshot => windowsRegistryTimeZoneProvider
+      (MkWindowsRegistrySource (pure (Right snapshot))))
+    loaded
+
 protocolErrorMessage : WindowsRegistryProtocolError -> String
 protocolErrorMessage MissingLocalZoneId = "missing local Windows zone identifier"
 protocolErrorMessage (UnexpectedRegistryLine line) =

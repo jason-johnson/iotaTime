@@ -34,7 +34,7 @@
 <body class="namespace">
 <header>
   <strong>Idris2Doc</strong> : IotaTime.Pattern.Scalar
-  <nav><a class="guide-link" href="../guide.html">Guide</a><a href="../index.html">Index</a>
+  <nav><a class="guide-link" href="../guide.html">Guide</a><a class="cookbooks-link" href="../cookbooks.html">Cookbooks</a><a href="../index.html">Index</a>
 
   <select id="selectPreferredStyle">
     <option value="default">Default</option>
@@ -59,8 +59,8 @@
 </script>
 
 </header>
-<div class="container"><div id="module-header"><h1>IotaTime.Pattern.Scalar</h1><pre></pre></div><section class="module-cookbook"><h2>Cookbook</h2>
-<h3>Represent an instant without range loss</h3>
+<div class="container"><div id="module-header"><h1>IotaTime.Pattern.Scalar</h1><pre></pre></div><section class="module-cookbook"><h2>Using Scalar</h2><nav class="cookbook-toc" aria-label="Cookbook recipes"><strong>Recipes</strong><ul><li><a href="#recipe-represent-an-instant-without-range-loss">Represent an instant without range loss</a></li><li><a href="#recipe-agree-on-a-calendar-through-the-type">Agree on a calendar through the type</a></li><li><a href="#recipe-choose-zone-id-syntax">Choose zone-ID syntax</a></li></ul></nav>
+<h3 id="recipe-represent-an-instant-without-range-loss">Represent an instant without range loss</h3>
 <p><code>pInstantNanoseconds</code> uses an arbitrary-precision signed count relative to the iotaTime epoch. Append a unit literal when the surrounding protocol should state the unit explicitly.</p>
 <pre><code class="language-idris">instantNanosecondWire : Pattern Integer Instant
 instantNanosecondWire = pInstantNanoseconds &lt;% string "ns"
@@ -69,12 +69,12 @@ instantNanosecondWire = pInstantNanoseconds &lt;% string "ns"
 <pre><code class="language-idris">offsetWire : Pattern Offset Offset
 offsetWire = pOffsetFull
 </code></pre>
-<h3>Agree on a calendar through the type</h3>
+<h3 id="recipe-agree-on-a-calendar-through-the-type">Agree on a calendar through the type</h3>
 <p><code>pCalendarDays</code> represents an absolute day while the Pattern type fixes which calendar interprets it. Calendar details such as the civil Islamic epoch remain explicit without embedding a calendar tag in every value.</p>
 <pre><code class="language-idris">civilIslamicDayWire : Pattern Integer (CalendarDate CivilIslamicBcl)
 civilIslamicDayWire = pCalendarDays {calendar = CivilIslamicBcl}
 </code></pre>
-<h3>Choose zone-ID syntax</h3>
+<h3 id="recipe-choose-zone-id-syntax">Choose zone-ID syntax</h3>
 <p>Use the token form for whitespace-free IANA identifiers. Use the quoted form when identifiers may contain spaces or escaped characters, as Windows identifiers do.</p>
 <pre><code class="language-idris">ianaZoneWire : Pattern String String
 ianaZoneWire = pZoneIdToken

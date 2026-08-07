@@ -34,7 +34,7 @@
 <body class="namespace">
 <header>
   <strong>Idris2Doc</strong> : IotaTime.Pattern
-  <nav><a class="guide-link" href="../guide.html">Guide</a><a href="../index.html">Index</a>
+  <nav><a class="guide-link" href="../guide.html">Guide</a><a class="cookbooks-link" href="../cookbooks.html">Cookbooks</a><a href="../index.html">Index</a>
 
   <select id="selectPreferredStyle">
     <option value="default">Default</option>
@@ -59,8 +59,8 @@
 </script>
 
 </header>
-<div class="container"><div id="module-header"><h1>IotaTime.Pattern</h1><pre></pre></div><section class="module-cookbook"><h2>Cookbook</h2>
-<h3>Format and parse with a standard pattern</h3>
+<div class="container"><div id="module-header"><h1>IotaTime.Pattern</h1><pre></pre></div><section class="module-cookbook"><h2>Using Pattern</h2><nav class="cookbook-toc" aria-label="Cookbook recipes"><strong>Recipes</strong><ul><li><a href="#recipe-format-and-parse-with-a-standard-pattern">Format and parse with a standard pattern</a></li><li><a href="#recipe-build-a-custom-pattern">Build a custom pattern</a></li><li><a href="#recipe-mark-a-scalar-with-protocol-text">Mark a scalar with protocol text</a></li></ul></nav>
+<h3 id="recipe-format-and-parse-with-a-standard-pattern">Format and parse with a standard pattern</h3>
 <p>A <code>Pattern</code> handles both directions. The round-trip calendar-date pattern formats a value and validates the whole input when parsing.</p>
 <pre><code class="language-idris">roundTripText : String
 roundTripText = format (pR {calendar = Gregorian})
@@ -69,7 +69,7 @@ roundTripText = format (pR {calendar = Gregorian})
 roundTripDate : Either PatternError (CalendarDate Gregorian)
 roundTripDate = parse (pR {calendar = Gregorian}) "2020-03-03"
 </code></pre>
-<h3>Build a custom pattern</h3>
+<h3 id="recipe-build-a-custom-pattern">Build a custom pattern</h3>
 <p>Join compatible field patterns with <code>&lt;+&gt;</code> and append fixed text with <code>&lt;%</code>. This pattern uses slashes between the year, month, and day.</p>
 <pre><code class="language-idris">customDatePattern : Pattern DateFields (CalendarDate Gregorian)
 customDatePattern =
@@ -77,7 +77,7 @@ customDatePattern =
    (pMM {calendar = Gregorian} &lt;% char '/')) &lt;+&gt;
   pdd {calendar = Gregorian}
 </code></pre>
-<h3>Mark a scalar with protocol text</h3>
+<h3 id="recipe-mark-a-scalar-with-protocol-text">Mark a scalar with protocol text</h3>
 <p>Literals can make an application-selected representation self-describing without defining a library-wide interchange format.</p>
 <pre><code class="language-idris">signedIntegerWire : Pattern Integer Integer
 signedIntegerWire = pSignedInteger &lt;% string "i"

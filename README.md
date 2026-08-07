@@ -91,11 +91,12 @@ The Idris package collection is pinned to `nightly-251031`, the snapshot made fr
 - `src/IotaTime/Calendar/Julian.idr` — proof-carrying Julian calendar
 - `src/IotaTime/Calendar/Coptic.idr` — proof-carrying Coptic calendar
 - `src/IotaTime/Calendar/Islamic.idr` — indexed tabular Islamic calendars
-- `src/IotaTime/Calendar/Persian.idr` — bounded astronomical Persian calendar
+- `src/IotaTime/Calendar/Persian.idr` — bounded astronomical and exact arithmetic Persian calendars
 - `src/IotaTime/Locale/Unix/Platform.idr` — native POSIX locale acquisition
 - `src/IotaTime/Locale/Windows/Platform.idr` — native Win32 locale acquisition
 - `src/IotaTime/Locale.idr` — opaque locale data, built-ins, and public acquisition
 - `src/IotaTime/Pattern.idr` — composable typed parsing and formatting core
+- `src/IotaTime/Pattern/Scalar.idr` — lossless scalar patterns for explicit protocols
 - `src/IotaTime/Pattern/Calendar.idr` — calendar-specific pattern refinement capability
 - `src/IotaTime/Pattern/CalendarDate.idr` — calendar-polymorphic date patterns
 - `src/IotaTime/Pattern/LocalTime.idr` — local-time field and standard patterns
@@ -247,6 +248,23 @@ Static construction accepts scalar endpoints because `Instant` is intentionally 
 
 `isEmpty`, `overlaps`, and `isAdjacent` expose half-open range relationships. `intersection` returns only a non-empty shared range, so adjacent intervals have no intersection. `union` returns the smallest connected interval for overlapping or adjacent inputs, absorbs empty intervals, and returns `Nothing` for separated ranges.
 
+`UnboundedInterval` extends the same half-open model with an optional start,
+end, or both. `Nothing` denotes negative infinity in `unboundedStart` and
+positive infinity in `unboundedEnd`. Statically known optional nanosecond
+bounds use `unboundedInterval`; arbitrary optional `Instant` bounds use
+`refineUnboundedInterval`:
+
+```idris
+future : UnboundedInterval
+future = unboundedInterval (Just 0) Nothing
+```
+
+`toUnboundedInterval` embeds every bounded interval, while
+`toBoundedInterval` succeeds only when both bounds are finite. The prefixed
+membership, relationship, intersection, and connected-union operations retain
+the bounded API's semantics. `unboundedDuration` likewise returns a duration
+only for two finite endpoints.
+
 ## Offsets
 
 `Offset` is an opaque signed whole-second displacement from UTC, bounded inclusively to plus or minus 18 hours. Statically known values use unit-specific proof-carrying constructors; out-of-range literals fail compilation:
@@ -307,7 +325,17 @@ resolve it, while `availableZones` lists every installed Windows registry ID.
 
 `TimeZoneProvider` isolates platform discovery. The `utcWith`, `timeZoneWith`, `localZoneWith`, `availableZonesWith`, and `metadataWith` variants accept an explicit provider; the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. On Windows, internal registry models decode `REG_TZI_FORMAT`, `SYSTEMTIME`, and Dynamic DST history with typed malformed-data and unknown-zone failures; ICU supplies IANA/Windows identifier conversion.
 
+Provider caching is explicit and caller-owned. `cachedTimeZoneProvider policy provider` returns a new provider with mutex-protected caches for the successful operations selected by `TimeZoneCachePolicy`; failures are retried rather than retained. `defaultTimeZoneCachePolicy` caches named zones, enumeration, and metadata, but leaves the local zone live so changes to `TZ`, `/etc/localtime`, or Windows configuration remain observable. Constructing another wrapper discards the old cache without introducing global mutable state.
+
+```idris
+cachedProvider : IO TimeZoneProvider
+cachedProvider = cachedTimeZoneProvider
+	defaultTimeZoneCachePolicy systemTimeZoneProvider
+```
+
 On Windows, `systemTimeZoneProvider` uses `windowsNativeRegistrySource`. A small C support library calls `RegOpenKeyExW`, `RegEnumKeyExW`, and `RegQueryValueExW` from the native Win32 API. It reads the local zone, installed zone definitions, and Dynamic DST history without launching another process. Idris owns parsing, validation, recurrence construction, and all timezone calculations; the C boundary only acquires registry values. Native buffers are copied immediately and freed explicitly.
+
+`windowsSnapshotTimeZoneProvider` reads and parses that registry source once, returning an immutable provider whose named lookup, local lookup, and enumeration share one consistent snapshot. Constructing another snapshot provider is the explicit refresh operation. This avoids imposing snapshot lifetime or memory costs on applications that prefer the live `systemTimeZoneProvider`.
 
 `iotaTime.ipkg` builds and installs `libiotatime_windows` through package hooks. Windows receives the Win32 implementation; other systems receive a small explicit unsupported-platform stub so the same package remains buildable everywhere. Idris copies the support library into downstream Chez executables through its normal C FFI packaging. This is platform dispatch, not source-level conditional compilation: `System.Info.isWindows` selects the Windows or Unix provider, and only the selected provider performs platform I/O.
 
@@ -384,7 +412,7 @@ advanced = applyPeriod (months 1 <+> hours 2) lateDateTime
 
 Time-only periods wrap a `LocalTime` within its 24-hour day. On `CalendarDateTime`, date fields apply first from largest to smallest, then time fields apply and any positive or negative day carry adjusts the resulting date. `CalendarDate` supports only calendar units, `LocalTime` only time units, and `CalendarDateTime` both.
 
-Each of those value kinds provides a module-qualified `between start end`. `IotaTime.Calendar.between` returns an exact signed day period, `IotaTime.LocalTime.between` returns the signed same-day nanosecond difference, and `IotaTime.CalendarDateTime.between` combines absolute calendar days with nanosecond-precise local time. In every case, applying the result to `start` yields `end`. These canonical differences intentionally avoid policy-dependent decomposition into years and months, where end-of-month clamping can admit multiple answers.
+Each of those value kinds provides a module-qualified `between start end`. `IotaTime.Calendar.between` decomposes dates largest-first into years, months, and days, taking the largest component that does not pass the endpoint. Month application uses the calendar's ordinary clamping rule, so 31 January 2025 to 30 March 2025 is one month and 30 days, while an endpoint of 31 March is exactly two months. `IotaTime.Calendar.betweenDays` retains the exact signed day period, and `betweenWith` selects either behavior explicitly. `IotaTime.LocalTime.between` returns the signed same-day nanosecond difference, while `IotaTime.CalendarDateTime.between` combines absolute calendar days with nanosecond-precise local time. In every case, applying the result to `start` yields `end`.
 
 `on time date` constructs a calendar date-time with time-first argument order. The HodaTime-compatible `at date time` provides date-first order, while `atStartOfDay date` uses midnight.
 
@@ -458,7 +486,12 @@ leapDay = copticDate 6 CopticMonths.PiKogiEnavot 1731
 
 ## Islamic calendar API
 
-`CalendarDate (Islamic pattern)` implements the tabular Islamic calendar with the astronomical epoch, 1 Muharram 1 = July 18, 622 proleptic Gregorian. Odd months have 30 days, even months have 29, and Dhul Hijjah gains day 30 in a leap year.
+`CalendarDate (Islamic pattern)` implements the tabular Islamic calendar with
+the astronomical epoch, 1 Muharram 1 = July 18, 622 proleptic Gregorian.
+`CalendarDate (CivilIslamic pattern)` selects the civil epoch one day later,
+July 19, 622. The epoch is part of the calendar type, so astronomical and civil
+dates cannot be mixed accidentally. Odd months have 30 days, even months have
+29, and Dhul Hijjah gains day 30 in a leap year.
 
 The leap pattern is part of the calendar type. `IslamicBcl` and `IslamicBase16` use the Base16 pattern compatible with .NET and NodaTime; `IslamicBase15`, `IslamicIndian`, and `IslamicHabashAlHasib` select the other common 30-year patterns. Values from different patterns have different types and cannot be mixed.
 
@@ -469,13 +502,21 @@ defaultLeapDay = islamicDate 30 IslamicMonths.DhulHijjah 16
 base15LeapDay : CalendarDate IslamicBase15
 base15LeapDay = islamicDate' {pattern = Base15}
 	30 IslamicMonths.DhulHijjah 15
+
+civilNewYear : CalendarDate CivilIslamicBcl
+civilNewYear = civilIslamicDate 1 IslamicMonths.Muharram 1443
 ```
 
 The unprimed constructors and refinements use `IslamicBcl`. Primed forms such as `islamicDate'`, `islamicFromNthDay'`, and `refineIslamicDate'` select a pattern through the expected type or an explicit `{pattern = ...}` argument. Static invalid dates require impossible erased proofs; runtime inputs return `Either IslamicDateError`.
 
+The `civilIslamic...` constructors and refiners mirror the astronomical API,
+including day-count, nth-weekday, and week-date construction. Aliases such as
+`CivilIslamicBase15`, `CivilIslamicBase16`, and `CivilIslamicBcl` retain the
+same leap-pattern index. Formatting and parsing support both epoch families.
+
 ## Persian calendar API
 
-`CalendarDate Persian` implements the official astronomical Solar Hijri calendar over Persian years 1 through 1500. The first six months have 31 days, the next five have 30, and Esfand has 29 or 30 according to the astronomical leap assignment.
+`CalendarDate Persian` implements the official astronomical Solar Hijri calendar over Persian years 1 through 1500. `PersianSimple` implements the legacy 33-year BCL cycle, and `PersianArithmetic` implements Birashk's nested 2820-year cycle; both arithmetic calendars support complete years 1 through 9377. The calendar type keeps all three rules distinct.
 
 ```idris
 nowruz : CalendarDate Persian
@@ -483,11 +524,14 @@ nowruz = persianDate 1 PersianMonths.Farvardin 1404
 
 leapDay : CalendarDate Persian
 leapDay = persianDate 30 PersianMonths.Esfand 1403
+
+arithmeticNowruz : CalendarDate PersianArithmetic
+arithmeticNowruz = arithmeticPersianDate 1 PersianMonths.Farvardin 1404
 ```
 
 The leap-year table is generated from HodaTime's Meeus equinox, equation-of-time, and Espenak-Meeus delta-T calculation for its vouched range. Embedding those results makes behavior deterministic across backends and keeps static proofs reducible without running floating-point astronomy during compilation or at runtime. In particular, astronomical Nowruz 1404 is March 21, 2025, unlike the arithmetic calendar's March 20 result.
 
-`persianDate`, `persianFromDays`, `persianFromNthDay`, and `persianFromWeekDate` require erased validity proofs. Their `refinePersian...` counterparts return `Either PersianDateError` for runtime values. Period arithmetic clamps at both supported-year boundaries.
+`persianDate`, `persianFromDays`, `persianFromNthDay`, and `persianFromWeekDate` retain the astronomical API and require erased validity proofs. `simplePersianDate` and `arithmeticPersianDate` provide rule-specific static construction; the generic arithmetic nth-weekday, week-date, day-count, and runtime refinement functions select their rule through the expected type or an explicit `{rule = ...}` argument. Period arithmetic clamps at each calendar's supported-year boundaries.
 
 ## Hebrew calendar API
 
@@ -517,7 +561,7 @@ The calendar implements the 19-year leap cycle, the Rosh Hashanah postponement r
 
 `Pattern state value` combines formatting with full-input parsing. Fields compose with `<+>`, and `<%` appends a literal produced by `char` or `string`. The parsing engine uses `Data.String.Parser` from Idris 2's `contrib` package, while the public boundary returns `Either PatternError value`; malformed fields, values outside their field ranges, invalid final dates, and trailing input remain distinct typed failures. Formatting is specialized to `value -> String`, which provides the pattern-specific composition supplied by Haskell's `Formatting` and `HoleyMonoid` machinery without introducing a general variadic formatting layer.
 
-`CalendarPattern calendar` supplies calendar-specific numeric projection, canonical month names, month limits, weekday numbering, and runtime date refinement. Instances cover Gregorian, Julian, Coptic, Persian, every indexed Islamic leap pattern, and both Hebrew numbering systems. Parsed year, month, and day fields therefore cross each calendar's existing typed refinement boundary rather than constructing a generic unchecked date.
+`CalendarPattern calendar` supplies calendar-specific numeric projection, canonical month names, month limits, weekday numbering, and runtime date refinement. Instances cover Gregorian, Julian, Coptic, all three Persian rules, every indexed Islamic leap pattern and epoch, and both Hebrew numbering systems. Parsed year, month, and day fields therefore cross each calendar's existing typed refinement boundary rather than constructing a generic unchecked date.
 
 The calendar-date layer provides the HodaTime-compatible numeric fields `pyear`, `pyyyy`, `pyy`, `pmonthNum`, `pMM`, `pday`, `pdd`, and `pdaySpace`. Canonical calendar names are available through `pMMM` and `pMMMM`; `pddd` and `pdddd` use weekday names. Parsing is case-insensitive, and weekday fields are consumed without redundantly validating the date. `pd` is the slash-separated short date, `pD` is the canonical long date, `pR` is the numeric round-trip pattern, and `pmonthDay` and `pyearMonth` provide partial layouts:
 
@@ -574,15 +618,48 @@ The optional sign belongs to the complete duration rather than an individual fie
 
 Use `parseInstant` for the typed `Either PatternError Instant` parsing boundary. Because `Instant` has an arbitrary-precision timeline while the proof-carrying Gregorian calendar begins on October 15, 1582, `formatInstant` returns `Either CalendarConversionError String`. An earlier instant therefore reports `TargetCalendarOutOfRange` rather than hiding a partial conversion inside the total `Pattern.format` API.
 
+For cross-machine formats, applications can explicitly choose lossless Pattern
+building blocks and agree on them at both ends. `pInstantNanoseconds` represents
+the full arbitrary-precision instant timeline, `pOffsetFull` preserves every
+supported whole-second offset, and `pCalendarDays {calendar = ...}` represents
+an absolute day in the statically selected calendar while validating that
+calendar's range. `pSignedInteger` is available for other arbitrary-precision
+protocol fields.
+
+```idris
+instantWire : Pattern Integer Instant
+instantWire = pInstantNanoseconds <% string "ns"
+
+offsetWire : Pattern Offset Offset
+offsetWire = pOffsetFull
+
+civilIslamicWire : Pattern Integer (CalendarDate CivilIslamicBcl)
+civilIslamicWire = pCalendarDays {calendar = CivilIslamicBcl}
+
+ianaZoneWire : Pattern String String
+ianaZoneWire = pZoneIdToken
+
+windowsZoneWire : Pattern String String
+windowsZoneWire = pZoneIdQuoted
+```
+
+These patterns respectively produce values such as `-42ns`, `+05:30:15`,
+`-503165`, `America/New_York`, and `"Eastern Standard Time"`. Calendar identity
+is deliberately carried by the selected Pattern type rather than repeated in
+the text: both peers must agree on `CivilIslamicBcl`, `Gregorian`, or another
+calendar in advance. Distinct Islamic epochs and leap patterns, and distinct
+Hebrew numbering systems, therefore cannot be decoded through the wrong
+statically selected calendar pattern.
+
 ## Zoned date-time patterns
 
-`pZonedDateTime` formats a zoned value in its calendar as a numeric local date-time followed by its zone ID, such as `2024-04-23T09:00:00 Europe/Zurich` or `1731-13-06T01:02:03 UTC`. `zonedDateTimePattern` adapts another calendar-polymorphic `CalendarDateTime` pattern and a zone-suffix renderer. Both produce the dedicated format-only `ZonedDateTimePattern`, so the pure `Pattern.parse` API cannot accidentally construct a zoned value without loading its rules or choosing a local-time resolution policy.
+`pZonedDateTime` formats a zoned value in its calendar as a numeric local date-time followed by its zone ID, such as `2024-04-23T09:00:00 Europe/Zurich` or `1731-13-06T01:02:03 UTC`. `pZonedDateTimeQuoted` uses quoted, escaped zone IDs so Windows identifiers containing spaces remain unambiguous. `zonedDateTimePattern` adapts another calendar-polymorphic `CalendarDateTime` pattern and a zone-suffix renderer. These produce the dedicated format-only `ZonedDateTimePattern`, so the pure `Pattern.parse` API cannot accidentally construct a zoned value without loading its rules or choosing a local-time resolution policy.
 
-`parseStandardZonedDateTime` parses the standard layout. The caller supplies an effectful zone provider and an explicit resolver such as `fromCalendarDateTimeStrictly` or `fromCalendarDateTimeLeniently`; `parseZonedDateTimeWith` provides the same mechanism for a custom local pattern. `ZonedDateTimePatternError` keeps structural parsing, provider lookup, and skipped or ambiguous time resolution failures distinct. The standard parser has a distinct name in the umbrella API because locale `%Z` parsing already uses `parseZonedDateTime`.
+`parseStandardZonedDateTime` parses the standard layout. The caller supplies an effectful zone provider and an explicit resolver such as `fromCalendarDateTimeStrictly` or `fromCalendarDateTimeLeniently`; `parseZonedDateTimeWith` provides the same mechanism for a custom local pattern. `parseZonedDateTimePatternWith` additionally accepts an explicit zone pattern: use `pZoneIdToken` for whitespace-free IANA IDs or `pZoneIdQuoted` for escaped IDs including Windows names. For example, `parseZonedDateTimePatternWith ps pZoneIdQuoted provider fromCalendarDateTimeStrictly "1970-01-01T00:00:00 \"Eastern Standard Time\""` parses a Windows-zoned value under the caller's provider and strict resolution policy. `ZonedDateTimePatternError` keeps structural parsing, provider lookup, and skipped or ambiguous time resolution failures distinct. The standard parser has a distinct name in the umbrella API because locale `%Z` parsing already uses `parseZonedDateTime`.
 
 ## Offset and date-time patterns
 
-`pOffset` formats signed hours and minutes as `+02:00`; `pOffsetFull` includes seconds, `pOffsetZ` writes `Z` for UTC, and `pOffsetCompact` implements the `strftime` `%z` form such as `+0200`. Parsing reads the sign and all components as one quantity, then calls `refineOffsetSeconds`, so malformed components and values outside the supported plus-or-minus 18-hour range remain typed runtime failures.
+`pOffset` formats signed hours and minutes as `+02:00`; `pOffsetFull` losslessly represents every supported whole-second offset, `pOffsetZ` writes `Z` for UTC, and `pOffsetCompact` implements the `strftime` `%z` form such as `+0200`. Parsing reads the sign and all components as one quantity, then calls `refineOffsetSeconds`, so malformed components and values outside the supported plus-or-minus 18-hour range remain typed runtime failures.
 
 `pairPattern` combines two independently refined patterns through projections and a constructor. `calendarDateTimePattern` uses it for any `CalendarPattern` date and local time; the standard `ps`, `po`, `pf`, `pF`, `pg`, and `pG` layouts mirror HodaTime. `offsetDateTimePattern` then combines any such local pattern with an offset pattern. `pOffsetDateTime` is the calendar-polymorphic numeric layout `yyyy-MM-ddTHH:mm:ss(+/-)HH:mm`.
 

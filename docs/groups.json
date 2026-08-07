@@ -1,8 +1,12 @@
 {
   "IotaTime.Pattern": [
     { "title": "Core types", "names": ["Pattern", "PatternError", "LiteralPattern"] },
-    { "title": "Parsing and formatting", "names": ["parse", "parseWith", "format"] },
+    { "title": "Parsing and formatting", "names": ["parse", "parseWith", "format", "pSignedInteger"] },
     { "title": "Composition", "names": ["string", "char", "<%"] }
+  ],
+  "IotaTime.Pattern.Scalar": [
+    { "title": "Timeline and calendar scalars", "names": ["pInstantNanoseconds", "pCalendarDays"] },
+    { "title": "Zone identifiers", "names": ["pZoneIdToken", "pZoneIdQuoted"] }
   ],
   "IotaTime.Instant": [
     { "title": "Type and constants", "names": ["Instant", "epoch"] },
@@ -26,7 +30,10 @@
   "IotaTime.Interval": [
     { "title": "Type and construction", "names": ["Interval", "interval", "refineInterval", "IntervalError"] },
     { "title": "Endpoints and membership", "names": ["start", "end", "contains", "isEmpty", "duration"] },
-    { "title": "Relationships and set operations", "names": ["overlaps", "isAdjacent", "intersection", "union"] }
+    { "title": "Relationships and set operations", "names": ["overlaps", "isAdjacent", "intersection", "union"] },
+    { "title": "Unbounded construction and conversion", "names": ["UnboundedInterval", "isValidUnboundedInterval", "isValidUnboundedNanosecondInterval", "unboundedInterval", "refineUnboundedInterval", "toUnboundedInterval", "toBoundedInterval"] },
+    { "title": "Unbounded endpoints and membership", "names": ["unboundedStart", "unboundedEnd", "unboundedContains", "unboundedIsEmpty", "unboundedDuration"] },
+    { "title": "Unbounded relationships and set operations", "names": ["unboundedOverlaps", "unboundedIsAdjacent", "unboundedIntersection", "unboundedUnion"] }
   ],
   "IotaTime.DateTimeZone": [
     { "title": "Zone type and identity", "names": ["TimeZone", "DateTimeZone", "zoneId"] },
@@ -34,8 +41,13 @@
     { "title": "Local mapping", "names": ["LocalMapping", "mapLocal"] }
   ],
   "IotaTime.Tzdb": [
-    { "title": "Platform provider", "names": ["TimeZoneProvider", "systemTimeZoneProvider", "utc", "timeZone", "localZone", "availableZones", "metadata"] },
-    { "title": "Explicit providers", "names": ["utcWith", "timeZoneWith", "localZoneWith", "availableZonesWith", "metadataWith"] }
+    { "title": "Platform provider", "names": ["systemTimeZoneProvider", "utc", "timeZone", "localZone", "availableZones", "metadata"] },
+    { "title": "Explicit providers", "names": ["utcWith", "timeZoneWith", "localZoneWith", "availableZonesWith", "metadataWith"] },
+    { "title": "Windows snapshots", "names": ["windowsSnapshotTimeZoneProvider"] }
+  ],
+  "IotaTime.Tzdb.Provider": [
+    { "title": "Provider contract", "names": ["TzdbError", "TimeZoneProvider"] },
+    { "title": "Opt-in caching", "names": ["TimeZoneCachePolicy", "defaultTimeZoneCachePolicy", "cachedTimeZoneProvider"] }
   ],
   "IotaTime.Tzdb.Metadata": [
     { "title": "Metadata", "names": ["TzdbMetadata", "tzdbVersion"] },
@@ -44,13 +56,22 @@
   "IotaTime.Calendar": [
     { "title": "Calendar capability", "names": ["Calendar", "CalendarDate", "HasCalendarDate"] },
     { "title": "Date components", "names": ["year", "month", "day", "yearMonthDay"] },
-    { "title": "Conversion and arithmetic", "names": ["withCalendar", "between"] }
+    { "title": "Difference policy", "names": ["DateDifferenceUnits", "MonthArithmeticPolicy", "DateDifferencePolicy", "nodaTimePolicy"] },
+    { "title": "Conversion and arithmetic", "names": ["withCalendar", "between", "betweenWith", "betweenDays"] }
   ],
   "IotaTime.Calendar.Gregorian": [
     { "title": "Calendar and components", "names": ["Gregorian", "Month", "monthNumber", "DayOfWeek", "weekdayNumber"] },
     { "title": "Calendar rules", "names": ["isLeapYear", "maxDaysInMonth", "isValidGregorianDate", "isValidGregorianDays", "isValidGregorianNthDay", "isValidGregorianWeekDate"] },
     { "title": "Static construction", "names": ["calendarDate", "gregorianFromDays", "fromNthDay", "fromWeekDate"] },
     { "title": "Runtime refinement", "names": ["GregorianDateError", "refineGregorianDate", "refineGregorianDays", "refineGregorianNthDay", "refineGregorianWeekDate"] }
+  ],
+  "IotaTime.Calendar.Persian": [
+    { "title": "Calendar rules and components", "names": ["Persian", "PersianSimple", "PersianArithmetic", "PersianArithmeticRule", "ArithmeticPersian", "PersianMonth", "PersianDayOfWeek"] },
+    { "title": "Astronomical construction", "names": ["persianDate", "persianFromDays", "persianFromNthDay", "persianFromWeekDate"] },
+    { "title": "Astronomical runtime refinement", "names": ["PersianDateError", "refinePersianDate", "refinePersianDays", "refinePersianNthDay", "refinePersianWeekDate"] },
+    { "title": "Arithmetic construction", "names": ["simplePersianDate", "arithmeticPersianDate", "arithmeticRulePersianDate", "arithmeticPersianFromNthDay", "arithmeticPersianFromWeekDate"] },
+    { "title": "Arithmetic runtime refinement", "names": ["refineSimplePersianDate", "refineArithmeticPersianDate", "refineArithmeticRulePersianDate", "refineArithmeticPersianDays", "refineArithmeticPersianNthDay", "refineArithmeticPersianWeekDate"] },
+    { "title": "Arithmetic rules and bounds", "names": ["KnownPersianArithmeticRule", "minimumArithmeticPersianYear", "maximumArithmeticPersianYear", "isArithmeticPersianLeapYear", "arithmeticPersianNewYearDay", "maxArithmeticPersianDaysInMonth", "isValidArithmeticPersianDate", "isValidArithmeticPersianDays"] }
   ],
   "IotaTime.LocalTime": [
     { "title": "Type and construction", "names": ["LocalTime", "localTime"] },
@@ -89,5 +110,9 @@
     { "title": "12-hour fields", "names": ["phh", "phhSpace", "pp", "ppp", "pPeriod", "ppp'"] },
     { "title": "Fractional seconds", "names": ["pfrac"] },
     { "title": "Standard patterns", "names": ["pt", "pT", "pr"] }
+  ],
+  "IotaTime.Pattern.ZonedDateTime": [
+    { "title": "Formatting", "names": ["ZonedDateTimePattern", "zonedDateTimePattern", "formatZonedDateTime", "pZonedDateTime", "pZonedDateTimeQuoted"] },
+    { "title": "Effectful parsing", "names": ["ZonedDateTimePatternError", "parseZonedDateTimePatternWith", "parseZonedDateTimeWith", "parseStandardZonedDateTime"] }
   ]
 }

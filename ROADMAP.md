@@ -30,15 +30,24 @@ Features present in HodaTime that iotaTime should support.
 
 Features implemented in iotaTime that would strengthen HodaTime.
 
-- [ ] Add exact `between` operations for dates, local times, and calendar
-  date-times. The current iotaTime API returns canonical day/nanosecond periods
-  that apply back to the end value without choosing a years/months policy.
+- [ ] Add exact and calendar-aware `between` operations for dates, plus exact
+  local-time and calendar-date-time differences. iotaTime's date API supports
+  explicit day-only differences and largest-first years/months/days
+  decomposition with non-overshooting, clamped month arithmetic.
 - [ ] Add validated half-open intervals plus emptiness, overlap, adjacency,
   intersection, and connected union operations.
+- [ ] Add unbounded half-open intervals with optional endpoints, bounded
+  conversions, relationships, set operations, and finite duration queries.
+- [ ] Add a civil-epoch tabular Islamic variant while retaining leap-pattern
+  types. iotaTime indexes the epoch in the calendar type so astronomical and
+  civil dates cannot be mixed accidentally.
 - [ ] Add injectable system and fixed clocks, with zoned-clock adapters, so
   application code does not need to call the process clock directly.
 - [ ] Add an explicit time-zone provider contract for deterministic tests,
   embedded data, databases, and non-system zone sources.
+- [ ] Add opt-in successful-result provider caching and immutable Windows
+  registry snapshot providers. iotaTime keeps cache ownership and freshness
+  policy explicit rather than imposing a global cache.
 - [ ] Add `OffsetDateTime.withOffset` and `ZonedDateTime.withZone` operations
   that preserve the represented instant.
 - [ ] Add fixed-duration `ZonedDateTime` arithmetic that advances the timeline
@@ -49,27 +58,17 @@ Features implemented in iotaTime that would strengthen HodaTime.
 - [ ] Add TZDB version metadata, canonical identifiers, aliases, and
   IANA/Windows mappings. iotaTime reads TZDB identity data from the platform
   provider and uses Windows ICU APIs for IANA/Windows identifier conversion.
+- [ ] Add type-distinct Simple and Birashk arithmetic Persian variants.
+  iotaTime supports complete years 1-9377 under both exact rules while keeping
+  its vouched astronomical calendar distinct and capped at year 1500.
 
 ## Shared opportunities
 
 Features absent from both libraries that may belong in both after their
 semantics and data sources are specified.
 
-- [ ] Add a civil-epoch tabular Islamic variant while retaining leap-pattern
-  types, and add Persian variants only where their supported ranges can be
-  vouched for explicitly.
-- [ ] Add an unbounded interval representation and define its relationship to
-  the existing bounded half-open interval.
-- [ ] Design configurable years/months period-difference decomposition. Exact
-  day/nanosecond differences already avoid end-of-month ambiguity; calendar
-  decomposition requires an explicit rounding and clamping policy.
-- [ ] Define stable interchange before adding adapters: versioned textual or
-  binary encodings for instants, offsets, calendar values, and zone IDs, then
-  optional JSON and database mappings. These adapters must not expose internal
-  representations or force serialization/database dependencies into the core
-  packages.
-- [ ] Add caching and richer discovery controls to time-zone providers where
-  profiling or deployment requirements justify them.
+- [ ] Add richer discovery controls to time-zone providers where profiling or
+  deployment requirements justify them.
 
 ## Intentional differences
 
@@ -112,3 +111,8 @@ These are corresponding capabilities rather than gaps to erase.
 `AnnualDate`, `YearMonth`, `OffsetDate`, `OffsetTime`, and `DateInterval` are
 Noda Time concepts, not HodaTime 1.1.0.0 APIs. They should be added only for a
 demonstrated iotaTime or HodaTime use case, not described as compatibility gaps.
+
+A library-defined interchange format is also not planned. Applications can
+agree explicitly on composable `Pattern` values for instants, offsets, calendar
+dates, and zone identifiers without imposing a permanent wire contract on the
+core package.

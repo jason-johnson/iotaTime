@@ -173,6 +173,15 @@ systemTimeZoneProvider = if isWindows
   then windowsRegistryTimeZoneProvider windowsNativeRegistrySource
   else unixTimeZoneProvider
 
+||| Read the native Windows registry once and return a provider backed by that
+||| immutable snapshot. Construct another provider to observe registry changes.
+||| On non-Windows hosts this returns `UnsupportedPlatform` through the native
+||| registry source.
+public export
+windowsSnapshotTimeZoneProvider : IO (Either TzdbError TimeZoneProvider)
+windowsSnapshotTimeZoneProvider =
+  windowsRegistrySnapshotProvider windowsNativeRegistrySource
+
 ||| Load UTC through an explicit platform provider.
 public export
 utcWith : TimeZoneProvider -> IO (Either TzdbError TimeZone)

@@ -1,7 +1,5 @@
 module IotaTime.Pattern.ZonedDateTime
 
-import Data.String
-import Data.String.Parser
 import IotaTime.Calendar.Gregorian
 import IotaTime.CalendarDateTime
 import IotaTime.DateTimeZone
@@ -10,6 +8,7 @@ import IotaTime.Pattern.Calendar
 import IotaTime.Pattern.CalendarDate
 import IotaTime.Pattern.CalendarDateTime
 import IotaTime.Pattern.LocalTime
+import IotaTime.Pattern.Scalar
 import IotaTime.Period
 import IotaTime.ZonedDateTime
 
@@ -47,46 +46,56 @@ pZonedDateTime : {calendar : Type} ->
 pZonedDateTime = zonedDateTimePattern ps
   (\value => " " ++ IotaTime.ZonedDateTime.zoneId value)
 
+||| ISO local date-time followed by a quoted, escaped zone ID. This form can
+||| represent Windows identifiers containing spaces.
+public export
+pZonedDateTimeQuoted : {calendar : Type} ->
+  {auto patterned : CalendarPattern calendar} ->
+  ZonedDateTimePattern (DateFields, TimeFields) (ZonedDateTime calendar)
+pZonedDateTimeQuoted = zonedDateTimePattern ps
+  (\value => " " ++ IotaTime.Pattern.format pZoneIdQuoted
+    (IotaTime.ZonedDateTime.zoneId value))
+
 public export
 data ZonedDateTimePatternError providerError resolverError
   = ZonedDateTimeParseError PatternError
   | ZonedDateTimeProviderError providerError
   | ZonedDateTimeResolutionError resolverError
 
-isZoneCharacter : Char -> Bool
-isZoneCharacter value =
-  value /= ' ' && value /= '\t' && value /= '\n' && value /= '\r'
-
-readZoneToken : List Char -> Maybe (String, Nat)
-readZoneToken [] = Nothing
-readZoneToken (value :: rest) = if isZoneCharacter value
-  then readMore [value] 1 rest
-  else Nothing
-  where
-    readMore : List Char -> Nat -> List Char -> Maybe (String, Nat)
-    readMore reversed count (value :: rest) = if isZoneCharacter value
-      then readMore (value :: reversed) (S count) rest
-      else Just (pack (reverse reversed), count)
-    readMore reversed count [] = Just (pack (reverse reversed), count)
-
-zoneTokenPattern : Pattern String String
-zoneTokenPattern = MkPattern
-  ""
-  Right
-  (Parser.P (\state =>
-    let remaining = strSubstr state.pos (state.maxPos - state.pos) state.input in
-    case readZoneToken (unpack remaining) of
-      Nothing => pure (Parser.Fail state.pos "zone ID")
-      Just (token, consumed) => pure (Parser.OK (Right (const token))
-        ({ pos := state.pos + cast consumed } state))))
-  id
-
 zoneInfoPattern : {calendar : Type} ->
   {auto patterned : CalendarPattern calendar} ->
   Pattern state (CalendarDateTime calendar) ->
-  Pattern (state, String) (CalendarDateTime calendar, String)
-zoneInfoPattern local = pairPattern fst snd (\dateTime, zone => (dateTime, zone))
-  (local <% char ' ') zoneTokenPattern
+  Pattern zoneState String ->
+  Pattern (state, zoneState) (CalendarDateTime calendar, String)
+zoneInfoPattern local zone = pairPattern fst snd
+  (\dateTime, zoneId => (dateTime, zoneId))
+  (local <% char ' ') zone
+
+||| Parse using explicit local date-time and zone-ID patterns, then load and
+||| resolve the captured zone. This lets protocols choose token or quoted zone
+||| syntax in advance.
+public export
+parseZonedDateTimePatternWith :
+  {m : Type -> Type} -> Monad m =>
+  {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern state (CalendarDateTime calendar) ->
+  Pattern zoneState String ->
+  (String -> m (Either providerError TimeZone)) ->
+  (CalendarDateTime calendar -> TimeZone ->
+    Either resolverError (ZonedDateTime calendar)) ->
+  String ->
+  m (Either (ZonedDateTimePatternError providerError resolverError)
+    (ZonedDateTime calendar))
+parseZonedDateTimePatternWith local zone provider resolver source =
+  case IotaTime.Pattern.parse (zoneInfoPattern local zone) source of
+    Left error => pure (Left (ZonedDateTimeParseError error))
+    Right (dateTime, zoneId) => do
+      loaded <- provider zoneId
+      pure $ case loaded of
+        Left error => Left (ZonedDateTimeProviderError error)
+        Right valueZone => case resolver dateTime valueZone of
+          Left error => Left (ZonedDateTimeResolutionError error)
+          Right value => Right value
 
 ||| Parse using a local date-time pattern, load the captured zone ID, and
 ||| resolve the local value according to the caller's chosen policy.
@@ -104,15 +113,7 @@ parseZonedDateTimeWith :
   m (Either (ZonedDateTimePatternError providerError resolverError)
     (ZonedDateTime calendar))
 parseZonedDateTimeWith local provider resolver source =
-  case IotaTime.Pattern.parse (zoneInfoPattern local) source of
-    Left error => pure (Left (ZonedDateTimeParseError error))
-    Right (dateTime, zoneToken) => do
-      loaded <- provider zoneToken
-      pure $ case loaded of
-        Left error => Left (ZonedDateTimeProviderError error)
-        Right zone => case resolver dateTime zone of
-          Left error => Left (ZonedDateTimeResolutionError error)
-          Right value => Right value
+  parseZonedDateTimePatternWith local pZoneIdToken provider resolver source
 
 ||| Parse the standard ISO local date-time and zone-ID layout in the provider's
 ||| monad.

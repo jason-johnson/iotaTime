@@ -94,6 +94,24 @@ calendarDateTimeCases =
   , MkRuntimeCase "calendar date between applies back to its endpoint"
       (dateBetweenApplies (calendarDate 31 January 2000)
         (calendarDate 2 March 2000))
+  , MkRuntimeCase "calendar date between takes the largest non-overshooting month count"
+      (let difference = IotaTime.Calendar.between {calendar = Gregorian}
+            (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+        in periodYears difference == 0 &&
+          periodMonths difference == 1 &&
+          periodDays difference == 30)
+  , MkRuntimeCase "calendar date between keeps an exact multi-month result"
+      (let difference = IotaTime.Calendar.between {calendar = Gregorian}
+            (calendarDate 31 January 2025) (calendarDate 31 March 2025)
+        in periodMonths difference == 2 && periodDays difference == 0)
+  , MkRuntimeCase "calendar date between applies in reverse across a clamped month"
+      (dateBetweenApplies (calendarDate 30 March 2025)
+        (calendarDate 31 January 2025))
+  , MkRuntimeCase "days-only calendar difference preserves the exact day count"
+      (let policy = IotaTime.Calendar.MkDateDifferencePolicy DaysOnly ClampToMonth
+           difference = betweenWith {calendar = Gregorian} policy
+             (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+        in periodMonths difference == 0 && periodDays difference == 58)
   , MkRuntimeCase "date-time between spans days and subsecond time"
       (dateTimeBetweenApplies
         (on (localTime 23 59 59 999999999) (calendarDate 28 February 2000))

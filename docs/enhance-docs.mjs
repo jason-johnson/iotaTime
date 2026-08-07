@@ -7,6 +7,7 @@ import { marked } from "marked";
 const scriptDirectory = path.dirname(new URL(import.meta.url).pathname);
 const outputDirectory = path.resolve(process.argv[2] ?? "build/docs");
 const docsDirectory = path.join(outputDirectory, "docs");
+const cookbooksDirectory = path.join(scriptDirectory, "cookbooks");
 const groups = JSON.parse(
   await readFile(path.join(scriptDirectory, "groups.json"), "utf8"),
 );
@@ -44,9 +45,15 @@ function addSharedNavigation($, root) {
   }
 }
 
-function groupModulePage(html, moduleName, configuredGroups) {
+function groupModulePage(html, moduleName, configuredGroups, cookbook) {
   const $ = load(html, { decodeEntities: false });
   addSharedNavigation($, "../");
+
+  if (cookbook !== undefined) {
+    $("#module-header").after(
+      `<section class="module-cookbook">${marked.parse(cookbook)}</section>`,
+    );
+  }
 
   $("dl.decls > dt").each((_, element) => {
     const term = $(element);
@@ -189,13 +196,31 @@ async function validateLocalLinks(filePath) {
 await mkdir(outputDirectory, { recursive: true });
 await cp(path.join(scriptDirectory, "iotatime.css"), path.join(outputDirectory, "iotatime.css"));
 
+const cookbooks = new Map();
+for (const filename of await readdir(cookbooksDirectory)) {
+  if (!filename.endsWith(".md")) continue;
+  const moduleName = filename.slice(0, -3);
+  if (!publicModules.has(moduleName)) {
+    throw new Error(`${filename}: cookbook module is not public`);
+  }
+  cookbooks.set(
+    moduleName,
+    await readFile(path.join(cookbooksDirectory, filename), "utf8"),
+  );
+}
+
 const indexPath = path.join(outputDirectory, "index.html");
 await writeFile(indexPath, enhanceIndex(await readFile(indexPath, "utf8")));
 
 for (const [moduleName, configuredGroups] of Object.entries(groups)) {
   const modulePath = path.join(docsDirectory, `${moduleName}.html`);
   const html = await readFile(modulePath, "utf8");
-  await writeFile(modulePath, groupModulePage(html, moduleName, configuredGroups));
+  await writeFile(modulePath, groupModulePage(
+    html,
+    moduleName,
+    configuredGroups,
+    cookbooks.get(moduleName),
+  ));
 }
 
 const moduleFiles = await readdir(docsDirectory);
@@ -211,6 +236,7 @@ for (const filename of moduleFiles.filter((value) => value.endsWith(".html"))) {
     await readFile(modulePath, "utf8"),
     moduleName,
     [],
+    cookbooks.get(moduleName),
   ));
 }
 

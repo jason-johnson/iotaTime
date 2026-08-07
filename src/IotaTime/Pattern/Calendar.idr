@@ -170,6 +170,30 @@ public export
         Left _ => invalidDate "Islamic"
         Right date => Right date
 
+public export
+{pattern : IslamicLeapPattern} -> KnownIslamicLeapPattern pattern =>
+  CalendarPattern (CivilIslamic pattern) where
+  patternMonthLimit = 12
+  patternMonthNames =
+    [ "Muharram", "Safar", "RabiAlAwwal", "RabiAlThani"
+    , "JumadaAlAwwal", "JumadaAlThani", "Rajab", "Shaban"
+    , "Ramadan", "Shawwal", "DhulQadah", "DhulHijjah"
+    ]
+  patternMonthAbbreviations =
+    [ "Muh", "Saf", "RaA", "RaT", "JuA", "JuT"
+    , "Raj", "Sha", "Ram", "Shw", "DhQ", "DhH"
+    ]
+  patternMonthNumber date = IslamicMonths.monthNumber
+    (month {calendar = CivilIslamic pattern} date)
+  patternWeekdayNumber date = IslamicWeekdays.weekdayNumber
+    (dayOfWeek {calendar = CivilIslamic pattern} date)
+  refinePatternDate year month day = do
+    valueDay <- refineDay day
+    case refineCivilIslamicDate' {pattern} valueDay (islamicMonth month)
+      (yearFromInteger year) of
+        Left _ => invalidDate "Civil Islamic"
+        Right date => Right date
+
 persianMonth : Integer -> PersianMonth
 persianMonth 1 = PersianMonths.Farvardin
 persianMonth 2 = PersianMonths.Ordibehesht
@@ -202,6 +226,29 @@ CalendarPattern Persian where
     case refinePersianDate valueDay (persianMonth month) (yearFromInteger year) of
       Left _ => invalidDate "Persian"
       Right date => Right date
+
+public export
+{rule : PersianArithmeticRule} -> KnownPersianArithmeticRule rule =>
+  CalendarPattern (ArithmeticPersian rule) where
+  patternMonthLimit = 12
+  patternMonthNames =
+    [ "Farvardin", "Ordibehesht", "Khordad", "Tir", "Mordad", "Shahrivar"
+    , "Mehr", "Aban", "Azar", "Dey", "Bahman", "Esfand"
+    ]
+  patternMonthAbbreviations =
+    [ "Far", "Ord", "Kho", "Tir", "Mor", "Sha"
+    , "Meh", "Aba", "Aza", "Dey", "Bah", "Esf"
+    ]
+  patternMonthNumber date = PersianMonths.monthNumber
+    (month {calendar = ArithmeticPersian rule} date)
+  patternWeekdayNumber date = PersianWeekdays.weekdayNumber
+    (dayOfWeek {calendar = ArithmeticPersian rule} date)
+  refinePatternDate year month day = do
+    valueDay <- refineDay day
+    case refineArithmeticRulePersianDate {rule}
+      valueDay (persianMonth month) (yearFromInteger year) of
+        Left _ => invalidDate (arithmeticPersianName {rule})
+        Right date => Right date
 
 hebrewMonthName : {numbering : HebrewNumbering} ->
                   KnownHebrewNumbering numbering => Integer -> HebrewMonthName

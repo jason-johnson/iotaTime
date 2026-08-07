@@ -13,6 +13,14 @@ pymd date = case yearMonthDay {calendar = Persian} date of
   (valueYear ** (valueMonth, valueDay)) =>
     (valueYear, valueMonth, valueDay)
 
+arithmeticPymd : {rule : PersianArithmeticRule} ->
+  KnownPersianArithmeticRule rule =>
+  CalendarDate (ArithmeticPersian rule) -> (Year, PersianMonth, DayOfMonth)
+arithmeticPymd {rule} date =
+  case yearMonthDay {calendar = ArithmeticPersian rule} date of
+    (valueYear ** (valueMonth, valueDay)) =>
+      (valueYear, valueMonth, valueDay)
+
 persianRoundTrips : Integer -> Integer -> Bool
 persianRoundTrips final current =
   if current > final
@@ -26,6 +34,22 @@ persianRoundTrips final current =
               Right rebuilt =>
                 toDays {calendar = Persian} rebuilt == current &&
                 persianRoundTrips final (current + 97)
+
+arithmeticPersianRoundTrips : {rule : PersianArithmeticRule} ->
+  KnownPersianArithmeticRule rule => Integer -> Integer -> Bool
+arithmeticPersianRoundTrips {rule} final current =
+  if current > final
+    then True
+    else case refineArithmeticPersianDays {rule} current of
+      Left _ => False
+      Right date =>
+        let (valueYear, valueMonth, valueDay) = arithmeticPymd {rule} date
+         in case refineArithmeticRulePersianDate {rule}
+              valueDay valueMonth valueYear of
+                Left _ => False
+                Right rebuilt =>
+                  toDays {calendar = ArithmeticPersian rule} rebuilt == current &&
+                  arithmeticPersianRoundTrips {rule} final (current + 997)
 
 timeComponents : LocalTime -> (Hour, Minute, Second, Nanosecond)
 timeComponents value = (hour value, minute value, second value, nanosecond value)
@@ -68,6 +92,50 @@ persianCases =
       (case nowruz1404 of
         Left _ => False
         Right date => pymd date == (1404, PersianMonths.Farvardin, 1))
+  , MkRuntimeCase "arithmetic Nowruz 1404 is Gregorian March 20 2025"
+      (calendarDays
+        (arithmeticPersianDate 1 PersianMonths.Farvardin 1404) ==
+       calendarDays (calendarDate 20 March 2025))
+  , MkRuntimeCase "simple and Birashk Persian rules remain distinct types"
+      (calendarDays (simplePersianDate 1 PersianMonths.Farvardin 1) ==
+       calendarDays (julianDate 18 JulianMonths.March 622) &&
+       calendarDays (arithmeticPersianDate 1 PersianMonths.Farvardin 1) ==
+       calendarDays (julianDate 19 JulianMonths.March 622))
+  , MkRuntimeCase "arithmetic Persian matches Calendrical Calculations fixtures"
+      (calendarDays
+        (arithmeticPersianDate 1 PersianMonths.Farvardin 1016) ==
+       calendarDays (calendarDate 21 March 1637) &&
+       calendarDays
+        (arithmeticPersianDate 1 PersianMonths.Farvardin 1082) ==
+       calendarDays (calendarDate 22 March 1703) &&
+       calendarDays
+        (arithmeticPersianDate 1 PersianMonths.Farvardin 1796) ==
+       calendarDays (calendarDate 20 March 2417))
+  , MkRuntimeCase "arithmetic Persian supports complete years through 9377"
+      (case refineArithmeticPersianDate 29 PersianMonths.Esfand 9377 of
+        Left _ => False
+        Right date => arithmeticPymd {rule = Birashk} date ==
+          (9377, PersianMonths.Esfand, 29))
+  , MkRuntimeCase "both arithmetic rules round-trip their supported ranges"
+      (let simpleFirst = arithmeticPersianNewYearDay {rule = Simple} 1
+           simpleFinal = arithmeticPersianNewYearDay {rule = Simple} 9378 - 1
+           arithmeticFirst = arithmeticPersianNewYearDay {rule = Birashk} 1
+           arithmeticFinal =
+             arithmeticPersianNewYearDay {rule = Birashk} 9378 - 1
+        in arithmeticPersianRoundTrips {rule = Simple}
+             simpleFinal simpleFirst &&
+           arithmeticPersianRoundTrips {rule = Birashk}
+             arithmeticFinal arithmeticFirst)
+  , MkRuntimeCase "arithmetic Persian rejects years above 9377"
+      (isLeft (refineSimplePersianDate
+        1 PersianMonths.Farvardin 9378) &&
+       isLeft (refineArithmeticPersianDate
+        1 PersianMonths.Farvardin 9378))
+  , MkRuntimeCase "arithmetic Persian patterns round-trip"
+      (case parse (pR {calendar = PersianArithmetic}) "1404-01-01" of
+        Left _ => False
+        Right date => calendarDays date == calendarDays
+          (arithmeticPersianDate 1 PersianMonths.Farvardin 1404))
   , MkRuntimeCase "1 Dey 1348 is Gregorian December 22 1969"
       (calendarDays (persianDate 1 PersianMonths.Dey 1348) ==
        calendarDays (calendarDate 22 December 1969))

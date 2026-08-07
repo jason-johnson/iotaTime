@@ -1,10 +1,12 @@
 
 # Roadmap
 
-This roadmap compares iotaTime with HodaTime 1.1.0.0 in both directions. It
-tracks APIs to port, improvements that should flow back to HodaTime, shared
-opportunities neither library currently implements, and differences that are
-intentional consequences of Idris 2 and Haskell.
+This roadmap compares iotaTime with HodaTime 1.1.0.0 at commit `5199c05` in
+both directions. HodaTime's current `master` has the same `Data.HodaTime`
+source at the time of this audit. The comparison covers exported behavior and
+semantics, not only module or symbol names. It tracks APIs to port,
+improvements that should flow back to HodaTime, shared opportunities neither
+library currently implements, and intentional Idris 2/Haskell differences.
 
 In each directional section, a checked item means the destination library has
 the capability. Shared opportunities remain unchecked until both libraries have
@@ -14,14 +16,21 @@ adopted them or the item is split into library-specific work.
 
 Features present in HodaTime that iotaTime should support.
 
-- [x] Audit and fill standard/custom pattern and locale coverage. `parseWith`
-  supplies HodaTime `parse'`-style caller defaults through typed parser state.
+- [x] Audit and fill standard/custom pattern and locale coverage. Date-bearing
+  locale layouts and custom month/weekday names are calendar-polymorphic;
+  locale tables fall back to built-in calendar names when a calendar has more
+  months than the locale supplies. `parseWith` supplies HodaTime
+  `parse'`-style caller defaults through typed parser state.
 - [x] Add appropriate `Eq`, `Ord`, and `Show` implementations for compound
   values, including constructor-oriented displays that preserve opaque
   representations. `NFData` and `Hashable` remain intentionally absent because
   no Idris ecosystem use case currently justifies new dependencies or public
   hashing contracts.
-- [x] Expose ISO week-date construction through the supported public surface.
+- [x] Expose ISO week-date construction through `IotaTime.Calendar.Iso`.
+  It is deliberately not re-exported by the `IotaTime` umbrella because its
+  `fromWeekDate` name conflicts with the Gregorian operation.
+- [x] Support HodaTime's complete `DayNth` selection surface, from
+  `FourthToLast` through `Fifth`, across every built-in calendar.
 - [x] Promote `OffsetDateTime` instant, offset, and calendar conversions.
 - [x] Promote `ZonedDateTime` calendar conversion and local-time resolution
   policies.
@@ -48,8 +57,9 @@ Features implemented in iotaTime that would strengthen HodaTime.
 - [ ] Add opt-in successful-result provider caching and immutable Windows
   registry snapshot providers. iotaTime keeps cache ownership and freshness
   policy explicit rather than imposing a global cache.
-- [ ] Add `OffsetDateTime.withOffset` and `ZonedDateTime.withZone` operations
-  that preserve the represented instant.
+- [ ] Add `OffsetDateTime.toInstant`, calendar conversion, and
+  instant-preserving `withOffset`, plus instant-preserving
+  `ZonedDateTime.withZone`.
 - [ ] Add fixed-duration `ZonedDateTime` arithmetic that advances the timeline
   and then re-evaluates the active zone offset.
 - [ ] Add direct zone-offset and zone-interval queries for an instant. iotaTime
@@ -61,6 +71,20 @@ Features implemented in iotaTime that would strengthen HodaTime.
 - [ ] Add type-distinct Simple and Birashk arithmetic Persian variants.
   iotaTime supports complete years 1-9377 under both exact rules while keeping
   its vouched astronomical calendar distinct and capped at year 1500.
+- [ ] Add typed, position-preserving pattern failures and non-throwing parse
+  entry points. iotaTime distinguishes unexpected input, invalid values,
+  trailing input, provider failures, and resolver failures as data.
+- [ ] Add composable scalar patterns for exact instant nanoseconds and calendar
+  day numbers, plus quoted and token-delimited zone-identifier patterns.
+- [ ] Add explicit `strftime` layout compilers for dates, times, date-times,
+  and offset date-times instead of limiting locale layouts to fixed helpers.
+- [ ] Add typed, non-throwing locale acquisition alongside HodaTime's
+  exception-based `currentLocale` and `localeByName` operations.
+- [ ] Add arbitrary-precision exact nanosecond observations and round-trip
+  laws, and expose public period-component observations.
+- [ ] Correct HodaTime `localTime` validation so seconds and nanoseconds reject
+  values outside their documented ranges, with boundary tests for every
+  component.
 
 ## Shared opportunities
 
@@ -74,15 +98,14 @@ semantics and data sources are specified.
 
 These are corresponding capabilities rather than gaps to erase.
 
-- HodaTime constructors such as `calendarDate` and `localTime` validate with
-  `Maybe`. iotaTime rejects invalid static inputs with erased `So` proofs and
-  validates runtime inputs with typed `Either` refiners.
-- HodaTime uses `MonadThrow` exceptions for strict zoned resolution. iotaTime
-  represents skipped, ambiguous, provider, and calendar-range failures as
-  explicit data and `Either` values.
-- HodaTime uses lenses for many observations and updates. iotaTime uses total
-  projections and proof-preserving functions so hidden constructors cannot be
-  bypassed.
+- HodaTime calendar constructors validate with `Maybe`; `localTime`, strict
+  zoned resolution, parsing, and locale acquisition use `MonadThrow`.
+  iotaTime rejects invalid static inputs with erased `So` proofs and validates
+  runtime inputs with typed `Either` refiners.
+- HodaTime exposes lenses for interval endpoints, which can construct reversed
+  intervals; most public date/time observations are ordinary functions and
+  their setters are internal. iotaTime uses total projections and validated,
+  proof-preserving construction and replacement operations.
 - HodaTime relies on fixed-width machine integers where appropriate. iotaTime
   uses opaque semantic components and arbitrary-precision integers where that
   removes overflow and normalization states.
@@ -99,8 +122,12 @@ These are corresponding capabilities rather than gaps to erase.
 
 ## Packaging and engineering
 
-- [x] Decouple native-free use from mandatory Unix or Windows support builds
-  through `iotaTime-pure` and `IotaTime.Pure`.
+- [x] Decouple native-free core use from mandatory Unix or Windows support
+  builds through `iotaTime-pure` and `IotaTime.Pure`.
+- [ ] Either expose every native-independent pattern module from
+  `iotaTime-pure`, or keep documenting its intentionally reduced pattern
+  surface. It currently includes pattern infrastructure, scalar, calendar,
+  duration, and offset patterns rather than the complete package's full set.
 - [x] Keep constructors and raw representations outside the supported API and
   enforce that boundary with compile-fail tests.
 - [x] Support explicit runtime providers while retaining convenient system

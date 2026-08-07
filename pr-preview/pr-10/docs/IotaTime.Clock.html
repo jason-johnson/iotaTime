@@ -1,0 +1,62 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="utf-8">
+  <title>IotaTime.Clock</title>
+  <link rel="stylesheet" type="text/css" id="preferredStyle" href="../default.css">
+  <script>
+    /* Updates the stylesheet to use the preferred one.
+       Note that we set the link to root ++ sourceLoc because the config
+       is shared across the whole website, so the root may differ from
+       page to page.
+    */
+    function setStyleSource (sourceLoc) {
+      document.getElementById("preferredStyle").href = "../" + sourceLoc + ".css";
+      document.getElementById("selectPreferredStyle").value = sourceLoc;
+    }
+    /* Initialises the preferred style sheet:
+       1. if there is a stored value then use that
+          otherwise select the default
+       2. set both the css link href & the drop down menu selected option
+    */
+    function initStyleSource () {
+      var preferredStyle = localStorage.getItem("stylefile");
+      if (preferredStyle !== null) {
+        setStyleSource(preferredStyle);
+      } else {
+        setStyleSource("default");
+      };
+    }
+    function saveStyleSource (preferredStyle) {
+      localStorage.stylefile = preferredStyle;
+    }
+    </script>
+<link rel="stylesheet" type="text/css" href="../iotatime.css"></head>
+
+<body class="namespace">
+<header>
+  <strong>Idris2Doc</strong> : IotaTime.Clock
+  <nav><a class="guide-link" href="../guide.html">Guide</a><a class="cookbooks-link" href="../cookbooks.html">Cookbooks</a><a href="../index.html">Index</a>
+
+  <select id="selectPreferredStyle">
+    <option value="default">Default</option>
+<option value="alternative">Alternative</option>
+<option value="blackandwhite">Black &amp; White</option>
+
+  </select>
+  </nav>
+
+  <script>
+  /* We start by initialising the style source */
+  initStyleSource();
+
+  /* This listens for changes on the drop down menu and updates the
+     css used for the current page when a selection is made.
+  */
+  document.getElementById("selectPreferredStyle").addEventListener("change", function(){
+    var selected = this.options[this.selectedIndex].value; /* the option chosen */
+    setStyleSource (selected);
+    saveStyleSource (selected);
+  });
+</script>
+
+</header>
+<div class="container"><div id="module-header"><h1>IotaTime.Clock</h1><pre></pre></div><code></code><nav class="api-toc"><strong>On this page</strong><ul><li><a href="#clock-capability">Clock capability</a></li><li><a href="#system-and-fixed-clocks">System and fixed clocks</a></li><li><a href="#zoned-clock">Zoned clock</a></li></ul></nav><section class="api-group"><h2 id="clock-capability">Clock capability</h2><dl class="decls"><dt id="IotaTime.Clock.getCurrentInstant"><code><a class="type" href="IotaTime.Clock.html#IotaTime.Clock.getCurrentInstant"><span class="name function">getCurrentInstant</span></a> : <a class="type" href="IotaTime.Clock.html#IotaTime.Clock.Clock"><span class="name type">Clock</span></a> <span class="boundvar">clock</span> <span class="keyword">=&gt;</span> <span class="boundvar">clock</span> <span class="keyword">-&gt;</span> <span class="type resolved" title="PrimIO.IO"><span class="name type">IO</span></span> <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a></code></dt><dd>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd></dl></section><section class="api-group"><h2 id="system-and-fixed-clocks">System and fixed clocks</h2><dl class="decls"><dt id="IotaTime.Clock.SystemClock"><code><span class="keyword">data</span> <a class="type" href="IotaTime.Clock.html#IotaTime.Clock.SystemClock"><span class="name type">SystemClock</span></a> : <span class="name type">Type</span></code></dt><dd><pre>  The host operating system's UTC clock.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span><br>  <b>Constructor</b>: <dl class="decls"></dl><br>  <b>Hint</b>: <dl class="decls"></dl></dd><dt id="IotaTime.Clock.systemClock"><code><a class="type" href="IotaTime.Clock.html#IotaTime.Clock.systemClock"><span class="name function">systemClock</span></a> : <a class="type" href="IotaTime.Clock.html#IotaTime.Clock.SystemClock"><span class="name type">SystemClock</span></a></code></dt><dd><pre>  The system clock value used by production applications.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd><dt id="IotaTime.Clock.FixedClock"><code><span class="keyword">data</span> <a class="type" href="IotaTime.Clock.html#IotaTime.Clock.FixedClock"><span class="name type">FixedClock</span></a> : <span class="name type">Type</span></code></dt><dd><pre>  A clock that always returns one instant.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span><br>  <b>Constructor</b>: <dl class="decls"></dl><br>  <b>Hint</b>: <dl class="decls"></dl></dd><dt id="IotaTime.Clock.fixedClock"><code><a class="type" href="IotaTime.Clock.html#IotaTime.Clock.fixedClock"><span class="name function">fixedClock</span></a> : <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a> <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.Clock.html#IotaTime.Clock.FixedClock"><span class="name type">FixedClock</span></a></code></dt><dd><pre>  Construct a deterministic clock fixed at the supplied instant.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd></dl></section><section class="api-group"><h2 id="zoned-clock">Zoned clock</h2><dl class="decls"><dt id="IotaTime.Clock.zonedClock"><code><a class="type" href="IotaTime.Clock.html#IotaTime.Clock.zonedClock"><span class="name function">zonedClock</span></a> : <span class="boundvar">clock</span> <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.DateTimeZone.html#IotaTime.DateTimeZone.TimeZone"><span class="name function">TimeZone</span></a> <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.Clock.html#IotaTime.Clock.ZonedClock"><span class="name type">ZonedClock</span></a> <span class="boundvar">calendar</span> <span class="boundvar">clock</span></code></dt><dd><pre>  Pair any clock with the zone used to display its current instant.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd><dt id="IotaTime.Clock.getCurrentZonedDateTime"><code><a class="type" href="IotaTime.Clock.html#IotaTime.Clock.getCurrentZonedDateTime"><span class="name function">getCurrentZonedDateTime</span></a> : {<span class="keyword">auto</span> <span class="boundvar">cal</span> : <a class="type" href="IotaTime.Calendar.html#IotaTime.Calendar.Calendar"><span class="name type">Calendar</span></a> <span class="boundvar">calendar</span>} <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.Calendar.html#IotaTime.Calendar.HasCalendarDate"><span class="name type">HasCalendarDate</span></a> (<a class="type" href="IotaTime.Calendar.html#IotaTime.Calendar.CalendarDate"><span class="name function">CalendarDate</span></a> <span class="boundvar">calendar</span>) <span class="keyword">=&gt;</span> <a class="type" href="IotaTime.Clock.html#IotaTime.Clock.Clock"><span class="name type">Clock</span></a> <span class="boundvar">clock</span> <span class="keyword">=&gt;</span> <a class="type" href="IotaTime.Clock.html#IotaTime.Clock.ZonedClock"><span class="name type">ZonedClock</span></a> <span class="boundvar">calendar</span> <span class="boundvar">clock</span> <span class="keyword">-&gt;</span> <span class="type resolved" title="PrimIO.IO"><span class="name type">IO</span></span> (<span class="type resolved" title="Prelude.Types.Either"><span class="name type">Either</span></span> <a class="type" href="IotaTime.Calendar.html#IotaTime.Calendar.CalendarConversionError"><span class="name type">CalendarConversionError</span></a> (<a class="type" href="IotaTime.ZonedDateTime.html#IotaTime.ZonedDateTime.ZonedDateTime"><span class="name function">ZonedDateTime</span></a> <span class="boundvar">calendar</span>))</code></dt><dd><pre>  Read a clock and display its current instant in the configured zone.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd></dl></section></div><footer>Produced by Idris 2 version 0.8.0</footer></body></html>

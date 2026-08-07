@@ -1,0 +1,62 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="utf-8">
+  <title>IotaTime.Instant</title>
+  <link rel="stylesheet" type="text/css" id="preferredStyle" href="../default.css">
+  <script>
+    /* Updates the stylesheet to use the preferred one.
+       Note that we set the link to root ++ sourceLoc because the config
+       is shared across the whole website, so the root may differ from
+       page to page.
+    */
+    function setStyleSource (sourceLoc) {
+      document.getElementById("preferredStyle").href = "../" + sourceLoc + ".css";
+      document.getElementById("selectPreferredStyle").value = sourceLoc;
+    }
+    /* Initialises the preferred style sheet:
+       1. if there is a stored value then use that
+          otherwise select the default
+       2. set both the css link href & the drop down menu selected option
+    */
+    function initStyleSource () {
+      var preferredStyle = localStorage.getItem("stylefile");
+      if (preferredStyle !== null) {
+        setStyleSource(preferredStyle);
+      } else {
+        setStyleSource("default");
+      };
+    }
+    function saveStyleSource (preferredStyle) {
+      localStorage.stylefile = preferredStyle;
+    }
+    </script>
+<link rel="stylesheet" type="text/css" href="../iotatime.css"></head>
+
+<body class="namespace">
+<header>
+  <strong>Idris2Doc</strong> : IotaTime.Instant
+  <nav><a class="guide-link" href="../guide.html">Guide</a><a href="../index.html">Index</a>
+
+  <select id="selectPreferredStyle">
+    <option value="default">Default</option>
+<option value="alternative">Alternative</option>
+<option value="blackandwhite">Black &amp; White</option>
+
+  </select>
+  </nav>
+
+  <script>
+  /* We start by initialising the style source */
+  initStyleSource();
+
+  /* This listens for changes on the drop down menu and updates the
+     css used for the current page when a selection is made.
+  */
+  document.getElementById("selectPreferredStyle").addEventListener("change", function(){
+    var selected = this.options[this.selectedIndex].value; /* the option chosen */
+    setStyleSource (selected);
+    saveStyleSource (selected);
+  });
+</script>
+
+</header>
+<div class="container"><div id="module-header"><h1>IotaTime.Instant</h1><pre></pre></div><code></code><nav class="api-toc"><strong>On this page</strong><ul><li><a href="#type-and-constants">Type and constants</a></li><li><a href="#construction-and-conversion">Construction and conversion</a></li><li><a href="#timeline-arithmetic">Timeline arithmetic</a></li><li><a href="#system-clock">System clock</a></li><li><a href="#proofs">Proofs</a></li></ul></nav><section class="api-group"><h2 id="type-and-constants">Type and constants</h2><dl class="decls"><dt id="IotaTime.Instant.epoch"><code><a class="type" href="IotaTime.Instant.html#IotaTime.Instant.epoch"><span class="name function">epoch</span></a> : <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a></code></dt><dd><pre>  The library epoch: March 1, 2000 at 00:00:00 UTC.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd></dl></section><section class="api-group"><h2 id="construction-and-conversion">Construction and conversion</h2><dl class="decls"><dt id="IotaTime.Instant.fromNanosecondsSinceEpoch"><code><a class="type" href="IotaTime.Instant.html#IotaTime.Instant.fromNanosecondsSinceEpoch"><span class="name function">fromNanosecondsSinceEpoch</span></a> : <span class="name type">Integer</span> <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a></code></dt><dd><pre>  Construct an instant from nanoseconds relative to the library epoch.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd><dt id="IotaTime.Instant.toNanosecondsSinceEpoch"><code><a class="type" href="IotaTime.Instant.html#IotaTime.Instant.toNanosecondsSinceEpoch"><span class="name function">toNanosecondsSinceEpoch</span></a> : <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a> <span class="keyword">-&gt;</span> <span class="name type">Integer</span></code></dt><dd><pre>  Read an instant as nanoseconds relative to the library epoch.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd><dt id="IotaTime.Instant.fromSecondsSinceUnixEpoch"><code><a class="type" href="IotaTime.Instant.html#IotaTime.Instant.fromSecondsSinceUnixEpoch"><span class="name function">fromSecondsSinceUnixEpoch</span></a> : <span class="name type">Integer</span> <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a></code></dt><dd><pre>  Construct an instant from whole seconds relative to the Unix epoch.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd><dt id="IotaTime.Instant.fromNanosecondsSinceUnixEpoch"><code><a class="type" href="IotaTime.Instant.html#IotaTime.Instant.fromNanosecondsSinceUnixEpoch"><span class="name function">fromNanosecondsSinceUnixEpoch</span></a> : <span class="name type">Integer</span> <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a></code></dt><dd><pre>  Construct an instant from nanoseconds relative to the Unix epoch.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd><dt id="IotaTime.Instant.toNanosecondsSinceUnixEpoch"><code><a class="type" href="IotaTime.Instant.html#IotaTime.Instant.toNanosecondsSinceUnixEpoch"><span class="name function">toNanosecondsSinceUnixEpoch</span></a> : <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a> <span class="keyword">-&gt;</span> <span class="name type">Integer</span></code></dt><dd><pre>  Read an instant as nanoseconds relative to the Unix epoch.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd></dl></section><section class="api-group"><h2 id="timeline-arithmetic">Timeline arithmetic</h2><dl class="decls"><dt id="IotaTime.Instant.add"><code><a class="type" href="IotaTime.Instant.html#IotaTime.Instant.add"><span class="name function">add</span></a> : <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a> <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.Duration.html#IotaTime.Duration.Duration"><span class="name function">Duration</span></a> <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a></code></dt><dd>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd><dt id="IotaTime.Instant.minus"><code><a class="type" href="IotaTime.Instant.html#IotaTime.Instant.minus"><span class="name function">minus</span></a> : <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a> <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.Duration.html#IotaTime.Duration.Duration"><span class="name function">Duration</span></a> <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a></code></dt><dd>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd><dt id="IotaTime.Instant.difference"><code><a class="type" href="IotaTime.Instant.html#IotaTime.Instant.difference"><span class="name function">difference</span></a> : <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a> <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a> <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.Duration.html#IotaTime.Duration.Duration"><span class="name function">Duration</span></a></code></dt><dd><pre>  Compute the signed fixed duration from the second instant to the first.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd></dl></section><section class="api-group"><h2 id="system-clock">System clock</h2><dl class="decls"><dt id="IotaTime.Instant.now"><code><a class="type" href="IotaTime.Instant.html#IotaTime.Instant.now"><span class="name function">now</span></a> : <span class="type resolved" title="PrimIO.IO"><span class="name type">IO</span></span> <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a></code></dt><dd><pre>  Read the current UTC system clock as an instant.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd></dl></section><section class="api-group"><h2 id="proofs">Proofs</h2><dl class="decls"><dt id="IotaTime.Instant.instantNanosecondsRoundTrip"><code><a class="type" href="IotaTime.Instant.html#IotaTime.Instant.instantNanosecondsRoundTrip"><span class="name function">instantNanosecondsRoundTrip</span></a> : (<span class="boundvar">value</span> : <span class="name type">Integer</span>) <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.toNanosecondsSinceEpoch"><span class="name function">toNanosecondsSinceEpoch</span></a> (<a class="type" href="IotaTime.Instant.html#IotaTime.Instant.fromNanosecondsSinceEpoch"><span class="name function">fromNanosecondsSinceEpoch</span></a> <span class="boundvar">value</span>) <span class="keyword">=</span> <span class="boundvar">value</span></code></dt><dd><pre>  Converting a scalar nanosecond count to an instant and back is exact.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd><dt id="IotaTime.Instant.instantRoundTrip"><code><a class="type" href="IotaTime.Instant.html#IotaTime.Instant.instantRoundTrip"><span class="name function">instantRoundTrip</span></a> : (<span class="boundvar">value</span> : <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.Instant"><span class="name type">Instant</span></a>) <span class="keyword">-&gt;</span> <a class="type" href="IotaTime.Instant.html#IotaTime.Instant.fromNanosecondsSinceEpoch"><span class="name function">fromNanosecondsSinceEpoch</span></a> (<a class="type" href="IotaTime.Instant.html#IotaTime.Instant.toNanosecondsSinceEpoch"><span class="name function">toNanosecondsSinceEpoch</span></a> <span class="boundvar">value</span>) <span class="keyword">=</span> <span class="boundvar">value</span></code></dt><dd><pre>  Reconstructing an instant from its scalar nanosecond count is exact.</pre><br>  <b>Totality</b>: <span class="keyword">total</span><br>  <b>Visibility</b>: <span class="keyword">public export</span></dd></dl></section></div><footer>Produced by Idris 2 version 0.8.0</footer></body></html>

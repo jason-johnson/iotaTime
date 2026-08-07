@@ -212,7 +212,11 @@ pMM = pmonthNum 2
 public export
 pMonthName : {default Gregorian calendar : Type} ->
              {auto patterned : CalendarPattern calendar} ->
-             Vect size String -> Pattern DateFields (CalendarDate calendar)
+             {size : Nat} ->
+             (names : Vect size String) ->
+             {auto 0 complete : size =
+               cast (patternMonthLimit {calendar} @{patterned})} ->
+             Pattern DateFields (CalendarDate calendar)
 pMonthName names = calendarMonthNamePattern (toList names)
 
 ||| A calendar-specific full month-name field.
@@ -259,7 +263,7 @@ pdaySpace = MkPattern
 public export
 pDayName : {default Gregorian calendar : Type} ->
            {auto patterned : CalendarPattern calendar} ->
-           Vect size String -> Pattern DateFields (CalendarDate calendar)
+           Vect 7 String -> Pattern DateFields (CalendarDate calendar)
 pDayName names = calendarDayNamePattern (toList names)
 
 ||| A full English weekday-name field for the selected calendar.

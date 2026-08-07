@@ -1,5 +1,5 @@
 module IncompleteMonthPatternNames
--- EXPECT: Vect 11 String and: Vect 12 String
+-- EXPECT: Can't find an implementation for 11 = 12.
 
 import Data.Vect
 import IotaTime

@@ -1,5 +1,6 @@
 module Test.PatternCalendar
 
+import Data.Vect
 import IotaTime
 import Test.Support
 
@@ -38,6 +39,18 @@ namedRoundTrips {calendar} value expected =
   case IotaTime.Pattern.parse (namedPattern {calendar}) expected of
     Left _ => False
     Right actual => toDays actual == toDays value
+
+customCopticMonthNames : Vect 13 String
+customCopticMonthNames =
+  [ "M01", "M02", "M03", "M04", "M05", "M06", "M07"
+  , "M08", "M09", "M10", "M11", "M12", "M13"
+  ]
+
+customCopticPattern : Pattern DateFields (CalendarDate Coptic)
+customCopticPattern =
+  ((pyyyy {calendar = Coptic} <% char '-') <+>
+    (pMonthName {calendar = Coptic} customCopticMonthNames <% char '-')) <+>
+  pdd {calendar = Coptic}
 
 dateTimeRoundTrips : {calendar : Type} ->
                      {auto patterned : CalendarPattern calendar} ->
@@ -99,6 +112,12 @@ patternCalendarCases =
           1 IslamicMonths.Ramadan 1443) "1443-Ramadan-01" &&
        namedRoundTrips {calendar = HebrewCivil}
         (hebrewDate 1 5784 HebrewMonths.AdarI) "5784-AdarI-01")
+  , MkRuntimeCase "custom month names require the calendar's month count"
+      (let expected = copticDate 6 CopticMonths.PiKogiEnavot 1731 in
+        IotaTime.Pattern.format customCopticPattern expected == "1731-M13-06" &&
+        case IotaTime.Pattern.parse customCopticPattern "1731-M13-06" of
+          Left _ => False
+          Right actual => calendarDays actual == calendarDays expected)
   , MkRuntimeCase "calendar date-time patterns round-trip non-Gregorian values"
       (dateTimeRoundTrips {calendar = Julian}
         (on (localTime 23 59 58 0)

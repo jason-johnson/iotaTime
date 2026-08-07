@@ -59,7 +59,29 @@
 </script>
 
 </header>
-<div class="container"><div id="module-header"><h1>IotaTime.Calendar</h1><pre></pre></div><section class="module-cookbook"><h2>Using Calendar</h2><nav class="cookbook-toc" aria-label="Cookbook recipes"><strong>Recipes</strong><ul><li><a href="#recipe-decompose-a-difference-by-calendar-units">Decompose a difference by calendar units</a></li><li><a href="#recipe-request-an-exact-day-difference">Request an exact day difference</a></li></ul></nav>
+<div class="container"><div id="module-header"><h1>IotaTime.Calendar</h1><pre></pre></div><section class="module-cookbook"><h2>Using CalendarDate</h2><nav class="cookbook-toc" aria-label="Cookbook recipes"><strong>Recipes</strong><ul><li><a href="#recipe-construct-a-statically-known-date">Construct a statically known date</a></li><li><a href="#recipe-validate-date-components-at-runtime">Validate date components at runtime</a></li><li><a href="#recipe-convert-between-calendars">Convert between calendars</a></li><li><a href="#recipe-decompose-a-difference-by-calendar-units">Decompose a difference by calendar units</a></li><li><a href="#recipe-request-an-exact-day-difference">Request an exact day difference</a></li></ul></nav>
+<h3 id="recipe-construct-a-statically-known-date">Construct a statically known date</h3>
+<p><code>calendarDate</code> constructs a Gregorian date whose validity Idris proves while
+elaborating. Invalid literals, such as 29 February 2021, do not compile.</p>
+<pre><code class="language-idris">leapDay : CalendarDate Gregorian
+leapDay = calendarDate 29 February 2020
+</code></pre>
+<h3 id="recipe-validate-date-components-at-runtime">Validate date components at runtime</h3>
+<p>Use the calendar-specific refiner when components come from input. It returns a
+typed error instead of admitting an invalid date.</p>
+<pre><code class="language-idris">runtimeLeapDay : Either GregorianDateError (CalendarDate Gregorian)
+runtimeLeapDay = refineGregorianDate 29 February 2020
+</code></pre>
+<h3 id="recipe-convert-between-calendars">Convert between calendars</h3>
+<p><code>withCalendar</code> preserves the absolute day while changing its calendar
+representation. The result is fallible because the target calendar may not
+cover that day.</p>
+<pre><code class="language-idris">gregorianChristmas : CalendarDate Gregorian
+gregorianChristmas = calendarDate 25 December 2024
+
+julianChristmas : Either CalendarConversionError (CalendarDate Julian)
+julianChristmas = IotaTime.Calendar.withCalendar gregorianChristmas
+</code></pre>
 <h3 id="recipe-decompose-a-difference-by-calendar-units">Decompose a difference by calendar units</h3>
 <p><code>between</code> applies the standard largest-first, non-overshooting policy. Each
 accepted component is applied before the next smaller unit is calculated.</p>

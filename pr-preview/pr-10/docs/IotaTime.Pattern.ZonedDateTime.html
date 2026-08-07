@@ -59,8 +59,8 @@
 </script>
 
 </header>
-<div class="container"><div id="module-header"><h1>IotaTime.Pattern.ZonedDateTime</h1><pre></pre></div><section class="module-cookbook"><h2>Cookbook</h2>
-<h3>Format a quoted zone identifier</h3>
+<div class="container"><div id="module-header"><h1>IotaTime.Pattern.ZonedDateTime</h1><pre></pre></div><section class="module-cookbook"><h2>Using ZonedDateTime</h2><nav class="cookbook-toc" aria-label="Cookbook recipes"><strong>Recipes</strong><ul><li><a href="#recipe-format-a-quoted-zone-identifier">Format a quoted zone identifier</a></li><li><a href="#recipe-parse-with-an-application-selected-zone-syntax">Parse with an application-selected zone syntax</a></li></ul></nav>
+<h3 id="recipe-format-a-quoted-zone-identifier">Format a quoted zone identifier</h3>
 <p>The standard quoted pattern combines the ISO local date and time with an escaped zone ID. It can represent both IANA IDs and Windows names containing spaces.</p>
 <pre><code class="language-idris">quotedZonedPattern :
   ZonedDateTimePattern (DateFields, TimeFields) (ZonedDateTime Gregorian)
@@ -68,7 +68,7 @@ quotedZonedPattern = zonedDateTimePattern {calendar = Gregorian} ps
   (\value =&gt; " " ++ format pZoneIdQuoted (zoneId value))
 </code></pre>
 <p>For this layout, <code>pZonedDateTimeQuoted</code> is the ready-made equivalent.</p>
-<h3>Parse with an application-selected zone syntax</h3>
+<h3 id="recipe-parse-with-an-application-selected-zone-syntax">Parse with an application-selected zone syntax</h3>
 <p>Parsing a zoned value also requires a zone provider and a policy for skipped or ambiguous local times. <code>parseZonedDateTimePatternWith</code> keeps those choices explicit while allowing the protocol to select quoted zone IDs.</p>
 <pre><code class="language-idris">parseQuotedWindowsZone :
   (String -&gt; IO (Either error TimeZone)) -&gt;

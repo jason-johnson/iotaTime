@@ -92,9 +92,6 @@ calendarDay : {calendar : Type} -> {auto patterned : CalendarPattern calendar} -
               CalendarDate calendar -> Integer
 calendarDay date = dayOfMonthValue (day {calendar} date)
 
-calendarWeekday : CalendarDate Gregorian -> DayOfWeek
-calendarWeekday = dayOfWeek {calendar = Gregorian}
-
 gregorianMonths : Vect 12 Month
 gregorianMonths =
   [ January, February, March, April, May, June
@@ -105,36 +102,14 @@ gregorianWeekdays : Vect 7 DayOfWeek
 gregorianWeekdays =
   [ Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday ]
 
-monthIndex : Month -> Fin 12
-monthIndex January = 0
-monthIndex February = 1
-monthIndex March = 2
-monthIndex April = 3
-monthIndex May = 4
-monthIndex June = 5
-monthIndex July = 6
-monthIndex August = 7
-monthIndex September = 8
-monthIndex October = 9
-monthIndex November = 10
-monthIndex December = 11
-
-weekdayIndex : DayOfWeek -> Fin 7
-weekdayIndex Sunday = 0
-weekdayIndex Monday = 1
-weekdayIndex Tuesday = 2
-weekdayIndex Wednesday = 3
-weekdayIndex Thursday = 4
-weekdayIndex Friday = 5
-weekdayIndex Saturday = 6
-
-nameChoices : Vect size String -> Vect size field -> List (String, field)
-nameChoices [] [] = []
-nameChoices (name :: names) (value :: values) =
-  (name, value) :: nameChoices names values
-
 abbreviate : String -> String
 abbreviate = substr 0 3
+
+overlayNames : List String -> List String -> List String
+overlayNames [] defaults = defaults
+overlayNames supplied [] = supplied
+overlayNames (name :: names) (_ :: defaults) =
+  name :: overlayNames names defaults
 
 indexedNames : Integer -> List String -> List (String, Integer)
 indexedNames _ [] = []
@@ -233,14 +208,12 @@ pMM : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
   Pattern DateFields (CalendarDate calendar)
 pMM = pmonthNum 2
 
-||| A Gregorian month field using the supplied twelve full or abbreviated names.
+||| A calendar month field using supplied names in calendar order.
 public export
-pMonthName : Vect 12 String -> Pattern DateFields (CalendarDate Gregorian)
-pMonthName names = MkPattern
-  initialDateFields
-  (finishDate {calendar = Gregorian})
-  (namedUpdatePart (nameChoices names gregorianMonths) setMonth)
-  (\date => index (monthIndex (month {calendar = Gregorian} date)) names)
+pMonthName : {default Gregorian calendar : Type} ->
+             {auto patterned : CalendarPattern calendar} ->
+             Vect size String -> Pattern DateFields (CalendarDate calendar)
+pMonthName names = calendarMonthNamePattern (toList names)
 
 ||| A calendar-specific full month-name field.
 public export
@@ -279,17 +252,15 @@ pdaySpace = MkPattern
   (\date => let shown = show (calendarDay date) in
     if length (unpack shown) < 2 then " " ++ shown else shown)
 
-||| A Gregorian weekday field using the supplied Sunday-first names.
+||| A calendar weekday field using supplied Sunday-first names.
 |||
 ||| Parsing consumes and validates a name structurally; the date fields determine
 ||| the resulting date.
 public export
-pDayName : Vect 7 String -> Pattern DateFields (CalendarDate Gregorian)
-pDayName names = MkPattern
-  initialDateFields
-  (finishDate {calendar = Gregorian})
-  (namedConsumePart (toList names))
-  (\date => index (weekdayIndex (calendarWeekday date)) names)
+pDayName : {default Gregorian calendar : Type} ->
+           {auto patterned : CalendarPattern calendar} ->
+           Vect size String -> Pattern DateFields (CalendarDate calendar)
+pDayName names = calendarDayNamePattern (toList names)
 
 ||| A full English weekday-name field for the selected calendar.
 public export
@@ -303,25 +274,37 @@ pddd : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
   Pattern DateFields (CalendarDate calendar)
 pddd = calendarDayNamePattern weekdayAbbreviations
 
-||| A full Gregorian month-name field from an operating-system-style locale.
+||| A full locale month-name field for the selected calendar.
 public export
-pMMMM' : Locale -> Pattern DateFields (CalendarDate Gregorian)
-pMMMM' locale = pMonthName (monthNames locale)
+pMMMM' : {default Gregorian calendar : Type} ->
+         {auto patterned : CalendarPattern calendar} ->
+   Locale -> Pattern DateFields (CalendarDate calendar)
+pMMMM' {calendar} @{patterned} locale = calendarMonthNamePattern
+  (overlayNames (toList (monthNames locale))
+    (patternMonthNames {calendar} @{patterned}))
 
-||| An abbreviated Gregorian month-name field from a locale.
+||| An abbreviated locale month-name field for the selected calendar.
 public export
-pMMM' : Locale -> Pattern DateFields (CalendarDate Gregorian)
-pMMM' locale = pMonthName (monthNamesShort locale)
+pMMM' : {default Gregorian calendar : Type} ->
+  {auto patterned : CalendarPattern calendar} ->
+  Locale -> Pattern DateFields (CalendarDate calendar)
+pMMM' {calendar} @{patterned} locale = calendarMonthNamePattern
+  (overlayNames (toList (monthNamesShort locale))
+    (patternMonthAbbreviations {calendar} @{patterned}))
 
-||| A full Gregorian weekday-name field from a locale.
+||| A full locale weekday-name field for the selected calendar.
 public export
-pdddd' : Locale -> Pattern DateFields (CalendarDate Gregorian)
-pdddd' locale = pDayName (dayNames locale)
+pdddd' : {default Gregorian calendar : Type} ->
+         {auto patterned : CalendarPattern calendar} ->
+   Locale -> Pattern DateFields (CalendarDate calendar)
+pdddd' {calendar} locale = pDayName {calendar} (dayNames locale)
 
-||| An abbreviated Gregorian weekday-name field from a locale.
+||| An abbreviated locale weekday-name field for the selected calendar.
 public export
-pddd' : Locale -> Pattern DateFields (CalendarDate Gregorian)
-pddd' locale = pDayName (dayNamesShort locale)
+pddd' : {default Gregorian calendar : Type} ->
+  {auto patterned : CalendarPattern calendar} ->
+  Locale -> Pattern DateFields (CalendarDate calendar)
+pddd' {calendar} locale = pDayName {calendar} (dayNamesShort locale)
 
 ||| The numeric `dd/MM/yyyy` date pattern.
 public export

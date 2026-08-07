@@ -123,10 +123,11 @@ Two package definitions serve different deployment needs:
 
 - `iotaTime-pure.ipkg` provides the proof-carrying domain types, calendars,
   clocks, in-memory time zones, the explicit `TimeZoneProvider` contract, pure
-  Windows registry conversion, and native-free patterns. Import
-  `IotaTime.Pure`. Building and installing it does not run `make` or require a
-  C compiler. Locale-dependent patterns and automatic operating-system locale
-  or time-zone discovery are intentionally outside this package.
+	Windows registry conversion, and the pattern core with scalar, calendar,
+	duration, and offset patterns. Import `IotaTime.Pure`. Building and
+	installing it does not run `make` or require a C compiler. The remaining
+	specialized patterns, locale APIs, and automatic operating-system locale or
+	time-zone discovery are intentionally outside this package.
 - `iotaTime.ipkg` is the complete package and preserves the `IotaTime` API,
   including operating-system locale acquisition and platform time-zone
   discovery. It requires `make` and a C compiler. On Windows, use MinGW GCC so

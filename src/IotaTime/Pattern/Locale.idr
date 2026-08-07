@@ -94,19 +94,20 @@ toFragments = foldr step []
     step (LiteralToken value) rest = LiteralRun (pack [value]) :: rest
     step (ConversionToken value) rest = Conversion value :: rest
 
-dateConversion : Locale -> Char ->
+dateConversion : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+                 Locale -> Char ->
                  Either StrftimeError
-                   (Pattern DateFields (CalendarDate Gregorian))
-dateConversion locale 'Y' = Right (pyyyy {calendar = Gregorian})
-dateConversion locale 'y' = Right (pyy {calendar = Gregorian})
-dateConversion locale 'm' = Right (pMM {calendar = Gregorian})
-dateConversion locale 'd' = Right (pdd {calendar = Gregorian})
-dateConversion locale 'e' = Right (pdaySpace {calendar = Gregorian})
-dateConversion locale 'B' = Right (pMMMM' locale)
-dateConversion locale 'b' = Right (pMMM' locale)
-dateConversion locale 'h' = Right (pMMM' locale)
-dateConversion locale 'A' = Right (pdddd' locale)
-dateConversion locale 'a' = Right (pddd' locale)
+                   (Pattern DateFields (CalendarDate calendar))
+dateConversion {calendar} locale 'Y' = Right (pyyyy {calendar})
+dateConversion {calendar} locale 'y' = Right (pyy {calendar})
+dateConversion {calendar} locale 'm' = Right (pMM {calendar})
+dateConversion {calendar} locale 'd' = Right (pdd {calendar})
+dateConversion {calendar} locale 'e' = Right (pdaySpace {calendar})
+dateConversion {calendar} locale 'B' = Right (pMMMM' {calendar} locale)
+dateConversion {calendar} locale 'b' = Right (pMMM' {calendar} locale)
+dateConversion {calendar} locale 'h' = Right (pMMM' {calendar} locale)
+dateConversion {calendar} locale 'A' = Right (pdddd' {calendar} locale)
+dateConversion {calendar} locale 'a' = Right (pddd' {calendar} locale)
 dateConversion _ value = Left (UnsupportedSpecifier value)
 
 fragmentPattern : Pattern state value ->
@@ -127,23 +128,28 @@ assemble template conversion (fragment :: rest) = do
   remaining <- assemble template conversion rest
   Right (first <+> remaining)
 
-||| Compile a Gregorian date pattern from a supported `strftime` layout.
+||| Compile a calendar date pattern from a supported `strftime` layout.
 ||| Locale month and weekday names are used for textual fields.
 public export
-compileDatePattern : Locale -> String ->
+compileDatePattern : {default Gregorian calendar : Type} ->
+                     {auto patterned : CalendarPattern calendar} ->
+                     Locale -> String ->
                      Either StrftimeError
-                       (Pattern DateFields (CalendarDate Gregorian))
-compileDatePattern locale layout = do
+                       (Pattern DateFields (CalendarDate calendar))
+compileDatePattern {calendar} locale layout = do
   tokens <- tokenize (unpack layout)
-  assemble (pyyyy {calendar = Gregorian}) (dateConversion locale)
+  assemble (pyyyy {calendar}) (dateConversion {calendar} locale)
     (toFragments tokens)
 
-||| Compile the operating system's preferred Gregorian date layout.
+||| Compile the operating system's preferred date layout for a calendar.
 public export
-localeDatePattern : Locale ->
+localeDatePattern : {default Gregorian calendar : Type} ->
+                    {auto patterned : CalendarPattern calendar} ->
+                    Locale ->
                     Either StrftimeError
-                      (Pattern DateFields (CalendarDate Gregorian))
-localeDatePattern locale = compileDatePattern locale (rawDateFormat locale)
+                      (Pattern DateFields (CalendarDate calendar))
+localeDatePattern {calendar} locale =
+  compileDatePattern {calendar} locale (rawDateFormat locale)
 
 timeConversion : Locale -> Char ->
                  Either StrftimeError (Pattern TimeFields LocalTime)
@@ -169,21 +175,25 @@ localeTimePattern : Locale ->
                     Either StrftimeError (Pattern TimeFields LocalTime)
 localeTimePattern locale = compileTimePattern locale (rawTimeFormat locale)
 
-||| Parser state for a combined Gregorian date and local-time pattern.
+||| Parser state for a combined calendar date and local-time pattern.
 public export
 record DateTimeFields where
   constructor MkDateTimeFields
   parsedDateFields : DateFields
   parsedTimeFields : TimeFields
 
-initialDateTimeFields : DateTimeFields
-initialDateTimeFields = MkDateTimeFields
-  (pyyyy {calendar = Gregorian}).initialState pHH.initialState
+initialDateTimeFields : {calendar : Type} ->
+                        {auto patterned : CalendarPattern calendar} ->
+                        DateTimeFields
+initialDateTimeFields {calendar} = MkDateTimeFields
+  (pyyyy {calendar}).initialState pHH.initialState
 
-finishDateTime : DateTimeFields ->
-                 Either PatternError (CalendarDateTime Gregorian)
-finishDateTime fields = do
-  date <- (pyyyy {calendar = Gregorian}).finish fields.parsedDateFields
+finishDateTime : {calendar : Type} ->
+                 {auto patterned : CalendarPattern calendar} ->
+                 DateTimeFields ->
+                 Either PatternError (CalendarDateTime calendar)
+finishDateTime {calendar} fields = do
+  date <- (pyyyy {calendar}).finish fields.parsedDateFields
   time <- pHH.finish fields.parsedTimeFields
   Right (on time date)
 
@@ -197,28 +207,35 @@ liftTimeUpdate : (TimeFields -> TimeFields) ->
 liftTimeUpdate update fields =
   { parsedTimeFields := update fields.parsedTimeFields } fields
 
-liftDatePattern : Pattern DateFields (CalendarDate Gregorian) ->
-                  Pattern DateTimeFields (CalendarDateTime Gregorian)
-liftDatePattern pattern = MkPattern
-  initialDateTimeFields
-  finishDateTime
+liftDatePattern : {calendar : Type} ->
+                  {auto patterned : CalendarPattern calendar} ->
+                  Pattern DateFields (CalendarDate calendar) ->
+                  Pattern DateTimeFields (CalendarDateTime calendar)
+liftDatePattern {calendar} pattern = MkPattern
+  (initialDateTimeFields {calendar})
+  (finishDateTime {calendar})
   (map (map liftDateUpdate) pattern.parsePart)
   (pattern.formatPart . datePart)
 
-liftTimePattern : Pattern TimeFields LocalTime ->
-                  Pattern DateTimeFields (CalendarDateTime Gregorian)
-liftTimePattern pattern = MkPattern
-  initialDateTimeFields
-  finishDateTime
+liftTimePattern : {calendar : Type} ->
+                  {auto patterned : CalendarPattern calendar} ->
+                  Pattern TimeFields LocalTime ->
+                  Pattern DateTimeFields (CalendarDateTime calendar)
+liftTimePattern {calendar} pattern = MkPattern
+  (initialDateTimeFields {calendar})
+  (finishDateTime {calendar})
   (map (map liftTimeUpdate) pattern.parsePart)
   (pattern.formatPart . localTimeOfDay)
 
-dateTimeConversion : Locale -> Char ->
+dateTimeConversion : {calendar : Type} ->
+                     {auto patterned : CalendarPattern calendar} ->
+                     Locale -> Char ->
                      Either StrftimeError
-                       (Pattern DateTimeFields (CalendarDateTime Gregorian))
-dateTimeConversion locale value = case dateConversion locale value of
-  Right pattern => Right (liftDatePattern pattern)
-  Left _ => map liftTimePattern (timeConversion locale value)
+                       (Pattern DateTimeFields (CalendarDateTime calendar))
+dateTimeConversion {calendar} locale value =
+  case dateConversion {calendar} locale value of
+    Right pattern => Right (liftDatePattern {calendar} pattern)
+    Left _ => map (liftTimePattern {calendar}) (timeConversion locale value)
 
 isZoneSpecifier : Char -> Bool
 isZoneSpecifier value = value == 'Z' || value == 'z'
@@ -246,27 +263,31 @@ stripZones (Conversion value :: rest) =
     then stripZones rest
     else Conversion value :: stripZones rest
 
-||| Compile a Gregorian local date-time pattern from a supported `strftime`
+||| Compile a calendar-local date-time pattern from a supported `strftime`
 ||| layout. Zone specifiers are omitted because this pattern has no zone value.
 public export
-compileDateTimePattern : Locale -> String ->
+compileDateTimePattern : {default Gregorian calendar : Type} ->
+                         {auto patterned : CalendarPattern calendar} ->
+                         Locale -> String ->
                          Either StrftimeError
                            (Pattern DateTimeFields
-                             (CalendarDateTime Gregorian))
-compileDateTimePattern locale layout = do
+                             (CalendarDateTime calendar))
+compileDateTimePattern {calendar} locale layout = do
   tokens <- tokenize (unpack layout)
-  assemble (liftDatePattern (pyyyy {calendar = Gregorian}))
-    (dateTimeConversion locale)
+  assemble (liftDatePattern {calendar} (pyyyy {calendar}))
+    (dateTimeConversion {calendar} locale)
     (stripZones (toFragments tokens))
 
-||| Compile the operating system's preferred Gregorian local date-time layout.
+||| Compile the operating system's preferred local date-time layout for a calendar.
 public export
-localeDateTimePattern : Locale ->
+localeDateTimePattern : {default Gregorian calendar : Type} ->
+                        {auto patterned : CalendarPattern calendar} ->
+                        Locale ->
                         Either StrftimeError
                           (Pattern DateTimeFields
-                            (CalendarDateTime Gregorian))
-localeDateTimePattern locale =
-  compileDateTimePattern locale (rawDateTimeFormat locale)
+                            (CalendarDateTime calendar))
+localeDateTimePattern {calendar} locale =
+  compileDateTimePattern {calendar} locale (rawDateTimeFormat locale)
 
 trailingLiterals : List LayoutFragment -> Either StrftimeError String
 trailingLiterals [] = Right ""
@@ -284,26 +305,28 @@ splitOffset (fragment :: rest) = do
   (before, trailing) <- splitOffset rest
   Right (fragment :: before, trailing)
 
-||| Compile a Gregorian offset date-time layout containing a numeric `%z` field.
+||| Compile an offset date-time layout containing a numeric `%z` field.
 public export
-compileOffsetDateTimePattern : Locale -> String ->
+compileOffsetDateTimePattern : {default Gregorian calendar : Type} ->
+  {auto patterned : CalendarPattern calendar} -> Locale -> String ->
   Either StrftimeError
-    (Pattern (DateTimeFields, Offset) (OffsetDateTime Gregorian))
-compileOffsetDateTimePattern locale layout = do
+    (Pattern (DateTimeFields, Offset) (OffsetDateTime calendar))
+compileOffsetDateTimePattern {calendar} locale layout = do
   tokens <- tokenize (unpack layout)
   (before, trailing) <- splitOffset (toFragments tokens)
-  localPattern <- assemble (liftDatePattern (pyyyy {calendar = Gregorian}))
-    (dateTimeConversion locale) before
+  localPattern <- assemble (liftDatePattern {calendar} (pyyyy {calendar}))
+    (dateTimeConversion {calendar} locale) before
   Right (offsetDateTimePattern localPattern
     (pOffsetCompact <% string trailing))
 
-||| Compile the operating system's preferred Gregorian offset date-time layout.
+||| Compile the operating system's preferred offset date-time layout for a calendar.
 public export
-localeOffsetDateTimePattern : Locale ->
+localeOffsetDateTimePattern : {default Gregorian calendar : Type} ->
+  {auto patterned : CalendarPattern calendar} -> Locale ->
   Either StrftimeError
-    (Pattern (DateTimeFields, Offset) (OffsetDateTime Gregorian))
-localeOffsetDateTimePattern locale =
-  compileOffsetDateTimePattern locale (rawDateTimeFormat locale)
+    (Pattern (DateTimeFields, Offset) (OffsetDateTime calendar))
+localeOffsetDateTimePattern {calendar} locale =
+  compileOffsetDateTimePattern {calendar} locale (rawDateTimeFormat locale)
 
 ||| Errors from layout compilation, local parsing, zone loading, or local-time
 ||| resolution while parsing a zoned date-time.
@@ -352,14 +375,15 @@ splitZone (fragment :: rest) = do
   (before, trailing) <- splitZone rest
   Right (fragment :: before, trailing)
 
-zoneInfoPattern : Locale -> String ->
+zoneInfoPattern : {calendar : Type} ->
+  {auto patterned : CalendarPattern calendar} -> Locale -> String ->
   Either StrftimeError
-    (Pattern (DateTimeFields, String) (CalendarDateTime Gregorian, String))
-zoneInfoPattern locale layout = do
+    (Pattern (DateTimeFields, String) (CalendarDateTime calendar, String))
+zoneInfoPattern {calendar} locale layout = do
   tokens <- tokenize (unpack layout)
   (before, trailing) <- splitZone (toFragments tokens)
-  localPattern <- assemble (liftDatePattern (pyyyy {calendar = Gregorian}))
-    (dateTimeConversion locale) before
+  localPattern <- assemble (liftDatePattern {calendar} (pyyyy {calendar}))
+    (dateTimeConversion {calendar} locale) before
   Right (pairPattern fst snd (\local, zone => (local, zone))
     localPattern (zoneTokenPattern trailing))
 
@@ -367,15 +391,17 @@ zoneInfoPattern locale layout = do
 ||| local time.
 public export
 parseZonedDateTime :
+  {default Gregorian calendar : Type} ->
+  {auto patterned : CalendarPattern calendar} ->
   {m : Type -> Type} -> Monad m =>
   (String -> m (Either providerError TimeZone)) ->
-  (CalendarDateTime Gregorian -> TimeZone ->
-    Either resolverError (ZonedDateTime Gregorian)) ->
+  (CalendarDateTime calendar -> TimeZone ->
+    Either resolverError (ZonedDateTime calendar)) ->
   Locale -> String ->
   m (Either (ZonedPatternError providerError resolverError)
-    (ZonedDateTime Gregorian))
-parseZonedDateTime provider resolver locale source =
-  case zoneInfoPattern locale (rawDateTimeFormat locale) of
+    (ZonedDateTime calendar))
+parseZonedDateTime {calendar} provider resolver locale source =
+  case zoneInfoPattern {calendar} locale (rawDateTimeFormat locale) of
     Left error => pure (Left (ZonedLayoutError error))
     Right pattern => case IotaTime.Pattern.parse pattern source of
       Left error => pure (Left (ZonedParseError error))

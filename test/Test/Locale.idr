@@ -54,6 +54,18 @@ sameOffsetDateTime left right =
   sameDateTime (toCalendarDateTime left) (toCalendarDateTime right) &&
   offset left == offset right
 
+sameJulianDateTime : CalendarDateTime Julian ->
+                     CalendarDateTime Julian -> Bool
+sameJulianDateTime left right =
+  calendarDays (datePart left) == calendarDays (datePart right) &&
+  localTimeOfDay left == localTimeOfDay right
+
+sameJulianOffsetDateTime : OffsetDateTime Julian ->
+                           OffsetDateTime Julian -> Bool
+sameJulianOffsetDateTime left right =
+  sameJulianDateTime (toCalendarDateTime left) (toCalendarDateTime right) &&
+  offset left == offset right
+
 localeDateTimeFormatsAs : Locale -> CalendarDateTime Gregorian ->
                           String -> Bool
 localeDateTimeFormatsAs locale value expected =
@@ -96,6 +108,20 @@ localeCases =
         "Dienstag")
   , MkRuntimeCase "German month names parse case-insensitively"
       (parsesAs germanDate "03 märz 2020" (calendarDate 3 March 2020))
+  , MkRuntimeCase "locale name patterns support Julian dates"
+      (let value = julianDate 3 JulianMonths.March 2020 in
+        IotaTime.Pattern.format (pMMMM' {calendar = Julian} deDE) value ==
+          "März")
+  , MkRuntimeCase "locale names fall back for Coptic month thirteen"
+      (case compileDatePattern {calendar = Coptic} deDE "%d %B %Y" of
+        Left _ => False
+        Right pattern =>
+          let expected = copticDate 5 CopticMonths.PiKogiEnavot 1736 in
+            IotaTime.Pattern.format pattern expected ==
+              "05 PiKogiEnavot 1736" &&
+            case IotaTime.Pattern.parse pattern "05 PiKogiEnavot 1736" of
+              Left _ => False
+              Right actual => actual == expected)
   , MkRuntimeCase "locale weekdays consume without date validation"
       (parsesAs germanWeekdayDate "Montag, 03 März 2020"
         (calendarDate 3 March 2020))
@@ -111,6 +137,15 @@ localeCases =
   , MkRuntimeCase "Japanese locale date layout preserves separators"
       (localeFormatsAs jaJP (calendarDate 15 March 2020) "2020年03月15日" &&
        localeParsesAs jaJP "2020年03月15日" (calendarDate 15 March 2020))
+  , MkRuntimeCase "locale date layouts support Julian dates"
+      (case localeDatePattern {calendar = Julian} enUS of
+        Left _ => False
+        Right pattern =>
+          let expected = julianDate 15 JulianMonths.March 2020 in
+            IotaTime.Pattern.format pattern expected == "03/15/2020" &&
+            case IotaTime.Pattern.parse pattern "03/15/2020" of
+              Left _ => False
+              Right actual => actual == expected)
   , MkRuntimeCase "date layout compiler expands composites and literals"
       (case compileDatePattern enUS "Date: %F %% %A" of
         Left _ => False
@@ -170,6 +205,17 @@ localeCases =
             case IotaTime.Pattern.parse pattern "13:24 2020-03-15" of
               Left _ => False
               Right actual => sameDateTime actual expected)
+  , MkRuntimeCase "locale date-time layouts support Julian dates"
+      (case compileDateTimePattern {calendar = Julian} enUS "%F %T" of
+        Left _ => False
+        Right pattern =>
+          let expected = on (localTime 13 24 35 0)
+                (julianDate 15 JulianMonths.March 2020) in
+            IotaTime.Pattern.format pattern expected ==
+              "2020-03-15 13:24:35" &&
+            case IotaTime.Pattern.parse pattern "2020-03-15 13:24:35" of
+              Left _ => False
+              Right actual => sameJulianDateTime actual expected)
   , MkRuntimeCase "date-time compiler drops numeric zones"
       (case compileDateTimePattern enUS "%F %T %z" of
         Left _ => False
@@ -193,6 +239,19 @@ localeCases =
               "2020-03-15 13:24:35 +0200 end" of
                 Left _ => False
                 Right actual => sameOffsetDateTime actual expected)
+  , MkRuntimeCase "locale offset date-time layouts support Julian dates"
+      (case compileOffsetDateTimePattern {calendar = Julian}
+        enUS "%F %T %z" of
+          Left _ => False
+          Right pattern =>
+            let expected = fromCalendarDateTimeWithOffset
+                  (on (localTime 13 24 35 0)
+                    (julianDate 15 JulianMonths.March 2020))
+                  (fromHours 2) in
+              case IotaTime.Pattern.parse pattern
+                "2020-03-15 13:24:35 +0200" of
+                  Left _ => False
+                  Right actual => sameJulianOffsetDateTime actual expected)
   , MkRuntimeCase "locale offset date-time requires percent-z"
       (hasStrftimeError MissingOffsetSpecifier
         (localeOffsetDateTimePattern deDE))
@@ -238,6 +297,10 @@ strictResolver : CalendarDateTime Gregorian -> TimeZone ->
                  Either ZonedDateTimeError (ZonedDateTime Gregorian)
 strictResolver = fromCalendarDateTimeStrictly
 
+julianStrictResolver : CalendarDateTime Julian -> TimeZone ->
+                       Either ZonedDateTimeError (ZonedDateTime Julian)
+julianStrictResolver = fromCalendarDateTimeStrictly
+
 rejectingResolver : CalendarDateTime Gregorian -> TimeZone ->
                     Either String (ZonedDateTime Gregorian)
 rejectingResolver local zone = Left "resolution rejected"
@@ -257,6 +320,9 @@ zonedLocaleCases utcZone = do
     "Sun 15 Mar 2020 01:24:35 PM UTC"
   malformed <- parseZonedDateTime provider strictResolver enUS
     "Sun 15 Mar 2020 01:24:35 PM UTC extra"
+  julianResolved <- parseZonedDateTime {calendar = Julian}
+    provider julianStrictResolver enUS
+    "Sun 15 Mar 2020 01:24:35 PM UTC"
   pure
     [ MkRuntimeCase "locale percent-Z resolves through provider and resolver"
         (case resolved of
@@ -281,6 +347,12 @@ zonedLocaleCases utcZone = do
         (case malformed of
           Left (ZonedParseError _) => True
           _ => False)
+    , MkRuntimeCase "locale zoned parsing supports Julian dates"
+        (case julianResolved of
+          Left _ => False
+          Right value => sameJulianDateTime (toCalendarDateTime value)
+            (on (localTime 13 24 35 0)
+              (julianDate 15 JulianMonths.March 2020)))
     ]
 
 export

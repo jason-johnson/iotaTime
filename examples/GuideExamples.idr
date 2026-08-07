@@ -17,14 +17,51 @@ finish = IotaTime.Instant.add start elapsed
 checked : Duration
 checked = difference finish start
 
+combinedDuration : Duration
+combinedDuration = IotaTime.Duration.add
+  (IotaTime.Duration.fromHours 1)
+  (IotaTime.Duration.fromMinutes 30)
+
+boundedWindow : Interval
+boundedWindow = interval 0 5400000000000
+
+runtimeWindow : Either IntervalError Interval
+runtimeWindow = refineInterval start finish
+
+windowContainsStart : Bool
+windowContainsStart = contains boundedWindow start
+
+centralEuropeanOffset : Offset
+centralEuropeanOffset = IotaTime.Offset.fromHours 1
+
+runtimeOffset : Either OffsetError Offset
+runtimeOffset = refineOffsetSeconds 19800
+
 late : LocalTime
 late = localTime 23 30 0 0
+
+runtimeTime : Either LocalTimeError LocalTime
+runtimeTime = refineLocalTime 9 30 0 0
 
 endOfMonth : CalendarDateTime Gregorian
 endOfMonth = at (calendarDate 31 January 2000) late
 
+calendarAndClockPeriod : Period (CalendarDateTime Gregorian)
+calendarAndClockPeriod = months 1 <+> hours 2
+
 advanced : CalendarDateTime Gregorian
-advanced = applyPeriod (months 1 <+> hours 2) endOfMonth
+advanced = applyPeriod calendarAndClockPeriod endOfMonth
+
+fixedOffsetDateTime : OffsetDateTime Gregorian
+fixedOffsetDateTime = fromCalendarDateTimeWithOffset
+  endOfMonth centralEuropeanOffset
+
+fixedOffsetInstant : Instant
+fixedOffsetInstant = IotaTime.OffsetDateTime.toInstant fixedOffsetDateTime
+
+displayAtUtc : Either CalendarConversionError (OffsetDateTime Gregorian)
+displayAtUtc = IotaTime.OffsetDateTime.withOffset
+  (IotaTime.Offset.fromHours 0) fixedOffsetDateTime
 
 calendarDifference : Period (CalendarDate Gregorian)
 calendarDifference = IotaTime.Calendar.between {calendar = Gregorian}
@@ -64,6 +101,31 @@ cachedZurich : IO (Either TzdbError TimeZone)
 cachedZurich = do
   provider <- cachedProvider
   timeZoneWith provider "Europe/Zurich"
+
+systemZurich : IO (Either TzdbError TimeZone)
+systemZurich = timeZone "Europe/Zurich"
+
+resolveEndOfMonth : TimeZone -> Either ZonedDateTimeError
+  (ZonedDateTime Gregorian)
+resolveEndOfMonth zone = fromCalendarDateTimeStrictly endOfMonth zone
+
+zonedEpoch : TimeZone -> Either CalendarConversionError
+  (ZonedDateTime Gregorian)
+zonedEpoch zone = IotaTime.ZonedDateTime.fromInstant start zone
+
+sameInstantIn : TimeZone -> ZonedDateTime Gregorian ->
+  Either CalendarConversionError (ZonedDateTime Gregorian)
+sameInstantIn zone value = IotaTime.ZonedDateTime.fromInstant
+  (IotaTime.ZonedDateTime.toInstant value) zone
+
+current : IO Instant
+current = getCurrentInstant systemClock
+
+deterministicClock : FixedClock
+deterministicClock = fixedClock start
+
+readDeterministicClock : IO Instant
+readDeterministicClock = getCurrentInstant deterministicClock
 
 windowsSnapshotProvider : IO (Either TzdbError TimeZoneProvider)
 windowsSnapshotProvider = windowsSnapshotTimeZoneProvider

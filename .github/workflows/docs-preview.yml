@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  deployments: write
   pull-requests: write
 
 concurrency:
@@ -16,6 +17,9 @@ jobs:
   preview:
     name: API documentation candidate
     runs-on: ubuntu-latest
+    environment:
+      name: pr-preview-${{ github.event.pull_request.number }}
+      url: ${{ steps.preview.outputs['preview-url'] }}
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.user.login == github.repository_owner
@@ -68,8 +72,16 @@ jobs:
           grep -q 'class="module-cookbook"' build/docs/docs/IotaTime.Pattern.html
 
       - name: Publish preview
+        id: preview
         uses: rossjrw/pr-preview-action@v1
         with:
           source-dir: build/docs
           preview-branch: gh-pages
           umbrella-dir: pr-preview
+          pages-base-url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+
+      - name: Report preview URL
+        if: github.event.action != 'closed'
+        env:
+          PREVIEW_URL: ${{ steps.preview.outputs['preview-url'] }}
+        run: echo "[Open documentation preview]($PREVIEW_URL)" >> "$GITHUB_STEP_SUMMARY"

@@ -60,7 +60,9 @@ header nav .guide-link {
 
 .module-cookbook {
   max-width: 900px;
-  margin: 0 0 30px;
+  margin: 0 0 34px;
+  padding: 4px 0 28px;
+  border-bottom: 2px solid #83ad9f;
   line-height: 1.6;
 }
 
@@ -82,6 +84,35 @@ header nav .guide-link {
 
 .module-cookbook p {
   margin: 8px 0;
+}
+
+.cookbook-toc {
+  margin: 0 0 22px;
+  padding: 12px 0;
+  border-top: 1px solid #c7d3d0;
+  border-bottom: 1px solid #c7d3d0;
+}
+
+.cookbook-toc strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.cookbook-toc ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cookbook-toc li {
+  margin: 0;
+}
+
+.cookbook-toc a {
+  color: #126554;
 }
 
 .module-cookbook code {

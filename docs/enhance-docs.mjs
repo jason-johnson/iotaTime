@@ -53,9 +53,26 @@ function groupModulePage(html, moduleName, configuredGroups, cookbook) {
   addSharedNavigation($, "../");
 
   if (cookbook !== undefined) {
-    $("#module-header").after(
-      `<section class="module-cookbook">${marked.parse(cookbook)}</section>`,
-    );
+    const section = $('<section class="module-cookbook"></section>');
+    section.html(marked.parse(cookbook));
+    const typeName = moduleName.split(".").at(-1);
+    const heading = section.children("h2").first();
+    heading.text(`Using ${typeName}`);
+
+    const recipes = section.children("h3");
+    if (recipes.length > 1) {
+      const contents = $('<nav class="cookbook-toc" aria-label="Cookbook recipes"><strong>Recipes</strong><ul></ul></nav>');
+      recipes.each((_, element) => {
+        const recipe = $(element);
+        const id = `recipe-${slugify(recipe.text())}`;
+        recipe.attr("id", id);
+        contents.find("ul").append(
+          $("<li></li>").append($("<a></a>").attr("href", `#${id}`).text(recipe.text())),
+        );
+      });
+      heading.after(contents);
+    }
+    $("#module-header").after(section);
   }
 
   $("dl.decls > dt").each((_, element) => {
@@ -295,5 +312,15 @@ await writeFile(cookbooksPath, cookbooksPage(cookbooks));
 await validateLocalLinks(indexPath);
 await validateLocalLinks(guidePath);
 await validateLocalLinks(cookbooksPath);
+for (const moduleName of cookbooks.keys()) {
+  const modulePath = path.join(docsDirectory, `${moduleName}.html`);
+  const $ = load(await readFile(modulePath, "utf8"), { decodeEntities: false });
+  if ($(".module-cookbook").length !== 1) {
+    throw new Error(`${moduleName}: cookbook was not injected exactly once`);
+  }
+  if ($(".module-cookbook > h3").length === 0) {
+    throw new Error(`${moduleName}: cookbook has no recipes`);
+  }
+}
 
 console.log(`Enhanced documentation in ${outputDirectory}`);

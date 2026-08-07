@@ -1,6 +1,6 @@
 package iotaTime
 
-version = 1.0.0
+version = 1.0.1
 authors = "Jason Johnson"
 maintainers = "Jason Johnson"
 license = "BSD-3-Clause"

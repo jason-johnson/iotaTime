@@ -1,6 +1,6 @@
 IDRIS2 ?= idris2
 CC ?= cc
-PACKAGE_VERSION := 1.0.0
+PACKAGE_VERSION := 1.0.1
 PACKAGE_LIBDIR := $(shell $(IDRIS2) --libdir)/iotaTime-$(PACKAGE_VERSION)/lib
 
 ifeq ($(OS),Windows_NT)

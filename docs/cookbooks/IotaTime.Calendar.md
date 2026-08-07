@@ -1,4 +1,38 @@
-## Cookbook
+## Using CalendarDate
+
+### Construct a statically known date
+
+`calendarDate` constructs a Gregorian date whose validity Idris proves while
+elaborating. Invalid literals, such as 29 February 2021, do not compile.
+
+```idris
+leapDay : CalendarDate Gregorian
+leapDay = calendarDate 29 February 2020
+```
+
+### Validate date components at runtime
+
+Use the calendar-specific refiner when components come from input. It returns a
+typed error instead of admitting an invalid date.
+
+```idris
+runtimeLeapDay : Either GregorianDateError (CalendarDate Gregorian)
+runtimeLeapDay = refineGregorianDate 29 February 2020
+```
+
+### Convert between calendars
+
+`withCalendar` preserves the absolute day while changing its calendar
+representation. The result is fallible because the target calendar may not
+cover that day.
+
+```idris
+gregorianChristmas : CalendarDate Gregorian
+gregorianChristmas = calendarDate 25 December 2024
+
+julianChristmas : Either CalendarConversionError (CalendarDate Julian)
+julianChristmas = IotaTime.Calendar.withCalendar gregorianChristmas
+```
 
 ### Decompose a difference by calendar units
 

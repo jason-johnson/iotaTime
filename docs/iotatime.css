@@ -60,7 +60,9 @@ header nav .guide-link {
 
 .module-cookbook {
   max-width: 900px;
-  margin: 0 0 30px;
+  margin: 0 0 34px;
+  padding: 4px 0 28px;
+  border-bottom: 2px solid #83ad9f;
   line-height: 1.6;
 }
 
@@ -84,6 +86,35 @@ header nav .guide-link {
   margin: 8px 0;
 }
 
+.cookbook-toc {
+  margin: 0 0 22px;
+  padding: 12px 0;
+  border-top: 1px solid #c7d3d0;
+  border-bottom: 1px solid #c7d3d0;
+}
+
+.cookbook-toc strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.cookbook-toc ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cookbook-toc li {
+  margin: 0;
+}
+
+.cookbook-toc a {
+  color: #126554;
+}
+
 .module-cookbook code {
   padding: 1px 4px;
   border-radius: 3px;
@@ -93,16 +124,22 @@ header nav .guide-link {
 }
 
 .module-cookbook pre {
+  display: block;
+  width: 100%;
+  max-width: 100%;
   margin: 12px 0 18px;
   padding: 14px 16px;
   overflow-x: auto;
+  box-sizing: border-box;
   border-left: 4px solid #287a68;
   background: #172320;
   color: #eef8f5;
   line-height: 1.5;
+  white-space: pre;
 }
 
 .module-cookbook pre code {
+  display: block;
   padding: 0;
   background: transparent;
   color: inherit;
@@ -194,6 +231,34 @@ header nav .guide-link {
   margin: 5px 0;
 }
 
+.cookbook-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 0 32px;
+  padding: 0;
+  list-style: none;
+}
+
+.cookbook-list li {
+  padding: 18px 0;
+  border-bottom: 1px solid #c7d3d0;
+}
+
+.cookbook-list a {
+  display: block;
+  margin-bottom: 5px;
+  color: #126554;
+  font-family: "Lucida Console", Monaco, monospace;
+  font-weight: bold;
+}
+
+.cookbook-list span {
+  display: block;
+  color: #4a5a57;
+  font-family: Georgia, serif;
+  line-height: 1.5;
+}
+
 .guide code {
   padding: 1px 4px;
   border-radius: 3px;
@@ -204,17 +269,21 @@ header nav .guide-link {
 
 .guide pre {
   display: block;
+  width: 100%;
   max-width: 100%;
   margin: 18px 0;
   padding: 16px;
   overflow-x: auto;
+  box-sizing: border-box;
   border-left: 4px solid #287a68;
   background: #172320;
   color: #eef8f5;
   line-height: 1.5;
+  white-space: pre;
 }
 
 .guide pre code {
+  display: block;
   padding: 0;
   background: transparent;
   color: inherit;

@@ -124,16 +124,22 @@ header nav .guide-link {
 }
 
 .module-cookbook pre {
+  display: block;
+  width: 100%;
+  max-width: 100%;
   margin: 12px 0 18px;
   padding: 14px 16px;
   overflow-x: auto;
+  box-sizing: border-box;
   border-left: 4px solid #287a68;
   background: #172320;
   color: #eef8f5;
   line-height: 1.5;
+  white-space: pre;
 }
 
 .module-cookbook pre code {
+  display: block;
   padding: 0;
   background: transparent;
   color: inherit;
@@ -263,17 +269,21 @@ header nav .guide-link {
 
 .guide pre {
   display: block;
+  width: 100%;
   max-width: 100%;
   margin: 18px 0;
   padding: 16px;
   overflow-x: auto;
+  box-sizing: border-box;
   border-left: 4px solid #287a68;
   background: #172320;
   color: #eef8f5;
   line-height: 1.5;
+  white-space: pre;
 }
 
 .guide pre code {
+  display: block;
   padding: 0;
   background: transparent;
   color: inherit;

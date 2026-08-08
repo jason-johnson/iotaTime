@@ -73,6 +73,30 @@ localTimeOfDay : {calendar : Type} -> {auto cal : Calendar calendar} ->
                  CalendarDateTime calendar @{cal} -> LocalTime
 localTimeOfDay = time
 
+||| Extracting the date after construction returns the supplied date.
+public export
+atDatePart : {calendar : Type} -> {auto cal : Calendar calendar} ->
+             (valueDate : CalendarDate calendar @{cal}) ->
+             (valueTime : LocalTime) ->
+             datePart @{cal} (at @{cal} valueDate valueTime) = valueDate
+atDatePart _ _ = Refl
+
+||| Extracting the local time after construction returns the supplied time.
+public export
+atLocalTimeOfDay : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                   (valueDate : CalendarDate calendar @{cal}) ->
+                   (valueTime : LocalTime) ->
+                   localTimeOfDay @{cal} (at @{cal} valueDate valueTime) = valueTime
+atLocalTimeOfDay _ _ = Refl
+
+||| Reconstructing a calendar date-time from its projections is exact.
+public export
+calendarDateTimeRoundTrip :
+  {calendar : Type} -> {auto cal : Calendar calendar} ->
+  (value : CalendarDateTime calendar @{cal}) ->
+  at @{cal} (datePart @{cal} value) (localTimeOfDay @{cal} value) = value
+calendarDateTimeRoundTrip (MkCalendarDateTime _ _) = Refl
+
 ||| Convert the date component to another calendar while preserving the local
 ||| time of day and absolute day.
 public export

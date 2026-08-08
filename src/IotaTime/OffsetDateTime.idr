@@ -84,6 +84,35 @@ offset : {calendar : Type} -> {auto cal : Calendar calendar} ->
          OffsetDateTime calendar @{cal} -> Offset
 offset = offsetOf
 
+||| Extracting the local date-time after construction returns the supplied value.
+public export
+offsetDateTimeLocalPart :
+  {calendar : Type} -> {auto cal : Calendar calendar} ->
+  (valueDateTime : CalendarDateTime calendar @{cal}) ->
+  (valueOffset : Offset) ->
+  toCalendarDateTime @{cal}
+    (fromCalendarDateTimeWithOffset @{cal} valueDateTime valueOffset) = valueDateTime
+offsetDateTimeLocalPart _ _ = Refl
+
+||| Extracting the offset after construction returns the supplied offset.
+public export
+offsetDateTimeOffsetPart :
+  {calendar : Type} -> {auto cal : Calendar calendar} ->
+  (valueDateTime : CalendarDateTime calendar @{cal}) ->
+  (valueOffset : Offset) ->
+  offset @{cal}
+    (fromCalendarDateTimeWithOffset @{cal} valueDateTime valueOffset) = valueOffset
+offsetDateTimeOffsetPart _ _ = Refl
+
+||| Reconstructing an offset date-time from its projections is exact.
+public export
+offsetDateTimeRoundTrip :
+  {calendar : Type} -> {auto cal : Calendar calendar} ->
+  (value : OffsetDateTime calendar @{cal}) ->
+  fromCalendarDateTimeWithOffset @{cal}
+    (toCalendarDateTime @{cal} value) (offset @{cal} value) = value
+offsetDateTimeRoundTrip (MkOffsetDateTime _ _) = Refl
+
 localNanoseconds : LocalTime -> Integer
 localNanoseconds value =
   (((hourValue (hour value) * 60 + minuteValue (minute value)) * 60 +

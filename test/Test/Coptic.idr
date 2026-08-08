@@ -90,6 +90,23 @@ copticCases =
   , MkRuntimeCase "absent epagomenal weekday is rejected"
       (isLeft (refineCopticNthDay First CopticWeekdays.Sunday
         CopticMonths.PiKogiEnavot 1732))
+  , MkRuntimeCase "absent reverse epagomenal weekdays are rejected"
+      (isLeft (refineCopticNthDay Last CopticWeekdays.Sunday
+        CopticMonths.PiKogiEnavot 1732) &&
+       isLeft (refineCopticNthDay SecondToLast CopticWeekdays.Friday
+        CopticMonths.PiKogiEnavot 1732) &&
+       isLeft (refineCopticNthDay ThirdToLast CopticWeekdays.Friday
+        CopticMonths.PiKogiEnavot 1732) &&
+       isLeft (refineCopticNthDay FourthToLast CopticWeekdays.Friday
+        CopticMonths.PiKogiEnavot 1732) &&
+             isLeft (refineCopticNthDay FourthToLast CopticWeekdays.Friday
+        CopticMonths.PiKogiEnavot 1731))
+  , MkRuntimeCase "valid reverse epagomenal weekday is preserved"
+      (case refineCopticNthDay Last CopticWeekdays.Saturday
+        CopticMonths.PiKogiEnavot 1732 of
+          Left _ => False
+          Right date => cymd date ==
+            (1732, CopticMonths.PiKogiEnavot, 5))
   , MkRuntimeCase "Coptic week one starts on Sunday"
       (dayOfWeek {calendar = Coptic}
         (copticFromWeekDate 1 CopticWeekdays.Sunday 1716) ==

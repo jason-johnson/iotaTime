@@ -307,9 +307,8 @@ refineCopticDays days = case choose (isValidCopticDays days) of
   Left valid => Right (copticFromDays days @{valid})
   Right _ => Left (InvalidCopticDayCount days)
 
-public export
-nthCopticDayOfMonth : DayNth -> CopticDayOfWeek -> CopticMonth -> Year -> DayOfMonth
-nthCopticDayOfMonth nth target valueMonth valueYear =
+copticNthDayNumber : DayNth -> CopticDayOfWeek -> CopticMonth -> Year -> Integer
+copticNthDayNumber nth target valueMonth valueYear =
   let monthLength = maxCopticDaysInMonth valueMonth valueYear
       firstOffset = (CopticWeekdays.weekdayNumber target -
         CopticWeekdays.weekdayNumber (copticWeekdayFromDays
@@ -327,18 +326,31 @@ nthCopticDayOfMonth nth target valueMonth valueYear =
         Third => 15 + firstOffset
         Fourth => 22 + firstOffset
         Fifth => 29 + firstOffset
-   in dayOfMonthFromInteger dayNumber
+   in dayNumber
 
 public export
 isValidCopticNthDay : DayNth -> CopticDayOfWeek -> CopticMonth -> Year -> Bool
 isValidCopticNthDay nth target valueMonth valueYear =
   yearValue valueYear >= 1 && case valueMonth of
     CopticMonths.PiKogiEnavot =>
-      nthCopticDayOfMonth nth target valueMonth valueYear <=
-        maxCopticDaysInMonth valueMonth valueYear
+      let candidate = copticNthDayNumber nth target valueMonth valueYear
+          monthLength = dayOfMonthValue
+            (maxCopticDaysInMonth valueMonth valueYear)
+       in candidate >= 1 && candidate <= monthLength
     _ => case nth of
-      Fifth => nthCopticDayOfMonth nth target valueMonth valueYear <= 30
+      Fifth => copticNthDayNumber nth target valueMonth valueYear <= 30
       _ => True
+
+||| Return the requested weekday occurrence under static validity evidence.
+public export
+nthCopticDayOfMonth : (nth : DayNth) -> (target : CopticDayOfWeek) ->
+                      (valueMonth : CopticMonth) -> (valueYear : Year) ->
+                      {auto 0 valid : So
+                        (isValidCopticNthDay nth target valueMonth valueYear)} ->
+                      DayOfMonth
+nthCopticDayOfMonth nth target valueMonth valueYear =
+  dayOfMonthFromInteger
+    (copticNthDayNumber nth target valueMonth valueYear)
 
 ||| Construct the nth requested weekday in a Coptic month.
 public export

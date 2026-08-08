@@ -18,6 +18,14 @@ rejects {calendar} source = case IotaTime.Pattern.parse (pR {calendar}) source o
   Left _ => True
   Right _ => False
 
+rejectsMonthRefinement : {calendar : Type} ->
+                         {auto patterned : CalendarPattern calendar} ->
+                         Integer -> Integer -> Bool
+rejectsMonthRefinement {calendar} year month =
+  case refinePatternDate {calendar} year month 1 of
+    Left (ValueOutOfRange "month" 1 _ value) => value == month
+    _ => False
+
 sameDateTime : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
                CalendarDateTime calendar -> CalendarDateTime calendar -> Bool
 sameDateTime left right =
@@ -140,6 +148,23 @@ patternCalendarCases =
        rejects {calendar = IslamicBase15} "0016-12-30" &&
        rejects {calendar = Persian} "1501-01-01" &&
        rejects {calendar = HebrewCivil} "5786-06-01")
+  , MkRuntimeCase "direct refinement rejects out-of-range months"
+      (rejectsMonthRefinement {calendar = Gregorian} 2000 0 &&
+       rejectsMonthRefinement {calendar = Gregorian} 2000 13 &&
+       rejectsMonthRefinement {calendar = Julian} 1900 0 &&
+       rejectsMonthRefinement {calendar = Julian} 1900 13 &&
+       rejectsMonthRefinement {calendar = Coptic} 1731 0 &&
+       rejectsMonthRefinement {calendar = Coptic} 1731 14 &&
+       rejectsMonthRefinement {calendar = IslamicBase15} 1443 0 &&
+       rejectsMonthRefinement {calendar = IslamicBase15} 1443 13 &&
+       rejectsMonthRefinement {calendar = CivilIslamicBase15} 1443 0 &&
+       rejectsMonthRefinement {calendar = CivilIslamicBase15} 1443 13 &&
+       rejectsMonthRefinement {calendar = Persian} 1400 0 &&
+       rejectsMonthRefinement {calendar = Persian} 1400 13 &&
+       rejectsMonthRefinement {calendar = ArithmeticPersian Simple} 1400 0 &&
+       rejectsMonthRefinement {calendar = ArithmeticPersian Birashk} 1400 13 &&
+       rejectsMonthRefinement {calendar = HebrewCivil} 5784 0 &&
+       rejectsMonthRefinement {calendar = HebrewScriptural} 5784 14)
   ]
 
 zonedCalendarCases : TimeZone -> IO (List RuntimeCase)

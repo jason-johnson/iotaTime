@@ -61,7 +61,7 @@ that the selected calendar has twelve month-name slots. Custom `pMonthName`
 tables retain an erased size equality for call-site inference while formatting
 now indexes month vectors directly with `Fin`.
 
-### 4. Invalid month normalization in `refinePatternDate`
+### 4. Invalid month normalization in `refinePatternDate` - completed
 
 Calendar month conversion helpers commonly map every unmatched integer to the
 last month. Pattern parsers enforce numeric bounds first, but the public
@@ -69,6 +69,11 @@ last month. Pattern parsers enforce numeric bounds first, but the public
 numbers.
 
 Return a typed failure for out-of-range values or accept a bounded month index.
+
+Implemented with a shared month bounds refiner that returns `ValueOutOfRange`
+before any calendar-specific integer conversion. Direct-interface tests cover
+zero and above-limit values across every built-in calendar family, including
+both Persian arithmetic rules and both Hebrew numbering schemes.
 
 ### 5. Ambiguous custom name tables
 

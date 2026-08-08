@@ -41,6 +41,13 @@ refineDay value = case refineDayOfMonth value of
   Left _ => Left (InvalidValue "day is outside 1-31")
   Right day => Right day
 
+refineMonth : Nat -> Integer -> Either PatternError Integer
+refineMonth monthCount value =
+  let maximum = cast monthCount
+  in if value >= 1 && value <= maximum
+    then Right value
+    else Left (ValueOutOfRange "month" 1 maximum value)
+
 invalidDate : String -> Either PatternError value
 invalidDate name = Left (InvalidValue ("invalid " ++ name ++ " date"))
 
@@ -111,8 +118,10 @@ CalendarPattern Gregorian where
       (month {calendar = Gregorian} date))
   patternWeekdayNumber date = weekdayNumber (dayOfWeek {calendar = Gregorian} date)
   refinePatternDate year month day = do
+    valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
-    case refineGregorianDate valueDay (gregorianMonth month) (yearFromInteger year) of
+    case refineGregorianDate valueDay (gregorianMonth valueMonth)
+      (yearFromInteger year) of
       Left _ => invalidDate "Gregorian"
       Right date => Right date
 
@@ -140,8 +149,10 @@ CalendarPattern Julian where
     (JulianMonths.monthNumber (month {calendar = Julian} date))
   patternWeekdayNumber date = JulianWeekdays.weekdayNumber (dayOfWeek {calendar = Julian} date)
   refinePatternDate year month day = do
+    valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
-    case refineJulianDate valueDay (julianMonth month) (yearFromInteger year) of
+    case refineJulianDate valueDay (julianMonth valueMonth)
+      (yearFromInteger year) of
       Left _ => invalidDate "Julian"
       Right date => Right date
 
@@ -176,8 +187,10 @@ CalendarPattern Coptic where
     (CopticMonths.monthNumber (month {calendar = Coptic} date))
   patternWeekdayNumber date = CopticWeekdays.weekdayNumber (dayOfWeek {calendar = Coptic} date)
   refinePatternDate year month day = do
+    valueMonth <- refineMonth 13 month
     valueDay <- refineDay day
-    case refineCopticDate valueDay (copticMonth month) (yearFromInteger year) of
+    case refineCopticDate valueDay (copticMonth valueMonth)
+      (yearFromInteger year) of
       Left _ => invalidDate "Coptic"
       Right date => Right date
 
@@ -213,8 +226,9 @@ public export
   patternWeekdayNumber date = IslamicWeekdays.weekdayNumber
     (dayOfWeek {calendar = Islamic pattern} date)
   refinePatternDate year month day = do
+    valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
-    case refineIslamicDate' {pattern} valueDay (islamicMonth month)
+    case refineIslamicDate' {pattern} valueDay (islamicMonth valueMonth)
       (yearFromInteger year) of
         Left _ => invalidDate "Islamic"
         Right date => Right date
@@ -237,8 +251,9 @@ public export
   patternWeekdayNumber date = IslamicWeekdays.weekdayNumber
     (dayOfWeek {calendar = CivilIslamic pattern} date)
   refinePatternDate year month day = do
+    valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
-    case refineCivilIslamicDate' {pattern} valueDay (islamicMonth month)
+    case refineCivilIslamicDate' {pattern} valueDay (islamicMonth valueMonth)
       (yearFromInteger year) of
         Left _ => invalidDate "Civil Islamic"
         Right date => Right date
@@ -272,8 +287,10 @@ CalendarPattern Persian where
     (PersianMonths.monthNumber (month {calendar = Persian} date))
   patternWeekdayNumber date = PersianWeekdays.weekdayNumber (dayOfWeek {calendar = Persian} date)
   refinePatternDate year month day = do
+    valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
-    case refinePersianDate valueDay (persianMonth month) (yearFromInteger year) of
+    case refinePersianDate valueDay (persianMonth valueMonth)
+      (yearFromInteger year) of
       Left _ => invalidDate "Persian"
       Right date => Right date
 
@@ -294,9 +311,10 @@ public export
   patternWeekdayNumber date = PersianWeekdays.weekdayNumber
     (dayOfWeek {calendar = ArithmeticPersian rule} date)
   refinePatternDate year month day = do
+    valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
     case refineArithmeticRulePersianDate {rule}
-      valueDay (persianMonth month) (yearFromInteger year) of
+      valueDay (persianMonth valueMonth) (yearFromInteger year) of
         Left _ => invalidDate (arithmeticPersianName {rule})
         Right date => Right date
 
@@ -366,8 +384,9 @@ public export
   patternWeekdayNumber date = HebrewWeekdays.weekdayNumber
     (dayOfWeek {calendar = Hebrew numbering} date)
   refinePatternDate year month day = do
+    valueMonth <- refineMonth 13 month
     valueDay <- refineDay day
     case refineHebrewDate' {numbering} valueDay
-      (hebrewMonthName {numbering} month) (yearFromInteger year) of
+      (hebrewMonthName {numbering} valueMonth) (yearFromInteger year) of
         Left _ => invalidDate "Hebrew"
         Right date => Right date

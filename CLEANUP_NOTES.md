@@ -92,7 +92,7 @@ caller order, so intentionally many-to-one custom names select their first
 matching entry. Tests cover repeated `"Odd"`/`"Even"` labels, overlapping
 prefixes, and empty-label formatting without zero-width parsing.
 
-### 6. Weekday text is consumed but not validated
+### 6. Weekday text is consumed but not validated - completed
 
 `pDayName` recognizes and consumes a weekday label but does not compare it with
 the resulting date. A weekday inconsistent with the parsed date is accepted.
@@ -102,6 +102,12 @@ Either:
 - add `parsedWeekday : Maybe (Fin 7)` to `DateFields` and validate it after date
   refinement; or
 - document and name the operation clearly as a structurally consumed field.
+
+Implemented as an opt-in strict alternative. `DateFields` carries an optional
+`Fin 7` parsed weekday through a default implicit field, preserving existing
+three-argument `MkDateFields` calls. `pVerifiedDayName`, `pddddVerified`,
+`pdddVerified`, and their locale-aware variants reject a weekday inconsistent
+with the refined date. Existing `pDayName`, `pdddd`, and `pddd` remain lenient.
 
 ### 7. `nameAt` hides invalid indexes
 

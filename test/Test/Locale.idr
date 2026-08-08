@@ -20,6 +20,11 @@ germanWeekdayDate = (((pdddd' deDE <% string ", ") <+>
   (pdd {calendar = Gregorian} <% char ' ')) <+>
   (pMMMM' deDE <% char ' ')) <+> pyyyy {calendar = Gregorian}
 
+verifiedGermanWeekdayDate : Pattern DateFields (CalendarDate Gregorian)
+verifiedGermanWeekdayDate = (((pddddVerified' deDE <% string ", ") <+>
+  (pdd {calendar = Gregorian} <% char ' ')) <+>
+  (pMMMM' deDE <% char ' ')) <+> pyyyy {calendar = Gregorian}
+
 localeFormatsAs : Locale -> CalendarDate Gregorian -> String -> Bool
 localeFormatsAs locale date expected = case localeDatePattern locale of
   Left _ => False
@@ -139,6 +144,13 @@ localeCases =
   , MkRuntimeCase "locale weekdays consume without date validation"
       (parsesAs germanWeekdayDate "Montag, 03 März 2020"
         (calendarDate 3 March 2020))
+  , MkRuntimeCase "verified locale weekdays reject inconsistent dates"
+      (parsesAs verifiedGermanWeekdayDate "Dienstag, 03 März 2020"
+         (calendarDate 3 March 2020) &&
+       case IotaTime.Pattern.parse verifiedGermanWeekdayDate
+         "Montag, 03 März 2020" of
+           Left (InvalidValue "weekday does not match date") => True
+           _ => False)
   , MkRuntimeCase "Japanese month names retain multibyte text"
       (IotaTime.Pattern.format (pMMMM' jaJP) (calendarDate 3 March 2020) ==
         "3月")

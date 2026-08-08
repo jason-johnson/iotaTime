@@ -22,6 +22,10 @@ isMonthRangeError : Either PatternError value -> Bool
 isMonthRangeError (Left (ValueOutOfRange "13" 1 12 5)) = True
 isMonthRangeError _ = False
 
+isWeekdayMismatch : Either PatternError value -> Bool
+isWeekdayMismatch (Left (InvalidValue "weekday does not match date")) = True
+isWeekdayMismatch _ = False
+
 isTrailingInputAt : Integer -> Either PatternError value -> Bool
 isTrailingInputAt expected (Left (TrailingInput actual _)) = actual == expected
 isTrailingInputAt _ _ = False
@@ -53,6 +57,12 @@ namedDate = ((pdd {calendar = Gregorian} <% char ' ') <+>
 
 weekdayDate : Pattern DateFields (CalendarDate Gregorian)
 weekdayDate = (((pdddd {calendar = Gregorian} <% string ", ") <+>
+    (pdd {calendar = Gregorian} <% char ' ')) <+>
+    (pMMMM {calendar = Gregorian} <% char ' ')) <+>
+    pyyyy {calendar = Gregorian}
+
+verifiedWeekdayDate : Pattern DateFields (CalendarDate Gregorian)
+verifiedWeekdayDate = (((pddddVerified {calendar = Gregorian} <% string ", ") <+>
     (pdd {calendar = Gregorian} <% char ' ')) <+>
     (pMMMM {calendar = Gregorian} <% char ' ')) <+>
     pyyyy {calendar = Gregorian}
@@ -123,6 +133,13 @@ patternCases =
                 (calendarDate 3 March 2020) == "Tuesday" &&
              parsesAs weekdayDate "Monday, 03 March 2020"
                  (calendarDate 3 March 2020))
+    , MkRuntimeCase "verified weekday names reject inconsistent dates"
+            (IotaTime.Pattern.format verifiedWeekdayDate
+                 (calendarDate 3 March 2020) == "Tuesday, 03 March 2020" &&
+             parsesAs verifiedWeekdayDate "Tuesday, 03 March 2020"
+                 (calendarDate 3 March 2020) &&
+             isWeekdayMismatch (IotaTime.Pattern.parse verifiedWeekdayDate
+                 "Monday, 03 March 2020"))
     , MkRuntimeCase "pD formats the English long date"
             (IotaTime.Pattern.format (pD {calendar = Gregorian})
                 (calendarDate 3 March 2020) ==

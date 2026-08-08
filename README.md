@@ -573,7 +573,7 @@ The calendar implements the 19-year leap cycle, the Rosh Hashanah postponement r
 
 `CalendarPattern calendar` supplies calendar-specific numeric projection, canonical month names, month limits, weekday numbering, and runtime date refinement. Instances cover Gregorian, Julian, Coptic, all three Persian rules, every indexed Islamic leap pattern and epoch, and both Hebrew numbering systems. Parsed year, month, and day fields therefore cross each calendar's existing typed refinement boundary rather than constructing a generic unchecked date.
 
-The calendar-date layer provides the HodaTime-compatible numeric fields `pyear`, `pyyyy`, `pyy`, `pmonthNum`, `pMM`, `pday`, `pdd`, and `pdaySpace`. Canonical calendar names are available through `pMMM` and `pMMMM`; `pddd` and `pdddd` use weekday names. Parsing is case-insensitive, and weekday fields are consumed without redundantly validating the date. `pd` is the slash-separated short date, `pD` is the canonical long date, `pR` is the numeric round-trip pattern, and `pmonthDay` and `pyearMonth` provide partial layouts:
+The calendar-date layer provides the HodaTime-compatible numeric fields `pyear`, `pyyyy`, `pyy`, `pmonthNum`, `pMM`, `pday`, `pdd`, and `pdaySpace`. Canonical calendar names are available through `pMMM` and `pMMMM`; `pddd` and `pdddd` use weekday names. Parsing is case-insensitive. The standard weekday fields consume recognized names without comparing them with the resulting date; use `pdddVerified`, `pddddVerified`, or `pVerifiedDayName` when inconsistent weekday text must be rejected. `pd` is the slash-separated short date, `pD` is the canonical long date, `pR` is the numeric round-trip pattern, and `pmonthDay` and `pyearMonth` provide partial layouts:
 
 ```idris
 isoText : String
@@ -693,7 +693,7 @@ japaneseMonth : String
 japaneseMonth = format (pMMMM' jaJP) (calendarDate 3 March 2020)
 ```
 
-Named locale fields parse case-insensitively. As with the fixed English weekday fields, locale weekday names are consumed but not validated against the resolved date.
+Named locale fields parse case-insensitively. As with the fixed English weekday fields, `pddd'` and `pdddd'` consume weekday names without validating them against the resolved date. Use `pdddVerified'` or `pddddVerified'` for strict locale weekday validation.
 
 On Unix, `localeByName` reads an installed locale through `newlocale` and `nl_langinfo_l`, while `currentLocale` follows `LC_ALL`, `LC_TIME`, and `LANG` and falls back to the POSIX `C` locale. The per-locale C APIs do not mutate process-global locale state.
 

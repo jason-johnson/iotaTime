@@ -17,6 +17,7 @@ record DateFields where
   parsedYear : Integer
   parsedMonth : Integer
   parsedDay : Integer
+  {default Nothing parsedWeekday : Maybe (Fin 7)}
 
 initialDateFields : DateFields
 initialDateFields = MkDateFields 2000 3 1
@@ -38,9 +39,16 @@ monthFromInteger _ = December
 finishDate : {calendar : Type} ->
              {auto patterned : CalendarPattern calendar} ->
              DateFields -> Either PatternError (CalendarDate calendar)
-finishDate {calendar} @{patterned} fields =
-  refinePatternDate {calendar} @{patterned} fields.parsedYear fields.parsedMonth
-  fields.parsedDay
+finishDate {calendar} @{patterned} fields = do
+  date <- refinePatternDate {calendar} @{patterned}
+    fields.parsedYear fields.parsedMonth fields.parsedDay
+  case fields.parsedWeekday of
+    Nothing => Right date
+    Just expected =>
+      if patternWeekdayNumber {calendar} @{patterned} date ==
+        cast (finToNat expected)
+        then Right date
+        else Left (InvalidValue "weekday does not match date")
 
 zeros : Nat -> String
 zeros Z = ""
@@ -74,6 +82,9 @@ setMonthField value fields = { parsedMonth := value } fields
 
 setDayField : Integer -> DateFields -> DateFields
 setDayField value fields = { parsedDay := value } fields
+
+setWeekdayField : Fin 7 -> DateFields -> DateFields
+setWeekdayField value fields = { parsedWeekday := Just value } fields
 
 setMonth : Month -> DateFields -> DateFields
 setMonth value fields = { parsedMonth := monthNumber value } fields
@@ -117,6 +128,11 @@ indexedNames _ [] = []
 indexedNames value (name :: names) =
   (name, value) :: indexedNames (value + 1) names
 
+indexedFinNames : Vect size String -> List (String, Fin size)
+indexedFinNames [] = []
+indexedFinNames (name :: names) =
+  (name, FZ) :: map (map FS) (indexedFinNames names)
+
 nameAt : Integer -> List String -> String
 nameAt _ [] = ""
 nameAt index (name :: names) = if index <= 1
@@ -152,6 +168,15 @@ calendarDayNamePattern {calendar} @{patterned} names = MkPattern
   (namedConsumePart names)
   (\date => nameAt
     (patternWeekdayNumber {calendar} @{patterned} date + 1) names)
+
+verifiedCalendarDayNamePattern : {calendar : Type} ->
+  {auto patterned : CalendarPattern calendar} ->
+  Vect 7 String -> Pattern DateFields (CalendarDate calendar)
+verifiedCalendarDayNamePattern {calendar} @{patterned} names = MkPattern
+  initialDateFields
+  finishDate
+  (namedUpdatePart (indexedFinNames names) setWeekdayField)
+  (calendarDayNamePattern {calendar} @{patterned} (toList names)).formatPart
 
 englishMonthNames : Vect 12 String
 englishMonthNames = map show gregorianMonths
@@ -273,6 +298,14 @@ pDayName : {default Gregorian calendar : Type} ->
            Vect 7 String -> Pattern DateFields (CalendarDate calendar)
 pDayName names = calendarDayNamePattern (toList names)
 
+||| A calendar weekday field that rejects a parsed name inconsistent with the
+||| resulting date. Names are supplied in Sunday-first order.
+public export
+pVerifiedDayName : {default Gregorian calendar : Type} ->
+                   {auto patterned : CalendarPattern calendar} ->
+                   Vect 7 String -> Pattern DateFields (CalendarDate calendar)
+pVerifiedDayName = verifiedCalendarDayNamePattern
+
 ||| A full English weekday-name field for the selected calendar.
 public export
 pdddd : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
@@ -284,6 +317,20 @@ public export
 pddd : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
   Pattern DateFields (CalendarDate calendar)
 pddd = calendarDayNamePattern weekdayAbbreviations
+
+||| A full English weekday-name field verified against the resulting date.
+public export
+pddddVerified : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
+pddddVerified {calendar} =
+  pVerifiedDayName {calendar} englishWeekdayNames
+
+||| An abbreviated English weekday-name field verified against the resulting date.
+public export
+pdddVerified : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
+  Pattern DateFields (CalendarDate calendar)
+pdddVerified {calendar} =
+  pVerifiedDayName {calendar} englishWeekdayAbbreviations
 
 localeMonthNames : {calendar : Type} ->
   {auto patterned : CalendarPattern calendar} ->
@@ -337,6 +384,22 @@ pddd' : {default Gregorian calendar : Type} ->
   {auto patterned : CalendarPattern calendar} ->
   Locale -> Pattern DateFields (CalendarDate calendar)
 pddd' {calendar} locale = pDayName {calendar} (dayNamesShort locale)
+
+||| A full locale weekday-name field verified against the resulting date.
+public export
+pddddVerified' : {default Gregorian calendar : Type} ->
+                 {auto patterned : CalendarPattern calendar} ->
+                 Locale -> Pattern DateFields (CalendarDate calendar)
+pddddVerified' {calendar} locale =
+  pVerifiedDayName {calendar} (dayNames locale)
+
+||| An abbreviated locale weekday-name field verified against the resulting date.
+public export
+pdddVerified' : {default Gregorian calendar : Type} ->
+                {auto patterned : CalendarPattern calendar} ->
+                Locale -> Pattern DateFields (CalendarDate calendar)
+pdddVerified' {calendar} locale =
+  pVerifiedDayName {calendar} (dayNamesShort locale)
 
 ||| The numeric `dd/MM/yyyy` date pattern.
 public export

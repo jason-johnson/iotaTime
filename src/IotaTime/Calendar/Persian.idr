@@ -326,6 +326,12 @@ public export
 ApplyPeriod PersianDate where
   applyPeriod = applyPersianPeriod
 
+public export
+CalendarValue PersianDate where
+  CalendarMonth _ = PersianMonth
+  calendarValueYearMonthDay = yearMonthDayFor {calendar = Persian}
+  calendarValueBetweenWith = betweenWithFor {calendar = Persian}
+
 ||| Construct a statically validated Persian date in years 1-1500.
 public export
 calendarDate : (valueDay : DayOfMonth) -> (valueMonth : PersianMonth) ->
@@ -739,6 +745,15 @@ public export
 {rule : PersianArithmeticRule} -> KnownPersianArithmeticRule rule =>
   ApplyPeriod (ArithmeticPersianDate rule) where
   applyPeriod = applyArithmeticPersianPeriod {rule}
+
+public export
+{rule : PersianArithmeticRule} -> KnownPersianArithmeticRule rule =>
+  CalendarValue (ArithmeticPersianDate rule) where
+  CalendarMonth _ = PersianMonth
+  calendarValueYearMonthDay =
+    yearMonthDayFor {calendar = ArithmeticPersian rule}
+  calendarValueBetweenWith =
+    betweenWithFor {calendar = ArithmeticPersian rule}
 
 ||| Construct a statically validated Persian date under an arithmetic rule.
 public export

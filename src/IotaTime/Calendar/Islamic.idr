@@ -434,6 +434,16 @@ public export
   ApplyPeriod (IslamicDate epoch pattern) where
   applyPeriod = applyIslamicPeriod {epoch} {pattern}
 
+public export
+{epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
+  KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
+  CalendarValue (IslamicDate epoch pattern) where
+  CalendarMonth _ = IslamicMonth
+  calendarValueYearMonthDay =
+    yearMonthDayFor {calendar = IslamicByEpoch epoch pattern}
+  calendarValueBetweenWith =
+    betweenWithFor {calendar = IslamicByEpoch epoch pattern}
+
 ||| Construct a statically validated Islamic date for the selected leap pattern.
 public export
 calendarDate' : {pattern : IslamicLeapPattern} ->

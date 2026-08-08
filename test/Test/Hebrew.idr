@@ -6,7 +6,7 @@ import Test.Support
 hymd : {numbering : HebrewNumbering} -> KnownHebrewNumbering numbering =>
   CalendarDate (Hebrew numbering) ->
        (Year, HebrewMonthName, DayOfMonth)
-hymd date = case yearMonthDay {calendar = Hebrew numbering} date of
+hymd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) =>
     (valueYear, monthName valueMonth, valueDay)
 

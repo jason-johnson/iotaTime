@@ -247,6 +247,12 @@ public export
 ApplyPeriod JulianDate where
   applyPeriod = applyJulianPeriod
 
+public export
+CalendarValue JulianDate where
+  CalendarMonth _ = JulianMonth
+  calendarValueYearMonthDay = yearMonthDayFor {calendar = Julian}
+  calendarValueBetweenWith = betweenWithFor {calendar = Julian}
+
 ||| Construct a statically validated Julian date.
 public export
 calendarDate : (valueDay : DayOfMonth) -> (valueMonth : JulianMonth) ->

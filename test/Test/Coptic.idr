@@ -5,7 +5,7 @@ import IotaTime.Calendar.Coptic
 import Test.Support
 
 cymd : CalendarDate Coptic -> (Year, CopticMonth, DayOfMonth)
-cymd date = case yearMonthDay {calendar = Coptic} date of
+cymd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) =>
     (valueYear, valueMonth, valueDay)
 

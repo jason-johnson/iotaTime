@@ -63,18 +63,22 @@ fixedOffsetInstant = toInstant fixedOffsetDateTime
 displayAtUtc : Either CalendarConversionError (OffsetDateTime Gregorian)
 displayAtUtc = withOffset (fromHours 0) fixedOffsetDateTime
 
+differenceStart : CalendarDate Gregorian
+differenceStart = calendarDate 31 January 2025
+
+differenceEnd : CalendarDate Gregorian
+differenceEnd = calendarDate 30 March 2025
+
 calendarDifference : Period (CalendarDate Gregorian)
-calendarDifference = between {calendar = Gregorian}
-  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+calendarDifference = IotaTime.Calendar.between differenceStart differenceEnd
 
 exactDayDifference : Period (CalendarDate Gregorian)
-exactDayDifference = betweenDays {calendar = Gregorian}
-  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+exactDayDifference = betweenDays differenceStart differenceEnd
 
 explicitDayDifference : Period (CalendarDate Gregorian)
-explicitDayDifference = betweenWith {calendar = Gregorian}
+explicitDayDifference = betweenWith
   (MkDateDifferencePolicy DaysOnly ClampToMonth)
-  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+  differenceStart differenceEnd
 
 gregorianChristmas : CalendarDate Gregorian
 gregorianChristmas = calendarDate 25 December 2024

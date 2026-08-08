@@ -386,7 +386,7 @@ public export
       , "Nis", "Iya", "Siv", "Tam", "Av", "Elu" ]
     _ => [ "Nis", "Iya", "Siv", "Tam", "Av", "Elu", "Tis"
       , "Che", "Kis", "Tev", "She", "AdI", "Ada" ]
-  patternMonthIndex date = case yearMonthDay {calendar = Hebrew numbering} date of
+  patternMonthIndex date = case yearMonthDayFor {calendar = Hebrew numbering} date of
     (_ ** (valueMonth, _)) => monthIndex13
       (IotaTime.Calendar.Hebrew.monthNumber valueMonth)
   patternWeekdayIndex date = weekdayIndex7 (HebrewWeekdays.weekdayNumber

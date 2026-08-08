@@ -265,6 +265,12 @@ public export
 ApplyPeriod CopticDate where
   applyPeriod = applyCopticPeriod
 
+public export
+CalendarValue CopticDate where
+  CalendarMonth _ = CopticMonth
+  calendarValueYearMonthDay = yearMonthDayFor {calendar = Coptic}
+  calendarValueBetweenWith = betweenWithFor {calendar = Coptic}
+
 ||| Construct a statically validated Coptic date.
 public export
 calendarDate : (valueDay : DayOfMonth) -> (valueMonth : CopticMonth) ->

@@ -11,7 +11,7 @@ isLeft (Right _) = False
 iymd : {pattern : IslamicLeapPattern} ->
        KnownIslamicLeapPattern pattern =>
        CalendarDate (Islamic pattern) -> (Year, IslamicMonth, DayOfMonth)
-iymd date = case yearMonthDay {calendar = Islamic pattern} date of
+iymd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) =>
     (valueYear, valueMonth, valueDay)
 
@@ -19,7 +19,7 @@ ciymd : {pattern : IslamicLeapPattern} ->
         KnownIslamicLeapPattern pattern =>
         CalendarDate (CivilIslamic pattern) ->
         (Year, IslamicMonth, DayOfMonth)
-ciymd date = case yearMonthDay {calendar = CivilIslamic pattern} date of
+ciymd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) =>
     (valueYear, valueMonth, valueDay)
 

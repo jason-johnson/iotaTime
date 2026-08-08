@@ -4,7 +4,7 @@ import IotaTime
 import Test.Support
 
 ymd : CalendarDate Gregorian -> (Year, Month, DayOfMonth)
-ymd date = case yearMonthDay {calendar = Gregorian} date of
+ymd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) => (valueYear, valueMonth, valueDay)
 
 timeComponents : LocalTime -> (Hour, Minute, Second, Nanosecond)
@@ -19,7 +19,7 @@ lateDateTime = on (localTime 23 30 0 0) (IotaTime.Calendar.Gregorian.calendarDat
 
 dateBetweenApplies : CalendarDate Gregorian -> CalendarDate Gregorian -> Bool
 dateBetweenApplies start end =
-  applyPeriod (IotaTime.Calendar.between {calendar = Gregorian} start end) start == end
+  applyPeriod (IotaTime.Calendar.between start end) start == end
 
 dateTimeBetweenApplies : CalendarDateTime Gregorian ->
                          CalendarDateTime Gregorian -> Bool
@@ -95,13 +95,13 @@ calendarDateTimeCases =
       (dateBetweenApplies (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000)
         (IotaTime.Calendar.Gregorian.calendarDate 2 March 2000))
   , MkRuntimeCase "calendar date between takes the largest non-overshooting month count"
-      (let difference = IotaTime.Calendar.between {calendar = Gregorian}
+      (let difference = IotaTime.Calendar.between
             (IotaTime.Calendar.Gregorian.calendarDate 31 January 2025) (IotaTime.Calendar.Gregorian.calendarDate 30 March 2025)
         in periodYears difference == 0 &&
           periodMonths difference == 1 &&
           periodDays difference == 30)
   , MkRuntimeCase "calendar date between keeps an exact multi-month result"
-      (let difference = IotaTime.Calendar.between {calendar = Gregorian}
+      (let difference = IotaTime.Calendar.between
             (IotaTime.Calendar.Gregorian.calendarDate 31 January 2025) (IotaTime.Calendar.Gregorian.calendarDate 31 March 2025)
         in periodMonths difference == 2 && periodDays difference == 0)
   , MkRuntimeCase "calendar date between applies in reverse across a clamped month"
@@ -109,7 +109,7 @@ calendarDateTimeCases =
         (IotaTime.Calendar.Gregorian.calendarDate 31 January 2025))
   , MkRuntimeCase "days-only calendar difference preserves the exact day count"
       (let policy = IotaTime.Calendar.MkDateDifferencePolicy DaysOnly ClampToMonth
-           difference = betweenWith {calendar = Gregorian} policy
+           difference = betweenWith policy
              (IotaTime.Calendar.Gregorian.calendarDate 31 January 2025) (IotaTime.Calendar.Gregorian.calendarDate 30 March 2025)
         in periodMonths difference == 0 && periodDays difference == 58)
   , MkRuntimeCase "date-time between spans days and subsecond time"

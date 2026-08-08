@@ -40,11 +40,21 @@ julianChristmas = IotaTime.Calendar.withCalendar gregorianChristmas
 accepted component is applied before the next smaller unit is calculated.
 
 ```idris
+differenceStart : CalendarDate Gregorian
+differenceStart = IotaTime.Calendar.Gregorian.calendarDate 31 January 2025
+
+differenceEnd : CalendarDate Gregorian
+differenceEnd = IotaTime.Calendar.Gregorian.calendarDate 30 March 2025
+
 calendarDifference : Period (CalendarDate Gregorian)
-calendarDifference = IotaTime.Calendar.between {calendar = Gregorian}
-  (IotaTime.Calendar.Gregorian.calendarDate 31 January 2025)
-  (IotaTime.Calendar.Gregorian.calendarDate 30 March 2025)
+calendarDifference = IotaTime.Calendar.between differenceStart differenceEnd
 ```
+
+The concrete date representation determines its calendar, so callers do not
+repeat `{calendar = Gregorian}`. Calendar-polymorphic implementation code that
+has a `Calendar calendar` dictionary rather than a concrete representation can
+use `betweenFor {calendar}`, `betweenDaysFor {calendar}`, or
+`betweenWithFor {calendar}`.
 
 This period contains one month and 30 days. A direct two-month application
 would produce 31 March, which passes the endpoint.
@@ -56,15 +66,12 @@ days. The equivalent explicit policy is available through `betweenWith`.
 
 ```idris
 exactDayDifference : Period (CalendarDate Gregorian)
-exactDayDifference = IotaTime.Calendar.betweenDays {calendar = Gregorian}
-  (IotaTime.Calendar.Gregorian.calendarDate 31 January 2025)
-  (IotaTime.Calendar.Gregorian.calendarDate 30 March 2025)
+exactDayDifference = IotaTime.Calendar.betweenDays differenceStart differenceEnd
 
 explicitDayDifference : Period (CalendarDate Gregorian)
-explicitDayDifference = IotaTime.Calendar.betweenWith {calendar = Gregorian}
+explicitDayDifference = IotaTime.Calendar.betweenWith
   (MkDateDifferencePolicy DaysOnly ClampToMonth)
-  (IotaTime.Calendar.Gregorian.calendarDate 31 January 2025)
-  (IotaTime.Calendar.Gregorian.calendarDate 30 March 2025)
+  differenceStart differenceEnd
 ```
 
 Both exact forms contain 58 days. These declarations are compiled from

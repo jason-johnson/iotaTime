@@ -4,11 +4,11 @@ import IotaTime
 import Test.Support
 
 julianYmd : CalendarDate Julian -> (Year, JulianMonth, DayOfMonth)
-julianYmd date = case yearMonthDay {calendar = Julian} date of
+julianYmd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) => (valueYear, valueMonth, valueDay)
 
 hebrewYmd : CalendarDate HebrewCivil -> (Year, HebrewMonthName, DayOfMonth)
-hebrewYmd date = case yearMonthDay {calendar = HebrewCivil} date of
+hebrewYmd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) =>
     (valueYear, monthName valueMonth, valueDay)
 

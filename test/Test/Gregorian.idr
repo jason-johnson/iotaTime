@@ -4,7 +4,7 @@ import IotaTime
 import Test.Support
 
 ymd : CalendarDate Gregorian -> (Year, Month, DayOfMonth)
-ymd date = case yearMonthDay {calendar = Gregorian} date of
+ymd date = case yearMonthDay date of
     (valueYear ** (valueMonth, valueDay)) => (valueYear, valueMonth, valueDay)
 
 weekday : CalendarDate Gregorian -> DayOfWeek

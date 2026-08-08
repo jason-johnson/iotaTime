@@ -567,6 +567,13 @@ public export
 {numbering : HebrewNumbering} -> ApplyPeriod (HebrewDate numbering) where
   applyPeriod = applyHebrewPeriod
 
+public export
+{numbering : HebrewNumbering} -> KnownHebrewNumbering numbering =>
+  CalendarValue (HebrewDate numbering) where
+  CalendarMonth valueYear = HebrewMonth numbering valueYear
+  calendarValueYearMonthDay = yearMonthDayFor {calendar = Hebrew numbering}
+  calendarValueBetweenWith = betweenWithFor {calendar = Hebrew numbering}
+
 ||| Construct a statically validated Hebrew date in the selected numbering.
 ||| The month is indexed by the year, making Adar I unavailable in common years.
 public export

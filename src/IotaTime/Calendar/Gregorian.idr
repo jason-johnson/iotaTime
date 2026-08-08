@@ -279,6 +279,12 @@ Calendar Gregorian where
   previous = previousGregorian
 
 public export
+CalendarValue GregorianDate where
+  CalendarMonth _ = Month
+  calendarValueYearMonthDay = yearMonthDayFor {calendar = Gregorian}
+  calendarValueBetweenWith = betweenWithFor {calendar = Gregorian}
+
+public export
 Show GregorianDate where
   show date = case civilFromDays date.daysSinceEpoch of
     (valueYear, valueMonth, valueDay) =>

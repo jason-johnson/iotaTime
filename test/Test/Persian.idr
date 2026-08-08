@@ -9,7 +9,7 @@ isLeft (Left _) = True
 isLeft (Right _) = False
 
 pymd : CalendarDate Persian -> (Year, PersianMonth, DayOfMonth)
-pymd date = case yearMonthDay {calendar = Persian} date of
+pymd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) =>
     (valueYear, valueMonth, valueDay)
 
@@ -17,7 +17,7 @@ arithmeticPymd : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule =>
   CalendarDate (ArithmeticPersian rule) -> (Year, PersianMonth, DayOfMonth)
 arithmeticPymd {rule} date =
-  case yearMonthDay {calendar = ArithmeticPersian rule} date of
+  case yearMonthDay date of
     (valueYear ** (valueMonth, valueDay)) =>
       (valueYear, valueMonth, valueDay)
 

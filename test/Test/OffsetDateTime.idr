@@ -9,7 +9,7 @@ gregorianComponents value =
   let local = toCalendarDateTime value
       date = datePart local
       time = localTimeOfDay local
-   in case yearMonthDay {calendar = Gregorian} date of
+  in case yearMonthDay date of
         (valueYear ** (valueMonth, valueDay)) =>
           ((valueYear, valueMonth, valueDay),
            (hour time, minute time, second time, nanosecond time),

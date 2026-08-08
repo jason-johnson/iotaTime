@@ -142,13 +142,19 @@ range validation, and date construction. A direct regression covers every
 records iotaTime's seven-day standard civil-week invariant without obscuring
 the occurrence offsets behind literals such as 8, 14, 21, or 29.
 
-### 9. Duplicate `CalendarPattern` data and scaffolding
+### 9. Duplicate `CalendarPattern` data and scaffolding - completed
 
 Islamic/civil Islamic and Persian/arithmetic Persian instances duplicate month
 names, abbreviations, projections, and refinement structure.
 
 Share constants and parameterized refinement helpers where this reduces drift
 without obscuring calendar-specific behavior.
+
+Islamic and civil Islamic now share their canonical month names and
+abbreviations, as do Persian and arithmetic Persian. Their common twelve-month
+range checks and date-refinement error mapping use `refineTwelveMonthDate`,
+while each instance still supplies its calendar-specific epoch or arithmetic
+rule through the selected refiner.
 
 ### 10. Broad fallback in `dateTimeConversion`
 

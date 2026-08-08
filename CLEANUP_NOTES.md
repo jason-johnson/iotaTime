@@ -19,7 +19,7 @@ Implemented by separating raw candidate calculation from `DayOfMonth`
 construction, requiring validity evidence for `nthCopticDayOfMonth`, and adding
 runtime and compile-fail coverage for reverse epagomenal occurrences.
 
-### 2. Non-Gregorian locale month names
+### 2. Non-Gregorian locale month names - completed
 
 `pMMMM'` and `pMMM'` currently overlay the locale's twelve Gregorian month
 names onto every calendar by ordinal position. This can label Coptic Thout,
@@ -32,6 +32,11 @@ Choose explicit semantics:
 - use canonical calendar names where localized names are unavailable.
 
 Do not describe ordinal Gregorian overlays as localized non-Gregorian names.
+
+Implemented with an explicit `PatternMonthNameSource` policy. Gregorian and
+Julian opt into operating-system locale month tables; all other calendars use
+their canonical full and abbreviated names. Tests cover Coptic, Persian,
+Islamic, and Hebrew behavior.
 
 ### 3. Under-constrained `CalendarPattern` instances
 

@@ -105,12 +105,6 @@ gregorianWeekdays =
 abbreviate : String -> String
 abbreviate = substr 0 3
 
-overlayNames : List String -> List String -> List String
-overlayNames [] defaults = defaults
-overlayNames supplied [] = supplied
-overlayNames (name :: names) (_ :: defaults) =
-  name :: overlayNames names defaults
-
 indexedNames : Integer -> List String -> List (String, Integer)
 indexedNames _ [] = []
 indexedNames index (name :: names) =
@@ -278,23 +272,40 @@ pddd : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
   Pattern DateFields (CalendarDate calendar)
 pddd = calendarDayNamePattern weekdayAbbreviations
 
-||| A full locale month-name field for the selected calendar.
+localeMonthNames : {calendar : Type} ->
+  {auto patterned : CalendarPattern calendar} ->
+  Locale -> List String
+localeMonthNames {calendar} @{patterned} locale =
+  case patternMonthNameSource {calendar} @{patterned} of
+    GregorianLocaleMonthNames => toList (monthNames locale)
+    CanonicalCalendarMonthNames => patternMonthNames {calendar} @{patterned}
+
+localeMonthAbbreviations : {calendar : Type} ->
+  {auto patterned : CalendarPattern calendar} ->
+  Locale -> List String
+localeMonthAbbreviations {calendar} @{patterned} locale =
+  case patternMonthNameSource {calendar} @{patterned} of
+    GregorianLocaleMonthNames => toList (monthNamesShort locale)
+    CanonicalCalendarMonthNames =>
+      patternMonthAbbreviations {calendar} @{patterned}
+
+||| A full month-name field using locale names when the selected calendar
+||| shares Gregorian month identities, and canonical names otherwise.
 public export
 pMMMM' : {default Gregorian calendar : Type} ->
          {auto patterned : CalendarPattern calendar} ->
    Locale -> Pattern DateFields (CalendarDate calendar)
 pMMMM' {calendar} @{patterned} locale = calendarMonthNamePattern
-  (overlayNames (toList (monthNames locale))
-    (patternMonthNames {calendar} @{patterned}))
+  (localeMonthNames {calendar} @{patterned} locale)
 
-||| An abbreviated locale month-name field for the selected calendar.
+||| An abbreviated month-name field using locale names when the selected
+||| calendar shares Gregorian month identities, and canonical names otherwise.
 public export
 pMMM' : {default Gregorian calendar : Type} ->
   {auto patterned : CalendarPattern calendar} ->
   Locale -> Pattern DateFields (CalendarDate calendar)
 pMMM' {calendar} @{patterned} locale = calendarMonthNamePattern
-  (overlayNames (toList (monthNamesShort locale))
-    (patternMonthAbbreviations {calendar} @{patterned}))
+  (localeMonthAbbreviations {calendar} @{patterned} locale)
 
 ||| A full locale weekday-name field for the selected calendar.
 public export

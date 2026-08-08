@@ -112,16 +112,30 @@ localeCases =
       (let value = julianDate 3 JulianMonths.March 2020 in
         IotaTime.Pattern.format (pMMMM' {calendar = Julian} deDE) value ==
           "März")
-  , MkRuntimeCase "locale names fall back for Coptic month thirteen"
+  , MkRuntimeCase "Coptic locale patterns retain canonical month names"
       (case compileDatePattern {calendar = Coptic} deDE "%d %B %Y" of
         Left _ => False
         Right pattern =>
-          let expected = copticDate 5 CopticMonths.PiKogiEnavot 1736 in
-            IotaTime.Pattern.format pattern expected ==
+          let first = copticDate 1 CopticMonths.Thout 1736
+              last = copticDate 5 CopticMonths.PiKogiEnavot 1736 in
+            IotaTime.Pattern.format pattern first == "01 Thout 1736" &&
+            IotaTime.Pattern.format pattern last ==
               "05 PiKogiEnavot 1736" &&
             case IotaTime.Pattern.parse pattern "05 PiKogiEnavot 1736" of
               Left _ => False
-              Right actual => actual == expected)
+              Right actual => actual == last)
+  , MkRuntimeCase "Persian locale patterns retain canonical month names"
+      (IotaTime.Pattern.format (pMMMM' {calendar = Persian} deDE)
+        (persianDate 1 PersianMonths.Farvardin 1400) == "Farvardin" &&
+       IotaTime.Pattern.format (pMMM' {calendar = Persian} deDE)
+        (persianDate 1 PersianMonths.Farvardin 1400) == "Far")
+  , MkRuntimeCase "Islamic locale patterns retain canonical month names"
+      (IotaTime.Pattern.format (pMMMM' {calendar = IslamicBase15} deDE)
+        (islamicDate' {pattern = Base15}
+          1 IslamicMonths.Muharram 1443) == "Muharram")
+  , MkRuntimeCase "Hebrew locale patterns retain canonical month names"
+      (IotaTime.Pattern.format (pMMMM' {calendar = HebrewCivil} deDE)
+        (hebrewDate 1 5784 HebrewMonths.Tishri) == "Tishri")
   , MkRuntimeCase "locale weekdays consume without date validation"
       (parsesAs germanWeekdayDate "Montag, 03 März 2020"
         (calendarDate 3 March 2020))

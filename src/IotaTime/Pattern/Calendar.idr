@@ -11,12 +11,21 @@ import IotaTime.Pattern
 
 %default total
 
+||| Selects whether locale-backed patterns use the locale's Gregorian month
+||| table or the calendar's canonical month names.
+public export
+data PatternMonthNameSource
+  = GregorianLocaleMonthNames
+  | CanonicalCalendarMonthNames
+
 ||| Calendar-specific projection and runtime refinement used by date patterns.
 public export
 interface Calendar calendar => CalendarPattern calendar where
   patternMonthLimit : Integer
   patternMonthNames : List String
   patternMonthAbbreviations : List String
+  patternMonthNameSource : PatternMonthNameSource
+  patternMonthNameSource = CanonicalCalendarMonthNames
   patternMonthNumber : CalendarDate calendar -> Integer
   patternWeekdayNumber : CalendarDate calendar -> Integer
   refinePatternDate : Integer -> Integer -> Integer ->
@@ -61,6 +70,7 @@ CalendarPattern Gregorian where
   patternMonthLimit = 12
   patternMonthNames = gregorianMonthNames
   patternMonthAbbreviations = abbreviateAll gregorianMonthNames
+  patternMonthNameSource = GregorianLocaleMonthNames
   patternMonthNumber date = IotaTime.Calendar.Gregorian.monthNumber
     (month {calendar = Gregorian} date)
   patternWeekdayNumber date = weekdayNumber (dayOfWeek {calendar = Gregorian} date)
@@ -89,6 +99,7 @@ CalendarPattern Julian where
   patternMonthLimit = 12
   patternMonthNames = gregorianMonthNames
   patternMonthAbbreviations = abbreviateAll gregorianMonthNames
+  patternMonthNameSource = GregorianLocaleMonthNames
   patternMonthNumber date = JulianMonths.monthNumber (month {calendar = Julian} date)
   patternWeekdayNumber date = JulianWeekdays.weekdayNumber (dayOfWeek {calendar = Julian} date)
   refinePatternDate year month day = do

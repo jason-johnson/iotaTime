@@ -308,8 +308,8 @@ Calendar Persian where
   shiftCalendarDays' = shiftPersianDays
 
   dayOfWeekFor = persianDayOfWeek
-  next = nextPersian
-  previous = previousPersian
+  nextFor = nextPersian
+  previousFor = previousPersian
 
 public export
 Show PersianDate where
@@ -336,6 +336,11 @@ CalendarValue PersianDate where
   calendarValueDay = dayFor {calendar = Persian}
   calendarValueDayOfWeek = dayOfWeekFor {calendar = Persian}
   calendarValueBetweenWith = betweenWithFor {calendar = Persian}
+
+public export
+CalendarNavigation PersianDayOfWeek PersianDate where
+  calendarValueNext = nextFor {calendar = Persian}
+  calendarValuePrevious = previousFor {calendar = Persian}
 
 ||| Construct a statically validated Persian date in years 1-1500.
 public export
@@ -730,8 +735,8 @@ public export
   applyCalendarPeriod' = applyArithmeticPersianPeriod {rule}
   shiftCalendarDays' = shiftArithmeticPersianDays {rule}
   dayOfWeekFor = arithmeticPersianDayOfWeek
-  next = nextArithmeticPersian {rule}
-  previous = previousArithmeticPersian {rule}
+  nextFor = nextArithmeticPersian {rule}
+  previousFor = previousArithmeticPersian {rule}
 
 public export
 {rule : PersianArithmeticRule} -> KnownPersianArithmeticRule rule =>
@@ -763,6 +768,12 @@ public export
   calendarValueDayOfWeek = dayOfWeekFor {calendar = ArithmeticPersian rule}
   calendarValueBetweenWith =
     betweenWithFor {calendar = ArithmeticPersian rule}
+
+public export
+{rule : PersianArithmeticRule} -> KnownPersianArithmeticRule rule =>
+  CalendarNavigation PersianDayOfWeek (ArithmeticPersianDate rule) where
+  calendarValueNext = nextFor {calendar = ArithmeticPersian rule}
+  calendarValuePrevious = previousFor {calendar = ArithmeticPersian rule}
 
 ||| Construct a statically validated Persian date under an arithmetic rule.
 public export

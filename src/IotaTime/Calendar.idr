@@ -101,8 +101,8 @@ interface Calendar calendar where
   shiftCalendarDays' : Integer -> DateRep -> DateRep
 
   dayOfWeekFor : DateRep -> WeekdayRep
-  next : Integer -> WeekdayRep -> DateRep -> DateRep
-  previous : Integer -> WeekdayRep -> DateRep -> DateRep
+  nextFor : Integer -> WeekdayRep -> DateRep -> DateRep
+  previousFor : Integer -> WeekdayRep -> DateRep -> DateRep
 
 ||| The opaque date representation selected by a calendar implementation.
 public export
@@ -133,6 +133,14 @@ interface CalendarValue date where
   calendarValueDayOfWeek : date -> CalendarWeekday
   calendarValueBetweenWith :
     DateDifferencePolicy -> date -> date -> Period date
+
+||| Weekday navigation determined by concrete weekday and date representations.
+||| Both ordinary arguments are available before Idris resolves this interface,
+||| so callers do not need to select the calendar explicitly.
+public export
+interface CalendarNavigation weekday date where
+  calendarValueNext : Integer -> weekday -> date -> date
+  calendarValuePrevious : Integer -> weekday -> date -> date
 
 ||| Extract the calendar year from a date.
 public export
@@ -322,6 +330,20 @@ public export
 dayOfWeek : (value : date) -> {auto rep : CalendarValue date} ->
             CalendarWeekday @{rep}
 dayOfWeek value @{rep} = calendarValueDayOfWeek @{rep} value
+
+||| Find a matching weekday relative to a concrete date value.
+public export
+next : Integer -> weekday -> (value : date) ->
+       {auto navigation : CalendarNavigation weekday date} -> date
+next count weekday value @{navigation} =
+  calendarValueNext @{navigation} count weekday value
+
+||| Find a preceding matching weekday relative to a concrete date value.
+public export
+previous : Integer -> weekday -> (value : date) ->
+           {auto navigation : CalendarNavigation weekday date} -> date
+previous count weekday value @{navigation} =
+  calendarValuePrevious @{navigation} count weekday value
 
 ||| Convert a date to another calendar while preserving its absolute day.
 ||| Returns `TargetCalendarOutOfRange` when the target cannot represent it.

@@ -376,7 +376,8 @@ components = yearMonthDay date
 Value-oriented operations infer the calendar from the concrete date
 representation. Generic implementation code that has a `Calendar calendar`
 dictionary can use the explicit `toDaysFor`, `yearFor`, `monthFor`, `dayFor`,
-`dayOfWeekFor`, and `yearMonthDayFor` variants with `{calendar}`.
+`dayOfWeekFor`, `nextFor`, `previousFor`, and `yearMonthDayFor` variants with
+`{calendar}`.
 
 ### Date components
 
@@ -449,7 +450,7 @@ The public Gregorian operations are:
 - `calendarDate`, `fromNthDay`, `fromWeekDate`, and `fromDays` construct dates under erased validity proofs. Statically invalid calls do not compile.
 - `refineDate`, `refineNthDay`, `refineWeekDate`, and `refineDays` handle values first learned at runtime. They return `Either GregorianDateError (CalendarDate Gregorian)` and are the only fallible construction boundary.
 - `isLeapYear`, `maxDaysInMonth`, and the `isValid...` predicates expose Gregorian rules and decision procedures.
-- `dayOfWeek`, `next`, and `previous` provide calendar-polymorphic weekday navigation. `dayOfWeek` infers the calendar from its date; navigation remains explicitly selected because its date is the final argument. Date-returning operations clamp at October 15, 1582, so they preserve the type's validity invariant without `Maybe`.
+- `dayOfWeek`, `next`, and `previous` provide calendar-polymorphic weekday navigation. They infer the calendar from the concrete weekday and date representations; generic code uses `dayOfWeekFor`, `nextFor`, and `previousFor`. Date-returning operations clamp at October 15, 1582, so they preserve the type's validity invariant without `Maybe`.
 - `yearMonthDay`, `day`, `month`, and `year` expose typed civil components.
 - `years`, `months`, `weeks`, `days`, and `applyPeriod` provide signed calendar-relative arithmetic.
 

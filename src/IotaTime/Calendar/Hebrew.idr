@@ -556,8 +556,8 @@ public export
   shiftCalendarDays' = shiftHebrewDays
 
   dayOfWeekFor = hebrewDayOfWeek
-  next = nextHebrew
-  previous = previousHebrew
+  nextFor = nextHebrew
+  previousFor = previousHebrew
 
 public export
 {numbering : HebrewNumbering} -> HasCalendar (HebrewDate numbering) where
@@ -578,6 +578,12 @@ public export
   calendarValueDay = dayFor {calendar = Hebrew numbering}
   calendarValueDayOfWeek = dayOfWeekFor {calendar = Hebrew numbering}
   calendarValueBetweenWith = betweenWithFor {calendar = Hebrew numbering}
+
+public export
+{numbering : HebrewNumbering} -> KnownHebrewNumbering numbering =>
+  CalendarNavigation (HebrewDayOfWeek numbering) (HebrewDate numbering) where
+  calendarValueNext = nextFor {calendar = Hebrew numbering}
+  calendarValuePrevious = previousFor {calendar = Hebrew numbering}
 
 ||| Construct a statically validated Hebrew date in the selected numbering.
 ||| The month is indexed by the year, making Adar I unavailable in common years.

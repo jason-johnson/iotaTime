@@ -410,8 +410,8 @@ public export
   shiftCalendarDays' = shiftIslamicDays {epoch} {pattern}
 
   dayOfWeekFor = islamicDayOfWeek
-  next = nextIslamic {epoch} {pattern}
-  previous = previousIslamic {epoch} {pattern}
+  nextFor = nextIslamic {epoch} {pattern}
+  previousFor = previousIslamic {epoch} {pattern}
 
 public export
 {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
@@ -448,6 +448,13 @@ public export
     dayOfWeekFor {calendar = IslamicByEpoch epoch pattern}
   calendarValueBetweenWith =
     betweenWithFor {calendar = IslamicByEpoch epoch pattern}
+
+public export
+{epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
+  KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
+  CalendarNavigation IslamicDayOfWeek (IslamicDate epoch pattern) where
+  calendarValueNext = nextFor {calendar = IslamicByEpoch epoch pattern}
+  calendarValuePrevious = previousFor {calendar = IslamicByEpoch epoch pattern}
 
 ||| Construct a statically validated Islamic date for the selected leap pattern.
 public export

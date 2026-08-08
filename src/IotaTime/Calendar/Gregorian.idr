@@ -275,8 +275,8 @@ Calendar Gregorian where
   shiftCalendarDays' = shiftGregorianDays
 
   dayOfWeekFor = gregorianDayOfWeek
-  next = nextGregorian
-  previous = previousGregorian
+  nextFor = nextGregorian
+  previousFor = previousGregorian
 
 public export
 CalendarValue GregorianDate where
@@ -288,6 +288,11 @@ CalendarValue GregorianDate where
   calendarValueDay = dayFor {calendar = Gregorian}
   calendarValueDayOfWeek = dayOfWeekFor {calendar = Gregorian}
   calendarValueBetweenWith = betweenWithFor {calendar = Gregorian}
+
+public export
+CalendarNavigation DayOfWeek GregorianDate where
+  calendarValueNext = nextFor {calendar = Gregorian}
+  calendarValuePrevious = previousFor {calendar = Gregorian}
 
 public export
 Show GregorianDate where

@@ -229,8 +229,8 @@ Calendar Julian where
   shiftCalendarDays' = shiftJulianDays
 
   dayOfWeekFor = julianDayOfWeek
-  next = nextJulian
-  previous = previousJulian
+  nextFor = nextJulian
+  previousFor = previousJulian
 
 public export
 Show JulianDate where
@@ -257,6 +257,11 @@ CalendarValue JulianDate where
   calendarValueDay = dayFor {calendar = Julian}
   calendarValueDayOfWeek = dayOfWeekFor {calendar = Julian}
   calendarValueBetweenWith = betweenWithFor {calendar = Julian}
+
+public export
+CalendarNavigation JulianDayOfWeek JulianDate where
+  calendarValueNext = nextFor {calendar = Julian}
+  calendarValuePrevious = previousFor {calendar = Julian}
 
 ||| Construct a statically validated Julian date.
 public export

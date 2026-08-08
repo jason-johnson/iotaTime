@@ -60,6 +60,10 @@ The same rule applies to date observers: concrete values use `toDays`, `year`,
 `month`, `day`, `dayOfWeek`, and `yearMonthDay` directly. Abstract calendar code
 uses their `...For {calendar}` variants.
 
+Weekday navigation keeps its existing argument order while also inferring the
+calendar: use `next count weekday date` and `previous count weekday date`.
+Abstract calendar code uses `nextFor {calendar}` and `previousFor {calendar}`.
+
 This period contains one month and 30 days. A direct two-month application
 would produce 31 March, which passes the endpoint.
 

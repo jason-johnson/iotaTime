@@ -247,8 +247,8 @@ Calendar Coptic where
   shiftCalendarDays' = shiftCopticDays
 
   dayOfWeekFor = copticDayOfWeek
-  next = nextCoptic
-  previous = previousCoptic
+  nextFor = nextCoptic
+  previousFor = previousCoptic
 
 public export
 Show CopticDate where
@@ -275,6 +275,11 @@ CalendarValue CopticDate where
   calendarValueDay = dayFor {calendar = Coptic}
   calendarValueDayOfWeek = dayOfWeekFor {calendar = Coptic}
   calendarValueBetweenWith = betweenWithFor {calendar = Coptic}
+
+public export
+CalendarNavigation CopticDayOfWeek CopticDate where
+  calendarValueNext = nextFor {calendar = Coptic}
+  calendarValuePrevious = previousFor {calendar = Coptic}
 
 ||| Construct a statically validated Coptic date.
 public export

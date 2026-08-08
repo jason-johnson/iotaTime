@@ -82,11 +82,18 @@ calendarYear : {calendar : Type} -> {auto patterned : CalendarPattern calendar} 
                CalendarDate calendar -> Integer
 calendarYear date = yearValue (year {calendar} date)
 
+calendarMonthIndex : {calendar : Type} ->
+                     {auto patterned : CalendarPattern calendar} ->
+                     CalendarDate calendar ->
+                     Fin (patternMonthCount {calendar} @{patterned})
+calendarMonthIndex {calendar} @{patterned} =
+  patternMonthIndex {calendar} @{patterned}
+
 calendarMonth : {calendar : Type} ->
                 {auto patterned : CalendarPattern calendar} ->
                 CalendarDate calendar -> Integer
-calendarMonth {calendar} @{patterned} =
-  patternMonthNumber {calendar} @{patterned}
+calendarMonth {calendar} @{patterned} date =
+  cast (finToNat (calendarMonthIndex {calendar} @{patterned} date)) + 1
 
 calendarDay : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
               CalendarDate calendar -> Integer
@@ -105,10 +112,10 @@ gregorianWeekdays =
 abbreviate : String -> String
 abbreviate = substr 0 3
 
-indexedNames : Integer -> List String -> List (String, Integer)
+indexedNames : Integer -> Vect size String -> List (String, Integer)
 indexedNames _ [] = []
-indexedNames index (name :: names) =
-  (name, index) :: indexedNames (index + 1) names
+indexedNames value (name :: names) =
+  (name, value) :: indexedNames (value + 1) names
 
 nameAt : Integer -> List String -> String
 nameAt _ [] = ""
@@ -118,12 +125,13 @@ nameAt index (name :: names) = if index <= 1
 
 calendarMonthNamePattern : {calendar : Type} ->
   {auto patterned : CalendarPattern calendar} ->
-  List String -> Pattern DateFields (CalendarDate calendar)
+  Vect (patternMonthCount {calendar} @{patterned}) String ->
+  Pattern DateFields (CalendarDate calendar)
 calendarMonthNamePattern {calendar} @{patterned} names = MkPattern
   initialDateFields
   finishDate
   (namedUpdatePart (indexedNames 1 names) setMonthField)
-  (\date => nameAt (calendarMonth {calendar} @{patterned} date) names)
+  (\date => index (calendarMonthIndex {calendar} @{patterned} date) names)
 
 weekdayNames : List String
 weekdayNames =
@@ -194,7 +202,7 @@ pmonthNum : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
     Nat -> Pattern DateFields (CalendarDate calendar)
 pmonthNum {calendar} @{patterned} width =
   dateField (calendarMonth {calendar} @{patterned}) setMonthField
-    width 2 1 (patternMonthLimit {calendar} @{patterned})
+    width 2 1 (cast (patternMonthCount {calendar} @{patterned}))
 
 ||| A two-digit numeric month field.
 public export
@@ -209,9 +217,9 @@ pMonthName : {default Gregorian calendar : Type} ->
              {size : Nat} ->
              (names : Vect size String) ->
              {auto 0 complete : size =
-               cast (patternMonthLimit {calendar} @{patterned})} ->
+               patternMonthCount {calendar} @{patterned}} ->
              Pattern DateFields (CalendarDate calendar)
-pMonthName names = calendarMonthNamePattern (toList names)
+pMonthName {complete = Refl} names = calendarMonthNamePattern names
 
 ||| A calendar-specific full month-name field.
 public export
@@ -274,18 +282,22 @@ pddd = calendarDayNamePattern weekdayAbbreviations
 
 localeMonthNames : {calendar : Type} ->
   {auto patterned : CalendarPattern calendar} ->
-  Locale -> List String
+  Locale -> Vect (patternMonthCount {calendar} @{patterned}) String
 localeMonthNames {calendar} @{patterned} locale =
   case patternMonthNameSource {calendar} @{patterned} of
-    GregorianLocaleMonthNames => toList (monthNames locale)
+    GregorianLocaleMonthNames countIsTwelve =>
+      replace {p = \monthCount => Vect monthCount String}
+        (sym countIsTwelve) (monthNames locale)
     CanonicalCalendarMonthNames => patternMonthNames {calendar} @{patterned}
 
 localeMonthAbbreviations : {calendar : Type} ->
   {auto patterned : CalendarPattern calendar} ->
-  Locale -> List String
+  Locale -> Vect (patternMonthCount {calendar} @{patterned}) String
 localeMonthAbbreviations {calendar} @{patterned} locale =
   case patternMonthNameSource {calendar} @{patterned} of
-    GregorianLocaleMonthNames => toList (monthNamesShort locale)
+    GregorianLocaleMonthNames countIsTwelve =>
+      replace {p = \monthCount => Vect monthCount String}
+        (sym countIsTwelve) (monthNamesShort locale)
     CanonicalCalendarMonthNames =>
       patternMonthAbbreviations {calendar} @{patterned}
 

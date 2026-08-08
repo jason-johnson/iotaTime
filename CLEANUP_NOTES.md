@@ -38,7 +38,7 @@ Julian opt into operating-system locale month tables; all other calendars use
 their canonical full and abbreviated names. Tests cover Coptic, Persian,
 Islamic, and Hebrew behavior.
 
-### 3. Under-constrained `CalendarPattern` instances
+### 3. Under-constrained `CalendarPattern` instances - completed
 
 `patternMonthLimit`, month-name lists, abbreviations, and numeric projections
 are independent values. External instances can provide mismatched lengths or
@@ -54,6 +54,12 @@ patternMonthIndex : CalendarDate calendar -> Fin patternMonthCount
 ```
 
 This is an API-breaking change and should be evaluated deliberately.
+
+Implemented with a `Nat` month count, count-indexed `Vect` name tables, and a
+`Fin` month projection. Gregorian locale-name selection carries erased evidence
+that the selected calendar has twelve month-name slots. Custom `pMonthName`
+tables retain an erased size equality for call-site inference while formatting
+now indexes month vectors directly with `Fin`.
 
 ### 4. Invalid month normalization in `refinePatternDate`
 

@@ -1,5 +1,7 @@
 module IotaTime.Pattern.Calendar
 
+import Data.Fin
+import Data.Vect
 import IotaTime.Calendar
 import IotaTime.Calendar.Coptic
 import IotaTime.Calendar.Gregorian
@@ -11,22 +13,25 @@ import IotaTime.Pattern
 
 %default total
 
-||| Selects whether locale-backed patterns use the locale's Gregorian month
-||| table or the calendar's canonical month names.
+||| Selects whether locale-backed patterns use the locale's twelve Gregorian
+||| month names or the selected calendar's canonical names.
 public export
-data PatternMonthNameSource
-  = GregorianLocaleMonthNames
-  | CanonicalCalendarMonthNames
+data PatternMonthNameSource : Nat -> Type where
+  GregorianLocaleMonthNames : {monthCount : Nat} ->
+    (0 countIsTwelve : monthCount = 12) ->
+    PatternMonthNameSource monthCount
+  CanonicalCalendarMonthNames : {monthCount : Nat} ->
+    PatternMonthNameSource monthCount
 
 ||| Calendar-specific projection and runtime refinement used by date patterns.
 public export
 interface Calendar calendar => CalendarPattern calendar where
-  patternMonthLimit : Integer
-  patternMonthNames : List String
-  patternMonthAbbreviations : List String
-  patternMonthNameSource : PatternMonthNameSource
+  patternMonthCount : Nat
+  patternMonthNames : Vect patternMonthCount String
+  patternMonthAbbreviations : Vect patternMonthCount String
+  patternMonthNameSource : PatternMonthNameSource patternMonthCount
   patternMonthNameSource = CanonicalCalendarMonthNames
-  patternMonthNumber : CalendarDate calendar -> Integer
+  patternMonthIndex : CalendarDate calendar -> Fin patternMonthCount
   patternWeekdayNumber : CalendarDate calendar -> Integer
   refinePatternDate : Integer -> Integer -> Integer ->
     Either PatternError (CalendarDate calendar)
@@ -42,14 +47,44 @@ invalidDate name = Left (InvalidValue ("invalid " ++ name ++ " date"))
 abbreviate : String -> String
 abbreviate name = substr 0 3 name
 
-abbreviateAll : List String -> List String
+abbreviateAll : {monthCount : Nat} ->
+                Vect monthCount String -> Vect monthCount String
 abbreviateAll = map abbreviate
 
-gregorianMonthNames : List String
+gregorianMonthNames : Vect 12 String
 gregorianMonthNames =
   [ "January", "February", "March", "April", "May", "June"
   , "July", "August", "September", "October", "November", "December"
   ]
+
+monthIndex12 : Integer -> Fin 12
+monthIndex12 1 = 0
+monthIndex12 2 = 1
+monthIndex12 3 = 2
+monthIndex12 4 = 3
+monthIndex12 5 = 4
+monthIndex12 6 = 5
+monthIndex12 7 = 6
+monthIndex12 8 = 7
+monthIndex12 9 = 8
+monthIndex12 10 = 9
+monthIndex12 11 = 10
+monthIndex12 _ = 11
+
+monthIndex13 : Integer -> Fin 13
+monthIndex13 1 = 0
+monthIndex13 2 = 1
+monthIndex13 3 = 2
+monthIndex13 4 = 3
+monthIndex13 5 = 4
+monthIndex13 6 = 5
+monthIndex13 7 = 6
+monthIndex13 8 = 7
+monthIndex13 9 = 8
+monthIndex13 10 = 9
+monthIndex13 11 = 10
+monthIndex13 12 = 11
+monthIndex13 _ = 12
 
 gregorianMonth : Integer -> Month
 gregorianMonth 1 = January
@@ -67,12 +102,13 @@ gregorianMonth _ = December
 
 public export
 CalendarPattern Gregorian where
-  patternMonthLimit = 12
+  patternMonthCount = 12
   patternMonthNames = gregorianMonthNames
   patternMonthAbbreviations = abbreviateAll gregorianMonthNames
-  patternMonthNameSource = GregorianLocaleMonthNames
-  patternMonthNumber date = IotaTime.Calendar.Gregorian.monthNumber
-    (month {calendar = Gregorian} date)
+  patternMonthNameSource = GregorianLocaleMonthNames Refl
+  patternMonthIndex date = monthIndex12
+    (IotaTime.Calendar.Gregorian.monthNumber
+      (month {calendar = Gregorian} date))
   patternWeekdayNumber date = weekdayNumber (dayOfWeek {calendar = Gregorian} date)
   refinePatternDate year month day = do
     valueDay <- refineDay day
@@ -96,11 +132,12 @@ julianMonth _ = JulianMonths.December
 
 public export
 CalendarPattern Julian where
-  patternMonthLimit = 12
+  patternMonthCount = 12
   patternMonthNames = gregorianMonthNames
   patternMonthAbbreviations = abbreviateAll gregorianMonthNames
-  patternMonthNameSource = GregorianLocaleMonthNames
-  patternMonthNumber date = JulianMonths.monthNumber (month {calendar = Julian} date)
+  patternMonthNameSource = GregorianLocaleMonthNames Refl
+  patternMonthIndex date = monthIndex12
+    (JulianMonths.monthNumber (month {calendar = Julian} date))
   patternWeekdayNumber date = JulianWeekdays.weekdayNumber (dayOfWeek {calendar = Julian} date)
   refinePatternDate year month day = do
     valueDay <- refineDay day
@@ -125,7 +162,7 @@ copticMonth _ = CopticMonths.PiKogiEnavot
 
 public export
 CalendarPattern Coptic where
-  patternMonthLimit = 13
+  patternMonthCount = 13
   patternMonthNames =
     [ "Thout", "Paopi", "Hathor", "Koiak", "Tobi", "Meshir"
     , "Paremhat", "Paremoude", "Pashons", "Paoni", "Epip", "Mesori"
@@ -135,7 +172,8 @@ CalendarPattern Coptic where
     [ "Tho", "Pao", "Hat", "Koi", "Tob", "Mes", "Par", "Pmd"
     , "Pas", "Pni", "Epi", "Mso", "PKN"
     ]
-  patternMonthNumber date = CopticMonths.monthNumber (month {calendar = Coptic} date)
+  patternMonthIndex date = monthIndex13
+    (CopticMonths.monthNumber (month {calendar = Coptic} date))
   patternWeekdayNumber date = CopticWeekdays.weekdayNumber (dayOfWeek {calendar = Coptic} date)
   refinePatternDate year month day = do
     valueDay <- refineDay day
@@ -160,7 +198,7 @@ islamicMonth _ = IslamicMonths.DhulHijjah
 public export
 {pattern : IslamicLeapPattern} -> KnownIslamicLeapPattern pattern =>
   CalendarPattern (Islamic pattern) where
-  patternMonthLimit = 12
+  patternMonthCount = 12
   patternMonthNames =
     [ "Muharram", "Safar", "RabiAlAwwal", "RabiAlThani"
     , "JumadaAlAwwal", "JumadaAlThani", "Rajab", "Shaban"
@@ -170,8 +208,8 @@ public export
     [ "Muh", "Saf", "RaA", "RaT", "JuA", "JuT"
     , "Raj", "Sha", "Ram", "Shw", "DhQ", "DhH"
     ]
-  patternMonthNumber date = IslamicMonths.monthNumber
-    (month {calendar = Islamic pattern} date)
+  patternMonthIndex date = monthIndex12 (IslamicMonths.monthNumber
+    (month {calendar = Islamic pattern} date))
   patternWeekdayNumber date = IslamicWeekdays.weekdayNumber
     (dayOfWeek {calendar = Islamic pattern} date)
   refinePatternDate year month day = do
@@ -184,7 +222,7 @@ public export
 public export
 {pattern : IslamicLeapPattern} -> KnownIslamicLeapPattern pattern =>
   CalendarPattern (CivilIslamic pattern) where
-  patternMonthLimit = 12
+  patternMonthCount = 12
   patternMonthNames =
     [ "Muharram", "Safar", "RabiAlAwwal", "RabiAlThani"
     , "JumadaAlAwwal", "JumadaAlThani", "Rajab", "Shaban"
@@ -194,8 +232,8 @@ public export
     [ "Muh", "Saf", "RaA", "RaT", "JuA", "JuT"
     , "Raj", "Sha", "Ram", "Shw", "DhQ", "DhH"
     ]
-  patternMonthNumber date = IslamicMonths.monthNumber
-    (month {calendar = CivilIslamic pattern} date)
+  patternMonthIndex date = monthIndex12 (IslamicMonths.monthNumber
+    (month {calendar = CivilIslamic pattern} date))
   patternWeekdayNumber date = IslamicWeekdays.weekdayNumber
     (dayOfWeek {calendar = CivilIslamic pattern} date)
   refinePatternDate year month day = do
@@ -221,7 +259,7 @@ persianMonth _ = PersianMonths.Esfand
 
 public export
 CalendarPattern Persian where
-  patternMonthLimit = 12
+  patternMonthCount = 12
   patternMonthNames =
     [ "Farvardin", "Ordibehesht", "Khordad", "Tir", "Mordad", "Shahrivar"
     , "Mehr", "Aban", "Azar", "Dey", "Bahman", "Esfand"
@@ -230,7 +268,8 @@ CalendarPattern Persian where
     [ "Far", "Ord", "Kho", "Tir", "Mor", "Sha"
     , "Meh", "Aba", "Aza", "Dey", "Bah", "Esf"
     ]
-  patternMonthNumber date = PersianMonths.monthNumber (month {calendar = Persian} date)
+  patternMonthIndex date = monthIndex12
+    (PersianMonths.monthNumber (month {calendar = Persian} date))
   patternWeekdayNumber date = PersianWeekdays.weekdayNumber (dayOfWeek {calendar = Persian} date)
   refinePatternDate year month day = do
     valueDay <- refineDay day
@@ -241,7 +280,7 @@ CalendarPattern Persian where
 public export
 {rule : PersianArithmeticRule} -> KnownPersianArithmeticRule rule =>
   CalendarPattern (ArithmeticPersian rule) where
-  patternMonthLimit = 12
+  patternMonthCount = 12
   patternMonthNames =
     [ "Farvardin", "Ordibehesht", "Khordad", "Tir", "Mordad", "Shahrivar"
     , "Mehr", "Aban", "Azar", "Dey", "Bahman", "Esfand"
@@ -250,8 +289,8 @@ public export
     [ "Far", "Ord", "Kho", "Tir", "Mor", "Sha"
     , "Meh", "Aba", "Aza", "Dey", "Bah", "Esf"
     ]
-  patternMonthNumber date = PersianMonths.monthNumber
-    (month {calendar = ArithmeticPersian rule} date)
+  patternMonthIndex date = monthIndex12 (PersianMonths.monthNumber
+    (month {calendar = ArithmeticPersian rule} date))
   patternWeekdayNumber date = PersianWeekdays.weekdayNumber
     (dayOfWeek {calendar = ArithmeticPersian rule} date)
   refinePatternDate year month day = do
@@ -295,7 +334,7 @@ hebrewMonthLabel AvName = "Av"
 hebrewMonthLabel ElulName = "Elul"
 
 hebrewNames : {numbering : HebrewNumbering} ->
-              KnownHebrewNumbering numbering => List String
+              KnownHebrewNumbering numbering => Vect 13 String
 hebrewNames {numbering} =
   [ hebrewMonthLabel (hebrewMonthName {numbering} 1)
   , hebrewMonthLabel (hebrewMonthName {numbering} 2)
@@ -315,15 +354,15 @@ hebrewNames {numbering} =
 public export
 {numbering : HebrewNumbering} -> KnownHebrewNumbering numbering =>
   CalendarPattern (Hebrew numbering) where
-  patternMonthLimit = 13
+  patternMonthCount = 13
   patternMonthNames = hebrewNames {numbering}
   patternMonthAbbreviations = case numberingStart {numbering} of
     0 => [ "Tis", "Che", "Kis", "Tev", "She", "AdI", "Ada"
       , "Nis", "Iya", "Siv", "Tam", "Av", "Elu" ]
     _ => [ "Nis", "Iya", "Siv", "Tam", "Av", "Elu", "Tis"
       , "Che", "Kis", "Tev", "She", "AdI", "Ada" ]
-  patternMonthNumber date = case yearMonthDay {calendar = Hebrew numbering} date of
-    (_ ** (valueMonth, _)) => hebrewMonthNumber valueMonth
+  patternMonthIndex date = case yearMonthDay {calendar = Hebrew numbering} date of
+    (_ ** (valueMonth, _)) => monthIndex13 (hebrewMonthNumber valueMonth)
   patternWeekdayNumber date = HebrewWeekdays.weekdayNumber
     (dayOfWeek {calendar = Hebrew numbering} date)
   refinePatternDate year month day = do

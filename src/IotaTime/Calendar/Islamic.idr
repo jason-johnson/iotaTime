@@ -442,8 +442,7 @@ public export
   CalendarWeekday = IslamicDayOfWeek
   calendarValueToDays = toDaysFor {calendar = IslamicByEpoch epoch pattern}
   calendarValueYear = yearFor {calendar = IslamicByEpoch epoch pattern}
-  calendarValueMonth = monthFor {calendar = IslamicByEpoch epoch pattern}
-  calendarValueDay = dayFor {calendar = IslamicByEpoch epoch pattern}
+  calendarValueMonthDay = toYmd {calendar = IslamicByEpoch epoch pattern}
   calendarValueDayOfWeek =
     dayOfWeekFor {calendar = IslamicByEpoch epoch pattern}
   calendarValueBetweenWith =

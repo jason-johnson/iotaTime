@@ -271,8 +271,7 @@ CalendarValue CopticDate where
   CalendarWeekday = CopticDayOfWeek
   calendarValueToDays = toDaysFor {calendar = Coptic}
   calendarValueYear = yearFor {calendar = Coptic}
-  calendarValueMonth = monthFor {calendar = Coptic}
-  calendarValueDay = dayFor {calendar = Coptic}
+  calendarValueMonthDay = toYmd {calendar = Coptic}
   calendarValueDayOfWeek = dayOfWeekFor {calendar = Coptic}
   calendarValueBetweenWith = betweenWithFor {calendar = Coptic}
 

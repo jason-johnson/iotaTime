@@ -284,8 +284,7 @@ CalendarValue GregorianDate where
   CalendarWeekday = DayOfWeek
   calendarValueToDays = toDaysFor {calendar = Gregorian}
   calendarValueYear = yearFor {calendar = Gregorian}
-  calendarValueMonth = monthFor {calendar = Gregorian}
-  calendarValueDay = dayFor {calendar = Gregorian}
+  calendarValueMonthDay = toYmd {calendar = Gregorian}
   calendarValueDayOfWeek = dayOfWeekFor {calendar = Gregorian}
   calendarValueBetweenWith = betweenWithFor {calendar = Gregorian}
 

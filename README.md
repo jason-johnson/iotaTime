@@ -379,6 +379,15 @@ dictionary can use the explicit `toDaysFor`, `yearFor`, `monthFor`, `dayFor`,
 `dayOfWeekFor`, `nextFor`, `previousFor`, and `yearMonthDayFor` variants with
 `{calendar}`.
 
+Custom concrete date representations implement `HasCalendarDate` before
+`CalendarValue`. A `CalendarValue` instance supplies one year and one
+year-indexed `(month, day)` decomposition, so the individual accessors cannot
+disagree. `calendarComponentsCoherent` exposes this relationship as an equality
+proof. Calendar-relative `toDays` remains distinct from the absolute
+`HasCalendarDate.calendarDays` conversion used by `withCalendar`.
+`CalendarNavigation` additionally requires the date representation to implement
+`CalendarValue`.
+
 ### Date components
 
 `Year`, `DayOfMonth`, and `WeekNumber` are opaque domain types rather than aliases for `Integer`:

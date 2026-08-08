@@ -122,14 +122,13 @@ interface HasCalendarDate date where
 ||| This lets value-oriented APIs infer the calendar from their first date
 ||| argument instead of requiring a repeated `{calendar = ...}` annotation.
 public export
-interface CalendarValue date where
+interface HasCalendarDate date => CalendarValue date where
   CalendarMonth : Year -> Type
   CalendarWeekday : Type
   calendarValueToDays : date -> Integer
   calendarValueYear : date -> Year
-  calendarValueMonth : (value : date) ->
-                       CalendarMonth (calendarValueYear value)
-  calendarValueDay : date -> DayOfMonth
+  calendarValueMonthDay : (value : date) ->
+    (CalendarMonth (calendarValueYear value), DayOfMonth)
   calendarValueDayOfWeek : date -> CalendarWeekday
   calendarValueBetweenWith :
     DateDifferencePolicy -> date -> date -> Period date
@@ -138,7 +137,7 @@ interface CalendarValue date where
 ||| Both ordinary arguments are available before Idris resolves this interface,
 ||| so callers do not need to select the calendar explicitly.
 public export
-interface CalendarNavigation weekday date where
+interface CalendarValue date => CalendarNavigation weekday date where
   calendarValueNext : Integer -> weekday -> date -> date
   calendarValuePrevious : Integer -> weekday -> date -> date
 
@@ -301,8 +300,7 @@ yearMonthDay : (value : date) -> {auto rep : CalendarValue date} ->
                (valueYear : Year **
                  (CalendarMonth @{rep} valueYear, DayOfMonth))
 yearMonthDay value @{rep} =
-  (calendarValueYear @{rep} value **
-    (calendarValueMonth @{rep} value, calendarValueDay @{rep} value))
+  (calendarValueYear @{rep} value ** calendarValueMonthDay @{rep} value)
 
 ||| Return the calendar-relative day count for a concrete date value.
 public export
@@ -317,13 +315,23 @@ year value @{rep} = calendarValueYear @{rep} value
 ||| Extract the year-indexed calendar month from a concrete date value.
 public export
 month : (value : date) -> {auto rep : CalendarValue date} ->
-        CalendarMonth @{rep} (calendarValueYear @{rep} value)
-month value @{rep} = calendarValueMonth @{rep} value
+  CalendarMonth @{rep} (year value @{rep})
+month value @{rep} = fst (calendarValueMonthDay @{rep} value)
 
 ||| Extract the day of month from a concrete date value.
 public export
 day : (value : date) -> {auto rep : CalendarValue date} -> DayOfMonth
-day value @{rep} = calendarValueDay @{rep} value
+day value @{rep} = snd (calendarValueMonthDay @{rep} value)
+
+||| Combined and projected civil-date observations are definitionally coherent.
+public export
+calendarComponentsCoherent :
+  (value : date) -> {auto rep : CalendarValue date} ->
+  yearMonthDay value @{rep} =
+    (year value @{rep} ** (month value @{rep}, day value @{rep}))
+calendarComponentsCoherent value @{rep} with
+  (calendarValueMonthDay @{rep} value)
+  _ | (_, _) = Refl
 
 ||| Extract the calendar-specific weekday from a concrete date value.
 public export

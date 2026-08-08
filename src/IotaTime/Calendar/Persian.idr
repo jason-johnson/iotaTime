@@ -332,8 +332,7 @@ CalendarValue PersianDate where
   CalendarWeekday = PersianDayOfWeek
   calendarValueToDays = toDaysFor {calendar = Persian}
   calendarValueYear = yearFor {calendar = Persian}
-  calendarValueMonth = monthFor {calendar = Persian}
-  calendarValueDay = dayFor {calendar = Persian}
+  calendarValueMonthDay = toYmd {calendar = Persian}
   calendarValueDayOfWeek = dayOfWeekFor {calendar = Persian}
   calendarValueBetweenWith = betweenWithFor {calendar = Persian}
 
@@ -763,8 +762,7 @@ public export
   CalendarWeekday = PersianDayOfWeek
   calendarValueToDays = toDaysFor {calendar = ArithmeticPersian rule}
   calendarValueYear = yearFor {calendar = ArithmeticPersian rule}
-  calendarValueMonth = monthFor {calendar = ArithmeticPersian rule}
-  calendarValueDay = dayFor {calendar = ArithmeticPersian rule}
+  calendarValueMonthDay = toYmd {calendar = ArithmeticPersian rule}
   calendarValueDayOfWeek = dayOfWeekFor {calendar = ArithmeticPersian rule}
   calendarValueBetweenWith =
     betweenWithFor {calendar = ArithmeticPersian rule}

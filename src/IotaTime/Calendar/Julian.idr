@@ -253,8 +253,7 @@ CalendarValue JulianDate where
   CalendarWeekday = JulianDayOfWeek
   calendarValueToDays = toDaysFor {calendar = Julian}
   calendarValueYear = yearFor {calendar = Julian}
-  calendarValueMonth = monthFor {calendar = Julian}
-  calendarValueDay = dayFor {calendar = Julian}
+  calendarValueMonthDay = toYmd {calendar = Julian}
   calendarValueDayOfWeek = dayOfWeekFor {calendar = Julian}
   calendarValueBetweenWith = betweenWithFor {calendar = Julian}
 

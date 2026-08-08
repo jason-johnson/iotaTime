@@ -574,8 +574,7 @@ public export
   CalendarWeekday = HebrewDayOfWeek numbering
   calendarValueToDays = toDaysFor {calendar = Hebrew numbering}
   calendarValueYear = yearFor {calendar = Hebrew numbering}
-  calendarValueMonth = monthFor {calendar = Hebrew numbering}
-  calendarValueDay = dayFor {calendar = Hebrew numbering}
+  calendarValueMonthDay = toYmd {calendar = Hebrew numbering}
   calendarValueDayOfWeek = dayOfWeekFor {calendar = Hebrew numbering}
   calendarValueBetweenWith = betweenWithFor {calendar = Hebrew numbering}
 

@@ -156,7 +156,7 @@ range checks and date-refinement error mapping use `refineTwelveMonthDate`,
 while each instance still supplies its calendar-specific epoch or arithmetic
 rule through the selected refiner.
 
-### 10. Broad fallback in `dateTimeConversion`
+### 10. Broad fallback in `dateTimeConversion` - completed
 
 `dateTimeConversion` uses `Left _` from `dateConversion` to try a time field.
 This is currently harmless because the only failure is `UnsupportedSpecifier`,
@@ -164,6 +164,11 @@ but it could silently discard future date-specific errors.
 
 Use an explicit `UnsupportedSpecifier` match or make field lookup return
 `Maybe`, constructing the final unsupported-specifier error once.
+
+`dateTimeConversion` now tries the time-field lookup only after an explicit
+`UnsupportedSpecifier`. Any other date-conversion error is returned unchanged,
+so adding a more specific failure to `dateConversion` cannot be silently
+masked by the fallback.
 
 ### 11. Combined test cases
 

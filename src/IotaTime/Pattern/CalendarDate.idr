@@ -45,8 +45,7 @@ finishDate {calendar} @{patterned} fields = do
   case fields.parsedWeekday of
     Nothing => Right date
     Just expected =>
-      if patternWeekdayNumber {calendar} @{patterned} date ==
-        cast (finToNat expected)
+      if patternWeekdayIndex {calendar} @{patterned} date == expected
         then Right date
         else Left (InvalidValue "weekday does not match date")
 
@@ -133,12 +132,6 @@ indexedFinNames [] = []
 indexedFinNames (name :: names) =
   (name, FZ) :: map (map FS) (indexedFinNames names)
 
-nameAt : Integer -> List String -> String
-nameAt _ [] = ""
-nameAt index (name :: names) = if index <= 1
-  then name
-  else nameAt (index - 1) names
-
 calendarMonthNamePattern : {calendar : Type} ->
   {auto patterned : CalendarPattern calendar} ->
   Vect (patternMonthCount {calendar} @{patterned}) String ->
@@ -149,25 +142,24 @@ calendarMonthNamePattern {calendar} @{patterned} names = MkPattern
   (namedUpdatePart (indexedNames 1 names) setMonthField)
   (\date => index (calendarMonthIndex {calendar} @{patterned} date) names)
 
-weekdayNames : List String
+weekdayNames : Vect 7 String
 weekdayNames =
   [ "Sunday", "Monday", "Tuesday", "Wednesday"
   , "Thursday", "Friday", "Saturday"
   ]
 
-weekdayAbbreviations : List String
+weekdayAbbreviations : Vect 7 String
 weekdayAbbreviations =
   [ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" ]
 
 calendarDayNamePattern : {calendar : Type} ->
   {auto patterned : CalendarPattern calendar} ->
-  List String -> Pattern DateFields (CalendarDate calendar)
+  Vect 7 String -> Pattern DateFields (CalendarDate calendar)
 calendarDayNamePattern {calendar} @{patterned} names = MkPattern
   initialDateFields
   finishDate
-  (namedConsumePart names)
-  (\date => nameAt
-    (patternWeekdayNumber {calendar} @{patterned} date + 1) names)
+  (namedConsumePart (toList names))
+  (\date => index (patternWeekdayIndex {calendar} @{patterned} date) names)
 
 verifiedCalendarDayNamePattern : {calendar : Type} ->
   {auto patterned : CalendarPattern calendar} ->
@@ -176,7 +168,7 @@ verifiedCalendarDayNamePattern {calendar} @{patterned} names = MkPattern
   initialDateFields
   finishDate
   (namedUpdatePart (indexedFinNames names) setWeekdayField)
-  (calendarDayNamePattern {calendar} @{patterned} (toList names)).formatPart
+  (calendarDayNamePattern {calendar} @{patterned} names).formatPart
 
 englishMonthNames : Vect 12 String
 englishMonthNames = map show gregorianMonths
@@ -296,7 +288,7 @@ public export
 pDayName : {default Gregorian calendar : Type} ->
            {auto patterned : CalendarPattern calendar} ->
            Vect 7 String -> Pattern DateFields (CalendarDate calendar)
-pDayName names = calendarDayNamePattern (toList names)
+pDayName = calendarDayNamePattern
 
 ||| A calendar weekday field that rejects a parsed name inconsistent with the
 ||| resulting date. Names are supplied in Sunday-first order.

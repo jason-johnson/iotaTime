@@ -109,13 +109,19 @@ three-argument `MkDateFields` calls. `pVerifiedDayName`, `pddddVerified`,
 `pdddVerified`, and their locale-aware variants reject a weekday inconsistent
 with the refined date. Existing `pDayName`, `pdddd`, and `pddd` remain lenient.
 
-### 7. `nameAt` hides invalid indexes
+### 7. `nameAt` hides invalid indexes - completed
 
 `nameAt` returns an empty string for an exhausted table and maps non-positive
 indexes to the first entry. This keeps formatting total while concealing
 malformed `CalendarPattern` instances.
 
 Prefer `Vect` indexed by `Fin` so invalid formatting states are unrepresentable.
+
+Implemented by replacing `patternWeekdayNumber` with
+`patternWeekdayIndex : CalendarDate calendar -> Fin 7`, changing weekday name
+tables to `Vect 7 String`, and formatting through direct vector indexing.
+`nameAt` has been removed, so external `CalendarPattern` instances cannot
+provide an out-of-range weekday projection.
 
 ## Maintainability
 

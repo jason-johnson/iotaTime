@@ -32,7 +32,7 @@ interface Calendar calendar => CalendarPattern calendar where
   patternMonthNameSource : PatternMonthNameSource patternMonthCount
   patternMonthNameSource = CanonicalCalendarMonthNames
   patternMonthIndex : CalendarDate calendar -> Fin patternMonthCount
-  patternWeekdayNumber : CalendarDate calendar -> Integer
+  patternWeekdayIndex : CalendarDate calendar -> Fin 7
   refinePatternDate : Integer -> Integer -> Integer ->
     Either PatternError (CalendarDate calendar)
 
@@ -93,6 +93,15 @@ monthIndex13 11 = 10
 monthIndex13 12 = 11
 monthIndex13 _ = 12
 
+weekdayIndex7 : Integer -> Fin 7
+weekdayIndex7 0 = 0
+weekdayIndex7 1 = 1
+weekdayIndex7 2 = 2
+weekdayIndex7 3 = 3
+weekdayIndex7 4 = 4
+weekdayIndex7 5 = 5
+weekdayIndex7 _ = 6
+
 gregorianMonth : Integer -> Month
 gregorianMonth 1 = January
 gregorianMonth 2 = February
@@ -116,7 +125,8 @@ CalendarPattern Gregorian where
   patternMonthIndex date = monthIndex12
     (IotaTime.Calendar.Gregorian.monthNumber
       (month {calendar = Gregorian} date))
-  patternWeekdayNumber date = weekdayNumber (dayOfWeek {calendar = Gregorian} date)
+  patternWeekdayIndex date = weekdayIndex7
+    (weekdayNumber (dayOfWeek {calendar = Gregorian} date))
   refinePatternDate year month day = do
     valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
@@ -147,7 +157,8 @@ CalendarPattern Julian where
   patternMonthNameSource = GregorianLocaleMonthNames Refl
   patternMonthIndex date = monthIndex12
     (JulianMonths.monthNumber (month {calendar = Julian} date))
-  patternWeekdayNumber date = JulianWeekdays.weekdayNumber (dayOfWeek {calendar = Julian} date)
+  patternWeekdayIndex date = weekdayIndex7
+    (JulianWeekdays.weekdayNumber (dayOfWeek {calendar = Julian} date))
   refinePatternDate year month day = do
     valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
@@ -185,7 +196,8 @@ CalendarPattern Coptic where
     ]
   patternMonthIndex date = monthIndex13
     (CopticMonths.monthNumber (month {calendar = Coptic} date))
-  patternWeekdayNumber date = CopticWeekdays.weekdayNumber (dayOfWeek {calendar = Coptic} date)
+  patternWeekdayIndex date = weekdayIndex7
+    (CopticWeekdays.weekdayNumber (dayOfWeek {calendar = Coptic} date))
   refinePatternDate year month day = do
     valueMonth <- refineMonth 13 month
     valueDay <- refineDay day
@@ -223,8 +235,8 @@ public export
     ]
   patternMonthIndex date = monthIndex12 (IslamicMonths.monthNumber
     (month {calendar = Islamic pattern} date))
-  patternWeekdayNumber date = IslamicWeekdays.weekdayNumber
-    (dayOfWeek {calendar = Islamic pattern} date)
+  patternWeekdayIndex date = weekdayIndex7 (IslamicWeekdays.weekdayNumber
+    (dayOfWeek {calendar = Islamic pattern} date))
   refinePatternDate year month day = do
     valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
@@ -248,8 +260,8 @@ public export
     ]
   patternMonthIndex date = monthIndex12 (IslamicMonths.monthNumber
     (month {calendar = CivilIslamic pattern} date))
-  patternWeekdayNumber date = IslamicWeekdays.weekdayNumber
-    (dayOfWeek {calendar = CivilIslamic pattern} date)
+  patternWeekdayIndex date = weekdayIndex7 (IslamicWeekdays.weekdayNumber
+    (dayOfWeek {calendar = CivilIslamic pattern} date))
   refinePatternDate year month day = do
     valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
@@ -285,7 +297,8 @@ CalendarPattern Persian where
     ]
   patternMonthIndex date = monthIndex12
     (PersianMonths.monthNumber (month {calendar = Persian} date))
-  patternWeekdayNumber date = PersianWeekdays.weekdayNumber (dayOfWeek {calendar = Persian} date)
+  patternWeekdayIndex date = weekdayIndex7
+    (PersianWeekdays.weekdayNumber (dayOfWeek {calendar = Persian} date))
   refinePatternDate year month day = do
     valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
@@ -308,8 +321,8 @@ public export
     ]
   patternMonthIndex date = monthIndex12 (PersianMonths.monthNumber
     (month {calendar = ArithmeticPersian rule} date))
-  patternWeekdayNumber date = PersianWeekdays.weekdayNumber
-    (dayOfWeek {calendar = ArithmeticPersian rule} date)
+  patternWeekdayIndex date = weekdayIndex7 (PersianWeekdays.weekdayNumber
+    (dayOfWeek {calendar = ArithmeticPersian rule} date))
   refinePatternDate year month day = do
     valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
@@ -381,8 +394,8 @@ public export
       , "Che", "Kis", "Tev", "She", "AdI", "Ada" ]
   patternMonthIndex date = case yearMonthDay {calendar = Hebrew numbering} date of
     (_ ** (valueMonth, _)) => monthIndex13 (hebrewMonthNumber valueMonth)
-  patternWeekdayNumber date = HebrewWeekdays.weekdayNumber
-    (dayOfWeek {calendar = Hebrew numbering} date)
+  patternWeekdayIndex date = weekdayIndex7 (HebrewWeekdays.weekdayNumber
+    (dayOfWeek {calendar = Hebrew numbering} date))
   refinePatternDate year month day = do
     valueMonth <- refineMonth 13 month
     valueDay <- refineDay day

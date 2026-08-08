@@ -69,7 +69,7 @@ zoneInfoRoot = do
     Nothing => "/usr/share/zoneinfo")
 
 pathComponents : List Char -> List (List Char)
-pathComponents source = go [] source
+pathComponents = go []
   where
     go : List Char -> List Char -> List (List Char)
     go current [] = [reverse current]

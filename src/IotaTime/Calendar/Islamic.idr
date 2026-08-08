@@ -7,6 +7,8 @@ import Derive.Prelude
 
 %language ElabReflection
 
+%hide Language.Reflection.Types.ParamTypeInfo.pattern
+
 %default total
 
 ||| The supported tabular Islamic 30-year leap-cycle assignments.
@@ -62,12 +64,12 @@ data IslamicByEpoch : IslamicEpoch -> IslamicLeapPattern -> Type where
 ||| The astronomical-epoch calendar retained by the original iotaTime API.
 public export
 Islamic : IslamicLeapPattern -> Type
-Islamic pattern = IslamicByEpoch Astronomical pattern
+Islamic = IslamicByEpoch Astronomical
 
 ||| A civil-epoch tabular Islamic calendar.
 public export
 CivilIslamic : IslamicLeapPattern -> Type
-CivilIslamic pattern = IslamicByEpoch Civil pattern
+CivilIslamic = IslamicByEpoch Civil
 
 public export
 IslamicBase15 : Type
@@ -298,7 +300,7 @@ public export
 makeIslamicDate : {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
                   KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
                   Integer -> IslamicDate epoch pattern
-makeIslamicDate days = MkIslamicDate days
+makeIslamicDate = MkIslamicDate
 
 clampToIslamic : {epoch : IslamicEpoch} -> KnownIslamicEpoch epoch =>
                  Integer -> Integer

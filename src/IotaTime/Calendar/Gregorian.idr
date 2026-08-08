@@ -7,6 +7,8 @@ import Derive.Prelude
 
 %language ElabReflection
 
+%default total
+
 ||| The Gregorian calendar, supported from October 15, 1582 onward.
 public export
 data Gregorian = GregorianCalendar

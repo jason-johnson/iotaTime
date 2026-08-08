@@ -63,7 +63,7 @@ refineTwelveMonthDate calendarName toMonth refineDate year month day = do
     Right date => Right date
 
 abbreviate : String -> String
-abbreviate name = substr 0 3 name
+abbreviate = substr 0 3
 
 abbreviateAll : {monthCount : Nat} ->
                 Vect monthCount String -> Vect monthCount String

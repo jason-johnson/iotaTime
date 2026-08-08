@@ -6,6 +6,8 @@ import Derive.Prelude
 
 %language ElabReflection
 
+%default total
+
 ||| Selects an occurrence of a weekday within a month.
 public export
 data DayNth

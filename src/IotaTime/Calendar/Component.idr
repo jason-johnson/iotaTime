@@ -2,6 +2,8 @@ module IotaTime.Calendar.Component
 
 import public Data.So
 
+%default total
+
 ||| A calendar year with an unbounded signed integer value.
 export
 record Year where

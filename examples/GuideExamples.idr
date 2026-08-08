@@ -110,11 +110,11 @@ systemZurich = timeZone "Europe/Zurich"
 
 resolveEndOfMonth : TimeZone -> Either ZonedDateTimeError
   (ZonedDateTime Gregorian)
-resolveEndOfMonth zone = fromCalendarDateTimeStrictly endOfMonth zone
+resolveEndOfMonth = fromCalendarDateTimeStrictly endOfMonth
 
 zonedEpoch : TimeZone -> Either CalendarConversionError
   (ZonedDateTime Gregorian)
-zonedEpoch zone = IotaTime.ZonedDateTime.fromInstant start zone
+zonedEpoch = IotaTime.ZonedDateTime.fromInstant start
 
 sameInstantIn : TimeZone -> ZonedDateTime Gregorian ->
   Either CalendarConversionError (ZonedDateTime Gregorian)

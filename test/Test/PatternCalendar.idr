@@ -108,17 +108,20 @@ patternCalendarCases =
       (roundTrips {calendar = HebrewScriptural}
         (hebrewDate' {numbering = Scriptural}
           1 5784 HebrewMonths.AdarI) "5784-12-01")
-  , MkRuntimeCase "canonical month names are calendar-polymorphic"
+  , MkRuntimeCase "Coptic canonical month names round-trip"
       (namedRoundTrips {calendar = Coptic}
         (copticDate 6 CopticMonths.PiKogiEnavot 1731)
-        "1731-PiKogiEnavot-06" &&
-       namedRoundTrips {calendar = IslamicBase15}
+        "1731-PiKogiEnavot-06")
+  , MkRuntimeCase "Islamic canonical month names round-trip"
+      (namedRoundTrips {calendar = IslamicBase15}
         (islamicDate' {pattern = Base15} 1 IslamicMonths.Ramadan 1443)
-        "1443-Ramadan-01" &&
-       namedRoundTrips {calendar = CivilIslamicBase15}
+        "1443-Ramadan-01")
+  , MkRuntimeCase "civil Islamic canonical month names round-trip"
+      (namedRoundTrips {calendar = CivilIslamicBase15}
         (civilIslamicDate' {pattern = Base15}
-          1 IslamicMonths.Ramadan 1443) "1443-Ramadan-01" &&
-       namedRoundTrips {calendar = HebrewCivil}
+          1 IslamicMonths.Ramadan 1443) "1443-Ramadan-01")
+  , MkRuntimeCase "Hebrew canonical month names round-trip"
+      (namedRoundTrips {calendar = HebrewCivil}
         (hebrewDate 1 5784 HebrewMonths.AdarI) "5784-AdarI-01")
   , MkRuntimeCase "custom month names require the calendar's month count"
       (let expected = copticDate 6 CopticMonths.PiKogiEnavot 1731 in
@@ -126,12 +129,13 @@ patternCalendarCases =
         case IotaTime.Pattern.parse customCopticPattern "1731-M13-06" of
           Left _ => False
           Right actual => calendarDays actual == calendarDays expected)
-  , MkRuntimeCase "calendar date-time patterns round-trip non-Gregorian values"
+  , MkRuntimeCase "Julian date-time patterns round-trip"
       (dateTimeRoundTrips {calendar = Julian}
         (on (localTime 23 59 58 0)
           (julianDate 29 JulianMonths.February 1900))
-        "1900-02-29T23:59:58" &&
-       dateTimeRoundTrips {calendar = Coptic}
+        "1900-02-29T23:59:58")
+  , MkRuntimeCase "Coptic date-time patterns round-trip"
+      (dateTimeRoundTrips {calendar = Coptic}
         (on (localTime 1 2 3 0)
           (copticDate 6 CopticMonths.PiKogiEnavot 1731))
         "1731-13-06T01:02:03")
@@ -142,29 +146,42 @@ patternCalendarCases =
             (persianDate 30 PersianMonths.Esfand 1403))
           (IotaTime.Offset.fromMinutes 210))
         "1403-12-30T12:30:00+03:30")
-  , MkRuntimeCase "calendar-specific refinement rejects invalid dates"
-      (rejects {calendar = Julian} "1901-02-29" &&
-       rejects {calendar = Coptic} "1730-13-06" &&
-       rejects {calendar = IslamicBase15} "0016-12-30" &&
-       rejects {calendar = Persian} "1501-01-01" &&
-       rejects {calendar = HebrewCivil} "5786-06-01")
-  , MkRuntimeCase "direct refinement rejects out-of-range months"
+    , MkRuntimeCase "Julian refinement rejects invalid dates"
+      (rejects {calendar = Julian} "1901-02-29")
+    , MkRuntimeCase "Coptic refinement rejects invalid dates"
+      (rejects {calendar = Coptic} "1730-13-06")
+    , MkRuntimeCase "Islamic refinement rejects invalid dates"
+      (rejects {calendar = IslamicBase15} "0016-12-30")
+    , MkRuntimeCase "Persian refinement rejects invalid dates"
+      (rejects {calendar = Persian} "1501-01-01")
+    , MkRuntimeCase "Hebrew refinement rejects invalid dates"
+      (rejects {calendar = HebrewCivil} "5786-06-01")
+    , MkRuntimeCase "Gregorian refinement rejects out-of-range months"
       (rejectsMonthRefinement {calendar = Gregorian} 2000 0 &&
-       rejectsMonthRefinement {calendar = Gregorian} 2000 13 &&
-       rejectsMonthRefinement {calendar = Julian} 1900 0 &&
-       rejectsMonthRefinement {calendar = Julian} 1900 13 &&
-       rejectsMonthRefinement {calendar = Coptic} 1731 0 &&
-       rejectsMonthRefinement {calendar = Coptic} 1731 14 &&
-       rejectsMonthRefinement {calendar = IslamicBase15} 1443 0 &&
-       rejectsMonthRefinement {calendar = IslamicBase15} 1443 13 &&
-       rejectsMonthRefinement {calendar = CivilIslamicBase15} 1443 0 &&
-       rejectsMonthRefinement {calendar = CivilIslamicBase15} 1443 13 &&
-       rejectsMonthRefinement {calendar = Persian} 1400 0 &&
-       rejectsMonthRefinement {calendar = Persian} 1400 13 &&
-       rejectsMonthRefinement {calendar = ArithmeticPersian Simple} 1400 0 &&
-       rejectsMonthRefinement {calendar = ArithmeticPersian Birashk} 1400 13 &&
-       rejectsMonthRefinement {calendar = HebrewCivil} 5784 0 &&
-       rejectsMonthRefinement {calendar = HebrewScriptural} 5784 14)
+       rejectsMonthRefinement {calendar = Gregorian} 2000 13)
+    , MkRuntimeCase "Julian refinement rejects out-of-range months"
+      (rejectsMonthRefinement {calendar = Julian} 1900 0 &&
+       rejectsMonthRefinement {calendar = Julian} 1900 13)
+    , MkRuntimeCase "Coptic refinement rejects out-of-range months"
+      (rejectsMonthRefinement {calendar = Coptic} 1731 0 &&
+       rejectsMonthRefinement {calendar = Coptic} 1731 14)
+    , MkRuntimeCase "Islamic refinement rejects out-of-range months"
+      (rejectsMonthRefinement {calendar = IslamicBase15} 1443 0 &&
+       rejectsMonthRefinement {calendar = IslamicBase15} 1443 13)
+    , MkRuntimeCase "civil Islamic refinement rejects out-of-range months"
+      (rejectsMonthRefinement {calendar = CivilIslamicBase15} 1443 0 &&
+       rejectsMonthRefinement {calendar = CivilIslamicBase15} 1443 13)
+    , MkRuntimeCase "Persian refinement rejects out-of-range months"
+      (rejectsMonthRefinement {calendar = Persian} 1400 0 &&
+       rejectsMonthRefinement {calendar = Persian} 1400 13)
+    , MkRuntimeCase "simple arithmetic Persian refinement rejects month zero"
+      (rejectsMonthRefinement {calendar = ArithmeticPersian Simple} 1400 0)
+    , MkRuntimeCase "Birashk Persian refinement rejects month thirteen"
+      (rejectsMonthRefinement {calendar = ArithmeticPersian Birashk} 1400 13)
+    , MkRuntimeCase "Hebrew civil refinement rejects month zero"
+      (rejectsMonthRefinement {calendar = HebrewCivil} 5784 0)
+    , MkRuntimeCase "Hebrew scriptural refinement rejects month fourteen"
+      (rejectsMonthRefinement {calendar = HebrewScriptural} 5784 14)
   ]
 
 zonedCalendarCases : TimeZone -> IO (List RuntimeCase)

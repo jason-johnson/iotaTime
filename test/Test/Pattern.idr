@@ -22,6 +22,10 @@ isMonthRangeError : Either PatternError value -> Bool
 isMonthRangeError (Left (ValueOutOfRange "13" 1 12 5)) = True
 isMonthRangeError _ = False
 
+isWeekdayMismatch : Either PatternError value -> Bool
+isWeekdayMismatch (Left (InvalidValue "weekday does not match date")) = True
+isWeekdayMismatch _ = False
+
 isTrailingInputAt : Integer -> Either PatternError value -> Bool
 isTrailingInputAt expected (Left (TrailingInput actual _)) = actual == expected
 isTrailingInputAt _ _ = False
@@ -57,6 +61,12 @@ weekdayDate = (((pdddd {calendar = Gregorian} <% string ", ") <+>
     (pMMMM {calendar = Gregorian} <% char ' ')) <+>
     pyyyy {calendar = Gregorian}
 
+verifiedWeekdayDate : Pattern DateFields (CalendarDate Gregorian)
+verifiedWeekdayDate = (((pddddVerified {calendar = Gregorian} <% string ", ") <+>
+    (pdd {calendar = Gregorian} <% char ' ')) <+>
+    (pMMMM {calendar = Gregorian} <% char ' ')) <+>
+    pyyyy {calendar = Gregorian}
+
 spaceDate : Pattern DateFields (CalendarDate Gregorian)
 spaceDate = ((pdaySpace {calendar = Gregorian} <% char '.') <+>
     (pMM {calendar = Gregorian} <% char '.')) <+>
@@ -72,72 +82,110 @@ customWeekdayNames : Vect 7 String
 customWeekdayNames =
     [ "SunX", "MonX", "TueX", "WedX", "ThuX", "FriX", "SatX" ]
 
+repeatedMonthNames : Vect 12 String
+repeatedMonthNames =
+    [ "Odd", "Even", "Odd", "Even", "Odd", "Even"
+    , "Odd", "Even", "Odd", "Even", "Odd", "Even"
+    ]
+
+overlappingMonthNames : Vect 12 String
+overlappingMonthNames =
+    [ "Mar", "March", "M03", "M04", "M05", "M06"
+    , "M07", "M08", "M09", "M10", "M11", "M12"
+    ]
+
+emptyMonthNames : Vect 12 String
+emptyMonthNames =
+    [ "", "Named", "M03", "M04", "M05", "M06"
+    , "M07", "M08", "M09", "M10", "M11", "M12"
+    ]
+
 patternCases : List RuntimeCase
 patternCases =
   [ MkRuntimeCase "pR formats an ISO Gregorian date"
             (IotaTime.Pattern.format (pR {calendar = Gregorian})
-                (calendarDate 3 March 2020) == "2020-03-03")
+                (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) == "2020-03-03")
   , MkRuntimeCase "pR parses an ISO Gregorian date"
             (parsesAs (pR {calendar = Gregorian}) "2020-03-03"
-                (calendarDate 3 March 2020))
+                (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020))
   , MkRuntimeCase "custom numeric fields omit padding at width one"
-      (IotaTime.Pattern.format unpadded (calendarDate 3 March 2020) == "2020-3-3" &&
-       parsesAs unpadded "2020-3-3" (calendarDate 3 March 2020))
+      (IotaTime.Pattern.format unpadded (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) == "2020-3-3" &&
+       parsesAs unpadded "2020-3-3" (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020))
   , MkRuntimeCase "width-one fields accept padded input"
-      (parsesAs unpadded "2020-03-03" (calendarDate 3 March 2020))
+      (parsesAs unpadded "2020-03-03" (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020))
   , MkRuntimeCase "pyy formats and infers the nearest century"
     (IotaTime.Pattern.format (pyy {calendar = Gregorian})
-      (calendarDate 3 March 2020) == "20" &&
-       parsesAs twoDigitYear "20-03-03" (calendarDate 3 March 2020) &&
-       parsesAs twoDigitYear "99-03-03" (calendarDate 3 March 1999))
+      (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) == "20" &&
+       parsesAs twoDigitYear "20-03-03" (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) &&
+       parsesAs twoDigitYear "99-03-03" (IotaTime.Calendar.Gregorian.calendarDate 3 March 1999))
   , MkRuntimeCase "field order is independent of date validation"
-      (parsesAs reordered "3/3/2020" (calendarDate 3 March 2020))
+      (parsesAs reordered "3/3/2020" (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020))
     , MkRuntimeCase "English month names parse case-insensitively"
             (IotaTime.Pattern.format (pMMM {calendar = Gregorian})
-                (calendarDate 3 March 2020) == "Mar" &&
+                (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) == "Mar" &&
              IotaTime.Pattern.format (pMMMM {calendar = Gregorian})
-                (calendarDate 3 March 2020) == "March" &&
-             parsesAs namedDate "03 mAr 2020" (calendarDate 3 March 2020))
+                (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) == "March" &&
+             parsesAs namedDate "03 mAr 2020" (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020))
     , MkRuntimeCase "weekday names format and consume without validation"
             (IotaTime.Pattern.format (pddd {calendar = Gregorian})
-                (calendarDate 3 March 2020) == "Tue" &&
+                (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) == "Tue" &&
              IotaTime.Pattern.format (pdddd {calendar = Gregorian})
-                (calendarDate 3 March 2020) == "Tuesday" &&
+                (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) == "Tuesday" &&
              parsesAs weekdayDate "Monday, 03 March 2020"
-                 (calendarDate 3 March 2020))
+                 (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020))
+    , MkRuntimeCase "verified weekday names reject inconsistent dates"
+            (IotaTime.Pattern.format verifiedWeekdayDate
+                 (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) == "Tuesday, 03 March 2020" &&
+             parsesAs verifiedWeekdayDate "Tuesday, 03 March 2020"
+                 (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) &&
+             isWeekdayMismatch (IotaTime.Pattern.parse verifiedWeekdayDate
+                 "Monday, 03 March 2020"))
     , MkRuntimeCase "pD formats the English long date"
             (IotaTime.Pattern.format (pD {calendar = Gregorian})
-                (calendarDate 3 March 2020) ==
+                (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) ==
                 "Tuesday, 03 March 2020")
     , MkRuntimeCase "partial named date patterns use default fields"
                 (IotaTime.Pattern.format (pmonthDay {calendar = Gregorian})
-                     (calendarDate 3 March 2020) ==
+                     (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) ==
                 "March 03" &&
                  parsesAs (pmonthDay {calendar = Gregorian}) "March 03"
-                     (calendarDate 3 March 2000) &&
+                     (IotaTime.Calendar.Gregorian.calendarDate 3 March 2000) &&
                  IotaTime.Pattern.format (pyearMonth {calendar = Gregorian})
-                     (calendarDate 3 March 2020) ==
+                     (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) ==
                 "2020 March" &&
                  parsesAs (pyearMonth {calendar = Gregorian}) "2020 March"
-                     (calendarDate 1 March 2020))
+                     (IotaTime.Calendar.Gregorian.calendarDate 1 March 2020))
         , MkRuntimeCase "seeded parsing supplies omitted date fields"
                         (case IotaTime.Pattern.parseWith
                                 (pmonthDay {calendar = Gregorian})
                                 (MkDateFields 2024 1 1) "March 03" of
                             Right actual => calendarDays actual ==
-                                calendarDays (calendarDate 3 March 2024)
+                                calendarDays (IotaTime.Calendar.Gregorian.calendarDate 3 March 2024)
                             Left _ => False)
     , MkRuntimeCase "pdaySpace formats padding and accepts common forms"
             (IotaTime.Pattern.format (pdaySpace {calendar = Gregorian})
-                (calendarDate 3 March 2020) == " 3" &&
-             parsesAs spaceDate " 3.03.2020" (calendarDate 3 March 2020) &&
-             parsesAs spaceDate "3.03.2020" (calendarDate 3 March 2020) &&
-             parsesAs spaceDate "03.03.2020" (calendarDate 3 March 2020))
+                (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) == " 3" &&
+             parsesAs spaceDate " 3.03.2020" (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) &&
+             parsesAs spaceDate "3.03.2020" (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) &&
+             parsesAs spaceDate "03.03.2020" (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020))
     , MkRuntimeCase "custom name tables are bidirectional"
             (IotaTime.Pattern.format (pMonthName customMonthNames)
-                (calendarDate 3 March 2020) == "MarX" &&
+                (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) == "MarX" &&
              IotaTime.Pattern.format (pDayName customWeekdayNames)
-                (calendarDate 3 March 2020) == "TueX")
+                (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) == "TueX")
+    , MkRuntimeCase "duplicate custom names select the first matching month"
+            (IotaTime.Pattern.format (pMonthName repeatedMonthNames)
+                    (IotaTime.Calendar.Gregorian.calendarDate 1 April 2000) == "Even" &&
+             parsesAs (pMonthName repeatedMonthNames) "Even"
+                 (IotaTime.Calendar.Gregorian.calendarDate 1 February 2000))
+    , MkRuntimeCase "custom names parse longest prefixes first"
+            (parsesAs (pMonthName overlappingMonthNames) "March"
+                (IotaTime.Calendar.Gregorian.calendarDate 1 February 2000))
+    , MkRuntimeCase "empty custom names are excluded from parsing"
+            (IotaTime.Pattern.format (pMonthName emptyMonthNames)
+                    (IotaTime.Calendar.Gregorian.calendarDate 1 January 2000) == "" &&
+             parsesAs (pMonthName emptyMonthNames) "Named"
+                 (IotaTime.Calendar.Gregorian.calendarDate 1 February 2000))
   , MkRuntimeCase "patterns reject trailing input"
             (isTrailingInputAt 10 (IotaTime.Pattern.parse
                 (pR {calendar = Gregorian}) "2020-03-03Z"))

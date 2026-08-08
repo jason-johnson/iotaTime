@@ -18,9 +18,10 @@ Features present in HodaTime that iotaTime should support.
 
 - [x] Audit and fill standard/custom pattern and locale coverage. Date-bearing
   locale layouts and custom month/weekday names are calendar-polymorphic;
-  locale tables fall back to built-in calendar names when a calendar has more
-  months than the locale supplies. `parseWith` supplies HodaTime
-  `parse'`-style caller defaults through typed parser state.
+  Gregorian and Julian patterns use operating-system locale month tables,
+  while calendars with distinct month identities retain their canonical names.
+  `parseWith` supplies HodaTime `parse'`-style caller defaults through typed
+  parser state.
 - [x] Add appropriate `Eq`, `Ord`, and `Show` implementations for compound
   values, including constructor-oriented displays that preserve opaque
   representations. `NFData` and `Hashable` remain intentionally absent because

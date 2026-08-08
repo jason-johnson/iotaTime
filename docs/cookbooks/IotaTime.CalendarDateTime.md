@@ -7,7 +7,7 @@ an offset or time zone resolves it.
 
 ```idris
 endOfMonth : CalendarDateTime Gregorian
-endOfMonth = at (calendarDate 31 January 2000) late
+endOfMonth = at (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) late
 ```
 
 ### Apply calendar and clock units

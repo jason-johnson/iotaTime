@@ -5,4 +5,4 @@ import IotaTime
 import IotaTime.Calendar.Islamic
 
 invalid : CalendarDate IslamicBcl
-invalid = islamicDate 30 IslamicMonths.Safar 1443
+invalid = IotaTime.Calendar.Islamic.calendarDate 30 IslamicMonths.Safar 1443

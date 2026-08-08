@@ -4,4 +4,4 @@ module MixedPersianCalendars
 import IotaTime
 
 invalid : CalendarDate Persian
-invalid = arithmeticPersianDate 1 PersianMonths.Farvardin 1404
+invalid = IotaTime.Calendar.Persian.arithmeticCalendarDate 1 PersianMonths.Farvardin 1404

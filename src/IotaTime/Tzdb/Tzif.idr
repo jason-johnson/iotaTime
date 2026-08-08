@@ -146,10 +146,10 @@ readRawTypes (S count) bytes = do
   (types, remaining) <- readRawTypes count afterType
   Right (MkRawType offset inDst abbreviationIndex :: types, remaining)
 
-indexList : Integer -> List value -> Maybe value
+indexList : Integer -> List element -> Maybe element
 indexList index values = if index < 0 then Nothing else go (cast index) values
   where
-    go : Nat -> List value -> Maybe value
+    go : Nat -> List element -> Maybe element
     go Z (value :: _) = Just value
     go (S index) (_ :: rest) = go index rest
     go _ [] = Nothing

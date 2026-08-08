@@ -20,7 +20,7 @@ offsetDateTimeCases =
   [ MkRuntimeCase "calendar date-time and offset construct a value"
       (let value = the (OffsetDateTime Gregorian)
             (fromCalendarDateTimeWithOffset
-              (on (localTime 1 0 0 0) (calendarDate 1 March 2000))
+              (on (localTime 1 0 0 0) (IotaTime.Calendar.Gregorian.calendarDate 1 March 2000))
               (IotaTime.Offset.fromHours 1)) in
         gregorianComponents value ==
           ((2000, March, 1), (1, 0, 0, 0), IotaTime.Offset.fromHours 1))
@@ -40,7 +40,7 @@ offsetDateTimeCases =
           Left _ => False)
   , MkRuntimeCase "toCalendarDateTime returns the original local value"
       (let local = on (localTime 23 59 58 7)
-            (calendarDate 31 December 2024)
+            (IotaTime.Calendar.Gregorian.calendarDate 31 December 2024)
            value = the (OffsetDateTime Gregorian)
              (fromCalendarDateTimeWithOffset local
                (IotaTime.Offset.fromHours (-5)))
@@ -51,35 +51,35 @@ offsetDateTimeCases =
       (let expected = IotaTime.Offset.fromSeconds 5445
            value = the (OffsetDateTime Gregorian)
              (fromCalendarDateTimeWithOffset
-               (on (localTime 0 0 0 0) (calendarDate 1 January 2025))
+               (on (localTime 0 0 0 0) (IotaTime.Calendar.Gregorian.calendarDate 1 January 2025))
                expected)
         in offset value == expected)
   , MkRuntimeCase "toInstant resolves local time using its offset"
       (let value = the (OffsetDateTime Gregorian)
             (fromCalendarDateTimeWithOffset
-              (on (localTime 1 30 0 0) (calendarDate 1 March 2000))
+              (on (localTime 1 30 0 0) (IotaTime.Calendar.Gregorian.calendarDate 1 March 2000))
               (IotaTime.Offset.fromMinutes 90))
         in toInstant value == epoch)
   , MkRuntimeCase "offset date-time equality retains the displayed offset"
       (let utcValue = the (OffsetDateTime Gregorian)
             (fromCalendarDateTimeWithOffset
-              (on (localTime 0 0 0 0) (calendarDate 1 March 2000)) empty)
+              (on (localTime 0 0 0 0) (IotaTime.Calendar.Gregorian.calendarDate 1 March 2000)) empty)
            shiftedValue = the (OffsetDateTime Gregorian)
              (fromCalendarDateTimeWithOffset
-               (on (localTime 1 0 0 0) (calendarDate 1 March 2000))
+               (on (localTime 1 0 0 0) (IotaTime.Calendar.Gregorian.calendarDate 1 March 2000))
                (IotaTime.Offset.fromHours 1))
         in toInstant utcValue == toInstant shiftedValue &&
           utcValue /= shiftedValue && utcValue < shiftedValue)
   , MkRuntimeCase "offset date-time show reconstructs instant and offset"
       (show (the (OffsetDateTime Gregorian)
         (fromCalendarDateTimeWithOffset
-          (on (localTime 1 30 0 0) (calendarDate 1 March 2000))
+          (on (localTime 1 30 0 0) (IotaTime.Calendar.Gregorian.calendarDate 1 March 2000))
           (IotaTime.Offset.fromMinutes 90))) ==
         "fromInstantWithOffset (fromNanosecondsSinceEpoch 0) (offsetFromSeconds 5400)")
   , MkRuntimeCase "withOffset preserves the represented instant"
       (let original = the (OffsetDateTime Gregorian)
             (fromCalendarDateTimeWithOffset
-              (on (localTime 0 0 0 0) (calendarDate 2 March 2000)) empty)
+              (on (localTime 0 0 0 0) (IotaTime.Calendar.Gregorian.calendarDate 2 March 2000)) empty)
         in case IotaTime.OffsetDateTime.withOffset
           (IotaTime.Offset.fromHours 2) original of
             Right converted =>
@@ -90,7 +90,7 @@ offsetDateTimeCases =
   , MkRuntimeCase "withCalendar preserves local time offset and instant"
       (let original = the (OffsetDateTime Gregorian)
             (fromCalendarDateTimeWithOffset
-              (on (localTime 12 34 56 7) (calendarDate 1 March 2000))
+              (on (localTime 12 34 56 7) (IotaTime.Calendar.Gregorian.calendarDate 1 March 2000))
               (IotaTime.Offset.fromHours 1))
         in case the (Either CalendarConversionError (OffsetDateTime Julian))
           (IotaTime.OffsetDateTime.withCalendar original) of

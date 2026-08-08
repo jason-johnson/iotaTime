@@ -4,4 +4,4 @@ module InvalidHebrewKislevDay
 import IotaTime
 
 invalid : CalendarDate HebrewCivil
-invalid = hebrewDate 30 5781 HebrewMonths.Kislev
+invalid = IotaTime.Calendar.Hebrew.calendarDate 30 5781 HebrewMonths.Kislev

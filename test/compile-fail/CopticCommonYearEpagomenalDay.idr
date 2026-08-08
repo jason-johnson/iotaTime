@@ -4,4 +4,4 @@ module CopticCommonYearEpagomenalDay
 import IotaTime
 
 invalid : CalendarDate Coptic
-invalid = copticDate 6 CopticMonths.PiKogiEnavot 1732
+invalid = IotaTime.Calendar.Coptic.calendarDate 6 CopticMonths.PiKogiEnavot 1732

@@ -235,7 +235,9 @@ dateTimeConversion : {calendar : Type} ->
 dateTimeConversion {calendar} locale value =
   case dateConversion {calendar} locale value of
     Right pattern => Right (liftDatePattern {calendar} pattern)
-    Left _ => map (liftTimePattern {calendar}) (timeConversion locale value)
+    Left (UnsupportedSpecifier _) =>
+      map (liftTimePattern {calendar}) (timeConversion locale value)
+    Left error => Left error
 
 isZoneSpecifier : Char -> Bool
 isZoneSpecifier value = value == 'Z' || value == 'z'

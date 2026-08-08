@@ -4,4 +4,4 @@ module CopticDayThirtyOne
 import IotaTime
 
 invalid : CalendarDate Coptic
-invalid = copticDate 31 CopticMonths.Thout 1738
+invalid = IotaTime.Calendar.Coptic.calendarDate 31 CopticMonths.Thout 1738

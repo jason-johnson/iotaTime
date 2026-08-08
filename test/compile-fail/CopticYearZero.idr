@@ -4,4 +4,4 @@ module CopticYearZero
 import IotaTime
 
 invalid : CalendarDate Coptic
-invalid = copticDate 1 CopticMonths.Thout 0
+invalid = IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 0

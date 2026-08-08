@@ -21,8 +21,7 @@ run = do
       case fromCalendarDateTimeStrictly meeting zurich of
         Left _ => putStrLn "The meeting time is skipped or ambiguous"
         Right here =>
-          case IotaTime.ZonedDateTime.fromInstant
-            (IotaTime.ZonedDateTime.toInstant here) newYork of
+          case fromInstant (toInstant here) newYork of
             Left _ => putStrLn "The instant is outside the Gregorian range"
             Right there => do
               let display = zonedDateTimePattern pF

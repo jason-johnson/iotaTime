@@ -57,7 +57,7 @@ patternOffsetCases =
        rejects pOffsetCompact "+0200suffix")
   , MkRuntimeCase "standard offset date-time pattern round-trips"
       (let expected = fromCalendarDateTimeWithOffset
-            (on (localTime 9 0 0 0) (calendarDate 23 April 2024))
+            (on (localTime 9 0 0 0) (IotaTime.Calendar.Gregorian.calendarDate 23 April 2024))
             (fromMinutes (-330)) in
         IotaTime.Pattern.format pOffsetDateTime expected ==
           "2024-04-23T09:00:00-05:30" &&

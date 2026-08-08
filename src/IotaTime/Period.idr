@@ -147,7 +147,7 @@ seconds value = MkPeriod 0 0 0 0 0 0 value 0
 ||| Construct a period measured in nanoseconds.
 public export
 nanoseconds : HasTime target => Integer -> Period target
-nanoseconds value = MkPeriod 0 0 0 0 0 0 0 value
+nanoseconds = MkPeriod 0 0 0 0 0 0 0
 
 ||| Negate every component of a period.
 public export

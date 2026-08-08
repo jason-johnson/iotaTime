@@ -49,19 +49,20 @@ roundTripConstructor =
 	cong fromNanosecondsSinceEpoch (instantNanosecondsRoundTrip 42)
 
 public export
-gregorianLeapCycle : isLeapYear 2000 = True
+gregorianLeapCycle : IotaTime.Calendar.Gregorian.isLeapYear 2000 = True
 gregorianLeapCycle = Refl
 
 public export
-gregorianCenturyException : isLeapYear 2100 = False
+gregorianCenturyException :
+	IotaTime.Calendar.Gregorian.isLeapYear 2100 = False
 gregorianCenturyException = Refl
 
 public export
-julianCenturyLeap : isJulianLeapYear 1900 = True
+julianCenturyLeap : IotaTime.Calendar.Julian.isLeapYear 1900 = True
 julianCenturyLeap = Refl
 
 public export
-hebrewLeapCycle : isHebrewLeapYear 5784 = True
+hebrewLeapCycle : IotaTime.Calendar.Hebrew.isLeapYear 5784 = True
 hebrewLeapCycle = Refl
 
 public export

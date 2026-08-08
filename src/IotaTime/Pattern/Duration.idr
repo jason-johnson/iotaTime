@@ -35,7 +35,7 @@ readTwoDigits (tens :: units :: rest) =
 readTwoDigits _ = Nothing
 
 readNineDigits : List Char -> Maybe (Integer, List Char)
-readNineDigits values = go 9 0 values
+readNineDigits = go 9 0
   where
     go : Nat -> Integer -> List Char -> Maybe (Integer, List Char)
     go Z value rest = Just (value, rest)

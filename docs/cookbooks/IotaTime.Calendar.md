@@ -2,12 +2,12 @@
 
 ### Construct a statically known date
 
-`calendarDate` constructs a Gregorian date whose validity Idris proves while
+`IotaTime.Calendar.Gregorian.calendarDate` constructs a Gregorian date whose validity Idris proves while
 elaborating. Invalid literals, such as 29 February 2021, do not compile.
 
 ```idris
 leapDay : CalendarDate Gregorian
-leapDay = calendarDate 29 February 2020
+leapDay = IotaTime.Calendar.Gregorian.calendarDate 29 February 2020
 ```
 
 ### Validate date components at runtime
@@ -17,7 +17,7 @@ typed error instead of admitting an invalid date.
 
 ```idris
 runtimeLeapDay : Either GregorianDateError (CalendarDate Gregorian)
-runtimeLeapDay = refineGregorianDate 29 February 2020
+runtimeLeapDay = IotaTime.Calendar.Gregorian.refineDate 29 February 2020
 ```
 
 ### Convert between calendars
@@ -28,7 +28,7 @@ cover that day.
 
 ```idris
 gregorianChristmas : CalendarDate Gregorian
-gregorianChristmas = calendarDate 25 December 2024
+gregorianChristmas = IotaTime.Calendar.Gregorian.calendarDate 25 December 2024
 
 julianChristmas : Either CalendarConversionError (CalendarDate Julian)
 julianChristmas = IotaTime.Calendar.withCalendar gregorianChristmas
@@ -42,7 +42,8 @@ accepted component is applied before the next smaller unit is calculated.
 ```idris
 calendarDifference : Period (CalendarDate Gregorian)
 calendarDifference = IotaTime.Calendar.between {calendar = Gregorian}
-  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+  (IotaTime.Calendar.Gregorian.calendarDate 31 January 2025)
+  (IotaTime.Calendar.Gregorian.calendarDate 30 March 2025)
 ```
 
 This period contains one month and 30 days. A direct two-month application
@@ -56,12 +57,14 @@ days. The equivalent explicit policy is available through `betweenWith`.
 ```idris
 exactDayDifference : Period (CalendarDate Gregorian)
 exactDayDifference = IotaTime.Calendar.betweenDays {calendar = Gregorian}
-  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+  (IotaTime.Calendar.Gregorian.calendarDate 31 January 2025)
+  (IotaTime.Calendar.Gregorian.calendarDate 30 March 2025)
 
 explicitDayDifference : Period (CalendarDate Gregorian)
 explicitDayDifference = IotaTime.Calendar.betweenWith {calendar = Gregorian}
   (MkDateDifferencePolicy DaysOnly ClampToMonth)
-  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+  (IotaTime.Calendar.Gregorian.calendarDate 31 January 2025)
+  (IotaTime.Calendar.Gregorian.calendarDate 30 March 2025)
 ```
 
 Both exact forms contain 58 days. These declarations are compiled from

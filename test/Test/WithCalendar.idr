@@ -14,11 +14,11 @@ hebrewYmd date = case yearMonthDay {calendar = HebrewCivil} date of
 
 gregorianChristmasInJulian : Either CalendarConversionError (CalendarDate Julian)
 gregorianChristmasInJulian =
-  IotaTime.Calendar.withCalendar (calendarDate 25 December 2024)
+  IotaTime.Calendar.withCalendar (IotaTime.Calendar.Gregorian.calendarDate 25 December 2024)
 
 gregorianNewYearInHebrew : Either CalendarConversionError (CalendarDate HebrewCivil)
 gregorianNewYearInHebrew =
-  IotaTime.Calendar.withCalendar (calendarDate 16 September 2023)
+  IotaTime.Calendar.withCalendar (IotaTime.Calendar.Gregorian.calendarDate 16 September 2023)
 
 backToGregorian : CalendarDate HebrewCivil ->
                   Either CalendarConversionError (CalendarDate Gregorian)
@@ -26,10 +26,10 @@ backToGregorian = IotaTime.Calendar.withCalendar
 
 hebrewEpochInGregorian : Either CalendarConversionError (CalendarDate Gregorian)
 hebrewEpochInGregorian = IotaTime.Calendar.withCalendar
-  (hebrewFromDays (-2103607))
+  (IotaTime.Calendar.Hebrew.fromDays (-2103607))
 
 christmasDateTime : CalendarDateTime Gregorian
-christmasDateTime = on (localTime 14 30 0 0) (calendarDate 25 December 2024)
+christmasDateTime = on (localTime 14 30 0 0) (IotaTime.Calendar.Gregorian.calendarDate 25 December 2024)
 
 christmasDateTimeInJulian : Either CalendarConversionError (CalendarDateTime Julian)
 christmasDateTimeInJulian = IotaTime.CalendarDateTime.withCalendar

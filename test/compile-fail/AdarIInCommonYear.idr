@@ -4,4 +4,4 @@ module AdarIInCommonYear
 import IotaTime
 
 invalid : CalendarDate HebrewCivil
-invalid = hebrewDate 1 5786 HebrewMonths.AdarI
+invalid = IotaTime.Calendar.Hebrew.calendarDate 1 5786 HebrewMonths.AdarI

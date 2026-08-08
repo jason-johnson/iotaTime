@@ -34,7 +34,7 @@ canonical names shown below. Applications should load zones with `utc`,
 The final public API should follow these principles:
 
 - Domain values carry the proofs needed to establish their validity. A `CalendarDate Gregorian` must always be a valid Gregorian date; there must be no second, possibly-invalid form of the same public type.
-- Invalid statically known expressions must fail to compile. For example, `calendarDate 29 February 2020` should type-check while `calendarDate 29 February 2021` should not.
+- Invalid statically known expressions must fail to compile. For example, `IotaTime.Calendar.Gregorian.calendarDate 29 February 2020` should type-check while `IotaTime.Calendar.Gregorian.calendarDate 29 February 2021` should not.
 - Calendar-specific structure belongs in types. In calendars such as Hebrew, a month that exists only in leap years should be impossible to select for a non-leap year.
 - Once a value has crossed a trust boundary, ordinary library operations should preserve its invariants and should not return `Maybe` merely to report states that the types already exclude.
 - Raw representations and unchecked constructors are implementation details. Any public escape hatch needed for interoperability must be clearly distinguished from the proof-carrying domain API.
@@ -367,7 +367,7 @@ Import `IotaTime` to use the calendar-polymorphic API and its Gregorian implemen
 
 ```idris
 date : CalendarDate Gregorian
-date = calendarDate 29 February 2000
+date = IotaTime.Calendar.Gregorian.calendarDate 29 February 2000
 
 components : (Year, Month, DayOfMonth)
 components = yearMonthDay {calendar = Gregorian} date
@@ -388,10 +388,10 @@ Calendar-relative arithmetic uses target-indexed `Period` values:
 
 ```idris
 tomorrow : CalendarDate Gregorian
-tomorrow = applyPeriod (days 1) (calendarDate 31 December 2000)
+tomorrow = applyPeriod (days 1) (IotaTime.Calendar.Gregorian.calendarDate 31 December 2000)
 
 later : CalendarDate Gregorian
-later = applyPeriod (months 2 <+> days 3) (calendarDate 31 January 2000)
+later = applyPeriod (months 2 <+> days 3) (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000)
 ```
 
 `years`, `months`, `weeks`, and `days` accept signed integers, so subtraction needs no parallel API: `days (-2)` moves two days backward. `negatePeriod` reverses every component and `scalePeriod` multiplies every component.
@@ -413,7 +413,7 @@ wrapped = applyPeriod (hours 2) late
 -- 01:30:00
 
 lateDateTime : CalendarDateTime Gregorian
-lateDateTime = on late (calendarDate 31 January 2000)
+lateDateTime = on late (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000)
 
 advanced : CalendarDateTime Gregorian
 advanced = applyPeriod (months 1 <+> hours 2) lateDateTime
@@ -426,24 +426,29 @@ Each of those value kinds provides a module-qualified `between start end`. `Iota
 
 `on time date` constructs a calendar date-time with time-first argument order. The HodaTime-compatible `at date time` provides date-first order, while `atStartOfDay date` uses midnight.
 
-`calendarDate` requires an erased proof of `So (isValidGregorianDate day month year)`. Idris finds that proof automatically for valid literals. Invalid literals fail to compile:
+Calendar operations use their module namespace rather than repeating the
+calendar name in each identifier. `calendarDate` retains HodaTime's explicit
+civil-date vocabulary without repeating the specific calendar name. For
+example, Gregorian `calendarDate` requires an
+erased proof of `So (isValidDate day month year)`. Idris finds that proof
+automatically for valid literals. Invalid literals fail to compile:
 
 ```idris
 invalidDate : CalendarDate Gregorian
-invalidDate = calendarDate 29 February 2021
+invalidDate = IotaTime.Calendar.Gregorian.calendarDate 29 February 2021
 -- Compile error: Can't find an implementation for So False.
 ```
 
 The public Gregorian operations are:
 
-- `calendarDate`, `fromNthDay`, `fromWeekDate`, and `gregorianFromDays` construct dates under erased validity proofs. Statically invalid calls do not compile.
-- `refineGregorianDate`, `refineGregorianNthDay`, `refineGregorianWeekDate`, and `refineGregorianDays` handle values first learned at runtime. They return `Either GregorianDateError (CalendarDate Gregorian)` and are the only fallible construction boundary.
-- `isLeapYear`, `maxDaysInMonth`, and the `isValidGregorian...` predicates expose Gregorian rules and decision procedures.
+- `calendarDate`, `fromNthDay`, `fromWeekDate`, and `fromDays` construct dates under erased validity proofs. Statically invalid calls do not compile.
+- `refineDate`, `refineNthDay`, `refineWeekDate`, and `refineDays` handle values first learned at runtime. They return `Either GregorianDateError (CalendarDate Gregorian)` and are the only fallible construction boundary.
+- `isLeapYear`, `maxDaysInMonth`, and the `isValid...` predicates expose Gregorian rules and decision procedures.
 - `dayOfWeek`, `next`, and `previous` provide calendar-polymorphic weekday navigation. Date-returning operations clamp at October 15, 1582, so they preserve the type's validity invariant without `Maybe`.
 - `yearMonthDay`, `day`, `month`, and `year` expose typed civil components.
 - `years`, `months`, `weeks`, `days`, and `applyPeriod` provide signed calendar-relative arithmetic.
 
-`gregorianFromDays` and `toDays` convert relative to the March 1, 2000 epoch. Flat days before the public Gregorian boundary cannot be constructed without an impossible proof. The generic `fromDays` method carries the same calendar-specific proof requirement.
+`IotaTime.Calendar.Gregorian.fromDays` and `toDays` convert relative to the March 1, 2000 epoch. Flat days before the public Gregorian boundary cannot be constructed without an impossible proof. The generic `Calendar.fromDays` method carries the same calendar-specific proof requirement, and `Calendar.isValidDays` is the single calendar-dispatched validity predicate rather than being duplicated by each concrete module.
 
 The negative compiler fixtures under `test/compile-fail/` verify that invalid component literals, forged component/date/period representations, invalid leap days, pre-changeover dates, absent fifth weekdays, pre-changeover flat days, and periods with unsupported target capabilities remain compile errors. Each fixture declares an expected diagnostic fragment so unrelated import or harness failures cannot produce false positives.
 
@@ -457,7 +462,7 @@ isoNewYear = IotaTime.Calendar.Iso.fromWeekDate 1 Monday 2020
 -- December 30, 2019
 ```
 
-`fromWeekDate` requires erased evidence of `isValidIsoWeekDate`. `refineIsoWeekDate` validates runtime values and returns `Either IsoWeekDateError (CalendarDate Gregorian)`. Arithmetic week zero and negative week numbers remain supported when their resulting dates are within the Gregorian range.
+`fromWeekDate` requires erased evidence of `isValidWeekDate`. `refineWeekDate` validates runtime values and returns `Either IsoWeekDateError (CalendarDate Gregorian)`. Arithmetic week zero and negative week numbers remain supported when their resulting dates are within the Gregorian range.
 
 ## Julian calendar API
 
@@ -467,17 +472,19 @@ Julian components are nominally distinct from Gregorian components. Use `JulianM
 
 ```idris
 leapDay : CalendarDate Julian
-leapDay = julianDate 29 JulianMonths.February 1900
+leapDay = IotaTime.Calendar.Julian.calendarDate
+	29 JulianMonths.February 1900
 
 thirdMonday : CalendarDate Julian
-thirdMonday = julianFromNthDay Third JulianWeekdays.Monday JulianMonths.January 2000
+thirdMonday = IotaTime.Calendar.Julian.fromNthDay
+	Third JulianWeekdays.Monday JulianMonths.January 2000
 ```
 
 The public Julian operations mirror the proof-carrying Gregorian boundary:
 
-- `julianDate`, `julianFromDays`, `julianFromNthDay`, and `julianFromWeekDate` require erased validity proofs, inferred automatically for valid literals.
-- `refineJulianDate`, `refineJulianDays`, `refineJulianNthDay`, and `refineJulianWeekDate` validate values learned at runtime.
-- `isJulianLeapYear`, `maxJulianDaysInMonth`, and the `isValidJulian...` predicates expose Julian rules.
+- `calendarDate`, `fromDays`, `fromNthDay`, and `fromWeekDate` require erased validity proofs, inferred automatically for valid literals.
+- `refineDate`, `refineDays`, `refineNthDay`, and `refineWeekDate` validate values learned at runtime.
+- `isLeapYear`, `maxDaysInMonth`, and the `isValid...` predicates expose Julian rules.
 - Calendar periods and mixed `CalendarDateTime Julian` periods use the same target-indexed period API as Gregorian values.
 
 ## Coptic calendar API
@@ -486,13 +493,14 @@ The public Julian operations mirror the proof-carrying Gregorian boundary:
 
 ```idris
 nayrouz : CalendarDate Coptic
-nayrouz = copticDate 1 CopticMonths.Thout 1738
+nayrouz = IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1738
 
 leapDay : CalendarDate Coptic
-leapDay = copticDate 6 CopticMonths.PiKogiEnavot 1731
+leapDay = IotaTime.Calendar.Coptic.calendarDate
+	6 CopticMonths.PiKogiEnavot 1731
 ```
 
-`copticDate`, `copticFromDays`, `copticFromNthDay`, and `copticFromWeekDate` reject invalid static values through erased proofs. Their `refineCoptic...` counterparts return `Either CopticDateError` for runtime input. Date periods clamp at the year-1 boundary and at the shorter epagomenal month.
+`calendarDate`, `fromDays`, `fromNthDay`, and `fromWeekDate` reject invalid static values through erased proofs. Their `refine...` counterparts return `Either CopticDateError` for runtime input. Date periods clamp at the year-1 boundary and at the shorter epagomenal month.
 
 ## Islamic calendar API
 
@@ -507,19 +515,21 @@ The leap pattern is part of the calendar type. `IslamicBcl` and `IslamicBase16` 
 
 ```idris
 defaultLeapDay : CalendarDate IslamicBcl
-defaultLeapDay = islamicDate 30 IslamicMonths.DhulHijjah 16
+defaultLeapDay = IotaTime.Calendar.Islamic.calendarDate
+	30 IslamicMonths.DhulHijjah 16
 
 base15LeapDay : CalendarDate IslamicBase15
-base15LeapDay = islamicDate' {pattern = Base15}
+base15LeapDay = IotaTime.Calendar.Islamic.calendarDate' {pattern = Base15}
 	30 IslamicMonths.DhulHijjah 15
 
 civilNewYear : CalendarDate CivilIslamicBcl
-civilNewYear = civilIslamicDate 1 IslamicMonths.Muharram 1443
+civilNewYear = IotaTime.Calendar.Islamic.civilCalendarDate
+	1 IslamicMonths.Muharram 1443
 ```
 
-The unprimed constructors and refinements use `IslamicBcl`. Primed forms such as `islamicDate'`, `islamicFromNthDay'`, and `refineIslamicDate'` select a pattern through the expected type or an explicit `{pattern = ...}` argument. Static invalid dates require impossible erased proofs; runtime inputs return `Either IslamicDateError`.
+The unprimed constructors and refinements use `IslamicBcl`. Primed forms such as `calendarDate'`, `fromNthDay'`, and `refineDate'` select a pattern through the expected type or an explicit `{pattern = ...}` argument. Static invalid dates require impossible erased proofs; runtime inputs return `Either IslamicDateError`.
 
-The `civilIslamic...` constructors and refiners mirror the astronomical API,
+The `civil...` constructors and refiners mirror the astronomical API,
 including day-count, nth-weekday, and week-date construction. Aliases such as
 `CivilIslamicBase15`, `CivilIslamicBase16`, and `CivilIslamicBcl` retain the
 same leap-pattern index. Formatting and parsing support both epoch families.
@@ -530,40 +540,40 @@ same leap-pattern index. Formatting and parsing support both epoch families.
 
 ```idris
 nowruz : CalendarDate Persian
-nowruz = persianDate 1 PersianMonths.Farvardin 1404
+nowruz = IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1404
 
 leapDay : CalendarDate Persian
-leapDay = persianDate 30 PersianMonths.Esfand 1403
+leapDay = IotaTime.Calendar.Persian.calendarDate 30 PersianMonths.Esfand 1403
 
 arithmeticNowruz : CalendarDate PersianArithmetic
-arithmeticNowruz = arithmeticPersianDate 1 PersianMonths.Farvardin 1404
+arithmeticNowruz = IotaTime.Calendar.Persian.arithmeticCalendarDate 1 PersianMonths.Farvardin 1404
 ```
 
 The leap-year table is generated from HodaTime's Meeus equinox, equation-of-time, and Espenak-Meeus delta-T calculation for its vouched range. Embedding those results makes behavior deterministic across backends and keeps static proofs reducible without running floating-point astronomy during compilation or at runtime. In particular, astronomical Nowruz 1404 is March 21, 2025, unlike the arithmetic calendar's March 20 result.
 
-`persianDate`, `persianFromDays`, `persianFromNthDay`, and `persianFromWeekDate` retain the astronomical API and require erased validity proofs. `simplePersianDate` and `arithmeticPersianDate` provide rule-specific static construction; the generic arithmetic nth-weekday, week-date, day-count, and runtime refinement functions select their rule through the expected type or an explicit `{rule = ...}` argument. Period arithmetic clamps at each calendar's supported-year boundaries.
+`calendarDate`, `fromDays`, `fromNthDay`, and `fromWeekDate` retain the astronomical API and require erased validity proofs. `IotaTime.Calendar.Persian.simpleCalendarDate` and `IotaTime.Calendar.Persian.arithmeticCalendarDate` provide rule-specific static construction; the generic arithmetic nth-weekday, week-date, day-count, and runtime refinement functions select their rule through the expected type or an explicit `{rule = ...}` argument. Period arithmetic clamps at each calendar's supported-year boundaries.
 
 ## Hebrew calendar API
 
-`CalendarDate (Hebrew numbering)` supports both civil and scriptural month numbering through `HebrewCivil` and `HebrewScriptural`. Both representations identify the same dates and flat days; only `hebrewMonthNumber` changes its starting month. Hebrew flat days begin at 1 Tishri 1 (`-2103607` relative to the shared epoch).
+`CalendarDate (Hebrew numbering)` supports both civil and scriptural month numbering through `HebrewCivil` and `HebrewScriptural`. Both representations identify the same dates and flat days; only `monthNumber` changes its starting month. Hebrew flat days begin at 1 Tishri 1 (`-2103607` relative to the shared epoch).
 
 Hebrew months are indexed by year. `HebrewMonths.AdarI` carries erased evidence that its year is a leap year, so selecting Adar I in a common year is unrepresentable:
 
 ```idris
 leapAdar : CalendarDate HebrewCivil
-leapAdar = hebrewDate 1 5784 HebrewMonths.AdarI
+leapAdar = IotaTime.Calendar.Hebrew.calendarDate 1 5784 HebrewMonths.AdarI
 
 -- Does not compile: 5786 is a common year.
 invalidAdar : CalendarDate HebrewCivil
-invalidAdar = hebrewDate 1 5786 HebrewMonths.AdarI
+invalidAdar = IotaTime.Calendar.Hebrew.calendarDate 1 5786 HebrewMonths.AdarI
 ```
 
 The calendar implements the 19-year leap cycle, the Rosh Hashanah postponement rules, variable Cheshvan and Kislev lengths, and distinct civil/scriptural month numbers. Its public construction boundary follows the other calendars:
 
-- `hebrewDate`, `hebrewFromDays`, `hebrewFromNthDay`, and `hebrewFromWeekDate` construct civil dates under erased proofs. Their primed variants select either numbering system.
-- `refineHebrewDate`, `refineHebrewDays`, `refineHebrewNthDay`, and `refineHebrewWeekDate` validate runtime civil values; primed variants support either numbering.
-- `refineHebrewMonth` converts a runtime `HebrewMonthName` into a month indexed by its year, rejecting Adar I in common years.
-- `isHebrewLeapYear`, `daysInHebrewYear`, `maxHebrewDaysInMonth`, and the `isValidHebrew...` predicates expose Hebrew decision procedures.
+- `calendarDate`, `fromDays`, `fromNthDay`, and `fromWeekDate` construct civil dates under erased proofs. Their primed variants select either numbering system.
+- `refineDate`, `refineDays`, `refineNthDay`, and `refineWeekDate` validate runtime civil values; primed variants support either numbering.
+- `refineMonth` converts a runtime `HebrewMonthName` into a month indexed by its year, rejecting Adar I in common years.
+- `isLeapYear`, `daysInYear`, `maxDaysInMonth`, and the `isValid...` predicates expose Hebrew decision procedures.
 - Month periods skip absent Adar I in common years. Year periods map leap-year Adar I into common-year Adar and clamp the day when necessary.
 - Hebrew dates support weekday navigation, mixed `CalendarDateTime` periods, and the same capability constraints as Gregorian and Julian dates.
 
@@ -571,13 +581,13 @@ The calendar implements the 19-year leap cycle, the Rosh Hashanah postponement r
 
 `Pattern state value` combines formatting with full-input parsing. Fields compose with `<+>`, and `<%` appends a literal produced by `char` or `string`. The parsing engine uses `Data.String.Parser` from Idris 2's `contrib` package, while the public boundary returns `Either PatternError value`; malformed fields, values outside their field ranges, invalid final dates, and trailing input remain distinct typed failures. Formatting is specialized to `value -> String`, which provides the pattern-specific composition supplied by Haskell's `Formatting` and `HoleyMonoid` machinery without introducing a general variadic formatting layer.
 
-`CalendarPattern calendar` supplies calendar-specific numeric projection, canonical month names, month limits, weekday numbering, and runtime date refinement. Instances cover Gregorian, Julian, Coptic, all three Persian rules, every indexed Islamic leap pattern and epoch, and both Hebrew numbering systems. Parsed year, month, and day fields therefore cross each calendar's existing typed refinement boundary rather than constructing a generic unchecked date.
+`CalendarPattern calendar` supplies calendar-specific bounded month and weekday projections, sized canonical month-name tables, and runtime date refinement. Instances cover Gregorian, Julian, Coptic, all three Persian rules, every indexed Islamic leap pattern and epoch, and both Hebrew numbering systems. Parsed year, month, and day fields therefore cross each calendar's existing typed refinement boundary rather than constructing a generic unchecked date.
 
-The calendar-date layer provides the HodaTime-compatible numeric fields `pyear`, `pyyyy`, `pyy`, `pmonthNum`, `pMM`, `pday`, `pdd`, and `pdaySpace`. Canonical calendar names are available through `pMMM` and `pMMMM`; `pddd` and `pdddd` use weekday names. Parsing is case-insensitive, and weekday fields are consumed without redundantly validating the date. `pd` is the slash-separated short date, `pD` is the canonical long date, `pR` is the numeric round-trip pattern, and `pmonthDay` and `pyearMonth` provide partial layouts:
+The calendar-date layer provides the HodaTime-compatible numeric fields `pyear`, `pyyyy`, `pyy`, `pmonthNum`, `pMM`, `pday`, `pdd`, and `pdaySpace`. Canonical calendar names are available through `pMMM` and `pMMMM`; `pddd` and `pdddd` use weekday names. Parsing is case-insensitive. The standard weekday fields consume recognized names without comparing them with the resulting date; use `pdddVerified`, `pddddVerified`, or `pVerifiedDayName` when inconsistent weekday text must be rejected. `pd` is the slash-separated short date, `pD` is the canonical long date, `pR` is the numeric round-trip pattern, and `pmonthDay` and `pyearMonth` provide partial layouts:
 
 ```idris
 isoText : String
-isoText = format (pR {calendar = Gregorian}) (calendarDate 3 March 2020)
+isoText = format (pR {calendar = Gregorian}) (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020)
 
 parsed : Either PatternError (CalendarDate Gregorian)
 parsed = parse (pR {calendar = Gregorian}) "2020-03-03"
@@ -599,7 +609,7 @@ unpadded =
 	pday {calendar = Gregorian} 1
 
 longText : String
-longText = format (pD {calendar = Gregorian}) (calendarDate 3 March 2020)
+longText = format (pD {calendar = Gregorian}) (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020)
 ```
 
 Each independently composed generic field may need `{calendar = ...}` because Idris elaborates operands before `<+>` combines them. Standard whole patterns usually need the calendar annotation only once.
@@ -687,13 +697,13 @@ otherwise omitted year.
 
 ```idris
 germanMonth : String
-germanMonth = format (pMMMM' deDE) (calendarDate 3 March 2020)
+germanMonth = format (pMMMM' deDE) (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020)
 
 japaneseMonth : String
-japaneseMonth = format (pMMMM' jaJP) (calendarDate 3 March 2020)
+japaneseMonth = format (pMMMM' jaJP) (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020)
 ```
 
-Named locale fields parse case-insensitively. As with the fixed English weekday fields, locale weekday names are consumed but not validated against the resolved date.
+Named locale fields parse case-insensitively. As with the fixed English weekday fields, `pddd'` and `pdddd'` consume weekday names without validating them against the resolved date. Use `pdddVerified'` or `pddddVerified'` for strict locale weekday validation.
 
 On Unix, `localeByName` reads an installed locale through `newlocale` and `nl_langinfo_l`, while `currentLocale` follows `LC_ALL`, `LC_TIME`, and `LANG` and falls back to the POSIX `C` locale. The per-locale C APIs do not mutate process-global locale state.
 
@@ -722,11 +732,11 @@ Operating-system locale date layouts remain Gregorian because `Locale` intention
 ```idris
 christmasJulian : Either CalendarConversionError (CalendarDate Julian)
 christmasJulian =
-	IotaTime.Calendar.withCalendar (calendarDate 25 December 2024)
+	IotaTime.Calendar.withCalendar (IotaTime.Calendar.Gregorian.calendarDate 25 December 2024)
 
 newYearHebrew : Either CalendarConversionError (CalendarDate HebrewCivil)
 newYearHebrew =
-	IotaTime.Calendar.withCalendar (calendarDate 16 September 2023)
+	IotaTime.Calendar.withCalendar (IotaTime.Calendar.Gregorian.calendarDate 16 September 2023)
 ```
 
 The result is an `Either` because each calendar has a different supported range; `TargetCalendarOutOfRange` reports the target name and absolute day. `IotaTime.CalendarDateTime.withCalendar` applies the same date conversion while preserving the `LocalTime` unchanged.

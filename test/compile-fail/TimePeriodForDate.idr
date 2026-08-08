@@ -4,4 +4,4 @@ module TimePeriodForDate
 import IotaTime
 
 invalid : CalendarDate Gregorian
-invalid = applyPeriod (minutes 20) (calendarDate 1 January 2000)
+invalid = applyPeriod (minutes 20) (IotaTime.Calendar.Gregorian.calendarDate 1 January 2000)

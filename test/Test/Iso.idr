@@ -21,15 +21,15 @@ isoCases =
       (ymd (IotaTime.Calendar.Iso.fromWeekDate 5 Sunday 2000) ==
         (2000, February, 6))
   , MkRuntimeCase "ISO week zero remains arithmetic"
-      (case refineIsoWeekDate 0 Monday 2000 of
+      (case IotaTime.Calendar.Iso.refineWeekDate 0 Monday 2000 of
         Right date => ymd date == (1999, December, 27)
         Left _ => False)
   , MkRuntimeCase "runtime ISO dates before the Gregorian boundary are rejected"
-      (case refineIsoWeekDate 1 Monday 1582 of
+      (case IotaTime.Calendar.Iso.refineWeekDate 1 Monday 1582 of
         Left (InvalidIsoWeekDate 1 Monday 1582) => True
         _ => False)
   , MkRuntimeCase "runtime ISO dates at the Gregorian boundary are accepted"
-      (case refineIsoWeekDate 41 Friday 1582 of
+      (case IotaTime.Calendar.Iso.refineWeekDate 41 Friday 1582 of
         Right date => ymd date == (1582, October, 15)
         Left _ => False)
   ]

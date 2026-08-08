@@ -7,8 +7,8 @@ import Data.So
 %default total
 
 public export
-gregorianDays : Year -> Integer -> Integer -> Integer
-gregorianDays valueYear valueMonth valueDay =
+daysFromCivil : Year -> Integer -> Integer -> Integer
+daysFromCivil valueYear valueMonth valueDay =
   let yearNumber = yearValue valueYear
       shiftedYear = if valueMonth <= 2 then yearNumber - 1 else yearNumber
       era = shiftedYear `div` 400
@@ -20,9 +20,9 @@ gregorianDays valueYear valueMonth valueDay =
    in era * 146097 + dayOfEra - 730485
 
 public export
-isoWeekDateDays : WeekNumber -> DayOfWeek -> Year -> Integer
-isoWeekDateDays week target valueYear =
-  let januaryFourth = gregorianDays valueYear 1 4
+weekDateDays : WeekNumber -> DayOfWeek -> Year -> Integer
+weekDateDays week target valueYear =
+  let januaryFourth = daysFromCivil valueYear 1 4
       januaryFourthWeekday = (januaryFourth + 3) `mod` 7
       januaryFourthFromMonday =
         (januaryFourthWeekday - weekdayNumber Monday) `mod` 7
@@ -32,28 +32,34 @@ isoWeekDateDays week target valueYear =
       7 * (weekNumberValue week - 1) + targetFromMonday
 
 public export
-isValidIsoWeekDate : WeekNumber -> DayOfWeek -> Year -> Bool
-isValidIsoWeekDate week target valueYear =
-  isValidGregorianDays (isoWeekDateDays week target valueYear)
+isValidWeekDate : WeekNumber -> DayOfWeek -> Year -> Bool
+isValidWeekDate week target valueYear =
+  IotaTime.Calendar.isValidDays {calendar = Gregorian}
+    (weekDateDays week target valueYear)
 
 ||| Construct a Gregorian date using ISO-8601 week numbering. Weeks start on
 ||| Monday and week 1 is the week containing January 4.
 public export
 fromWeekDate : (week : WeekNumber) -> (target : DayOfWeek) ->
                (valueYear : Year) ->
-               {auto 0 valid : So (isValidIsoWeekDate week target valueYear)} ->
+               {auto 0 valid : So
+                 (IotaTime.Calendar.Iso.isValidWeekDate
+                   week target valueYear)} ->
                CalendarDate Gregorian
 fromWeekDate week target valueYear =
-  gregorianFromDays (isoWeekDateDays week target valueYear) @{valid}
+  IotaTime.Calendar.Gregorian.fromDays
+    (weekDateDays week target valueYear) @{valid}
 
 public export
 data IsoWeekDateError = InvalidIsoWeekDate WeekNumber DayOfWeek Year
 
 ||| Validate an ISO week date learned at runtime.
 public export
-refineIsoWeekDate : WeekNumber -> DayOfWeek -> Year ->
-                    Either IsoWeekDateError (CalendarDate Gregorian)
-refineIsoWeekDate week target valueYear =
-  case choose (isValidIsoWeekDate week target valueYear) of
-    Left valid => Right (fromWeekDate week target valueYear @{valid})
+refineWeekDate : WeekNumber -> DayOfWeek -> Year ->
+                 Either IsoWeekDateError (CalendarDate Gregorian)
+refineWeekDate week target valueYear =
+  case choose
+    (IotaTime.Calendar.Iso.isValidWeekDate week target valueYear) of
+    Left valid => Right
+      (IotaTime.Calendar.Iso.fromWeekDate week target valueYear @{valid})
     Right _ => Left (InvalidIsoWeekDate week target valueYear)

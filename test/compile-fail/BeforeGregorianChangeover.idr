@@ -4,4 +4,4 @@ module BeforeGregorianChangeover
 import IotaTime
 
 beforeGregorianChangeover : CalendarDate Gregorian
-beforeGregorianChangeover = calendarDate 14 October 1582
+beforeGregorianChangeover = IotaTime.Calendar.Gregorian.calendarDate 14 October 1582

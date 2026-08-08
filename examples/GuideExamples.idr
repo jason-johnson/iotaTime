@@ -6,24 +6,22 @@ leapDay : CalendarDate Gregorian
 leapDay = calendarDate 29 February 2020
 
 runtimeLeapDay : Either GregorianDateError (CalendarDate Gregorian)
-runtimeLeapDay = refineGregorianDate 29 February 2020
+runtimeLeapDay = refineDate 29 February 2020
 
 start : Instant
 start = fromSecondsSinceUnixEpoch 0
 
 elapsed : Duration
-elapsed = IotaTime.Duration.fromMinutes 90
+elapsed = fromMinutes 90
 
 finish : Instant
-finish = IotaTime.Instant.add start elapsed
+finish = add start elapsed
 
 checked : Duration
 checked = difference finish start
 
 combinedDuration : Duration
-combinedDuration = IotaTime.Duration.add
-  (IotaTime.Duration.fromHours 1)
-  (IotaTime.Duration.fromMinutes 30)
+combinedDuration = add (fromHours 1) (fromMinutes 30)
 
 boundedWindow : Interval
 boundedWindow = interval 0 5400000000000
@@ -35,7 +33,7 @@ windowContainsStart : Bool
 windowContainsStart = contains boundedWindow start
 
 centralEuropeanOffset : Offset
-centralEuropeanOffset = IotaTime.Offset.fromHours 1
+centralEuropeanOffset = fromHours 1
 
 runtimeOffset : Either OffsetError Offset
 runtimeOffset = refineOffsetSeconds 19800
@@ -60,22 +58,21 @@ fixedOffsetDateTime = fromCalendarDateTimeWithOffset
   endOfMonth centralEuropeanOffset
 
 fixedOffsetInstant : Instant
-fixedOffsetInstant = IotaTime.OffsetDateTime.toInstant fixedOffsetDateTime
+fixedOffsetInstant = toInstant fixedOffsetDateTime
 
 displayAtUtc : Either CalendarConversionError (OffsetDateTime Gregorian)
-displayAtUtc = IotaTime.OffsetDateTime.withOffset
-  (IotaTime.Offset.fromHours 0) fixedOffsetDateTime
+displayAtUtc = withOffset (fromHours 0) fixedOffsetDateTime
 
 calendarDifference : Period (CalendarDate Gregorian)
-calendarDifference = IotaTime.Calendar.between {calendar = Gregorian}
+calendarDifference = between {calendar = Gregorian}
   (calendarDate 31 January 2025) (calendarDate 30 March 2025)
 
 exactDayDifference : Period (CalendarDate Gregorian)
-exactDayDifference = IotaTime.Calendar.betweenDays {calendar = Gregorian}
+exactDayDifference = betweenDays {calendar = Gregorian}
   (calendarDate 31 January 2025) (calendarDate 30 March 2025)
 
 explicitDayDifference : Period (CalendarDate Gregorian)
-explicitDayDifference = IotaTime.Calendar.betweenWith {calendar = Gregorian}
+explicitDayDifference = betweenWith {calendar = Gregorian}
   (MkDateDifferencePolicy DaysOnly ClampToMonth)
   (calendarDate 31 January 2025) (calendarDate 30 March 2025)
 
@@ -83,18 +80,18 @@ gregorianChristmas : CalendarDate Gregorian
 gregorianChristmas = calendarDate 25 December 2024
 
 julianChristmas : Either CalendarConversionError (CalendarDate Julian)
-julianChristmas = IotaTime.Calendar.withCalendar gregorianChristmas
+julianChristmas = withCalendar gregorianChristmas
 
 astronomicalNowruz1404 : CalendarDate Persian
-astronomicalNowruz1404 = persianDate 1 PersianMonths.Farvardin 1404
+astronomicalNowruz1404 = calendarDate 1 PersianMonths.Farvardin 1404
 
 arithmeticNowruz1404 : CalendarDate PersianArithmetic
 arithmeticNowruz1404 =
-  arithmeticPersianDate 1 PersianMonths.Farvardin 1404
+  arithmeticCalendarDate 1 PersianMonths.Farvardin 1404
 
 simplePersianRuntime : Either PersianDateError (CalendarDate PersianSimple)
 simplePersianRuntime =
-  refineSimplePersianDate 30 PersianMonths.Esfand 1404
+  refineSimpleDate 30 PersianMonths.Esfand 1404
 
 cachedProvider : IO TimeZoneProvider
 cachedProvider = cachedTimeZoneProvider
@@ -110,16 +107,15 @@ systemZurich = timeZone "Europe/Zurich"
 
 resolveEndOfMonth : TimeZone -> Either ZonedDateTimeError
   (ZonedDateTime Gregorian)
-resolveEndOfMonth zone = fromCalendarDateTimeStrictly endOfMonth zone
+resolveEndOfMonth = fromCalendarDateTimeStrictly endOfMonth
 
 zonedEpoch : TimeZone -> Either CalendarConversionError
   (ZonedDateTime Gregorian)
-zonedEpoch zone = IotaTime.ZonedDateTime.fromInstant start zone
+zonedEpoch = fromInstant start
 
 sameInstantIn : TimeZone -> ZonedDateTime Gregorian ->
   Either CalendarConversionError (ZonedDateTime Gregorian)
-sameInstantIn zone value = IotaTime.ZonedDateTime.fromInstant
-  (IotaTime.ZonedDateTime.toInstant value) zone
+sameInstantIn zone value = fromInstant (toInstant value) zone
 
 current : IO Instant
 current = getCurrentInstant systemClock
@@ -165,7 +161,7 @@ windowsZoneWire = pZoneIdQuoted
 
 quotedZonedPattern :
   ZonedDateTimePattern (DateFields, TimeFields) (ZonedDateTime Gregorian)
-quotedZonedPattern = zonedDateTimePattern {calendar = Gregorian} ps
+quotedZonedPattern = zonedDateTimePattern ps
   (\value => " " ++ format pZoneIdQuoted (zoneId value))
 
 parseQuotedWindowsZone :
@@ -175,8 +171,7 @@ parseQuotedWindowsZone :
   IO (Either (ZonedDateTimePatternError error resolutionError)
     (ZonedDateTime Gregorian))
 parseQuotedWindowsZone provider resolver =
-  parseZonedDateTimePatternWith {calendar = Gregorian}
-    ps pZoneIdQuoted provider resolver
+  parseZonedDateTimePatternWith ps pZoneIdQuoted provider resolver
     "1970-01-01T00:00:00 \"Eastern Standard Time\""
 
 germanDate : Either StrftimeError

@@ -4,4 +4,4 @@ module BeforeHebrewEpoch
 import IotaTime
 
 invalid : CalendarDate HebrewCivil
-invalid = hebrewFromDays (-2103608)
+invalid = IotaTime.Calendar.Hebrew.fromDays (-2103608)

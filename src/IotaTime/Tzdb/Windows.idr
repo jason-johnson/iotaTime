@@ -9,7 +9,7 @@ byteValue : Bits8 -> Integer
 byteValue = cast
 
 unsignedLittleEndian : List Bits8 -> Integer
-unsignedLittleEndian bytes = go 1 bytes
+unsignedLittleEndian = go 1
   where
     go : Integer -> List Bits8 -> Integer
     go multiplier [] = 0

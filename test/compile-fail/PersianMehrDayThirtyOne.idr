@@ -5,4 +5,4 @@ import IotaTime
 import IotaTime.Calendar.Persian
 
 invalid : CalendarDate Persian
-invalid = persianDate 31 PersianMonths.Mehr 1400
+invalid = IotaTime.Calendar.Persian.calendarDate 31 PersianMonths.Mehr 1400

@@ -20,6 +20,11 @@ germanWeekdayDate = (((pdddd' deDE <% string ", ") <+>
   (pdd {calendar = Gregorian} <% char ' ')) <+>
   (pMMMM' deDE <% char ' ')) <+> pyyyy {calendar = Gregorian}
 
+verifiedGermanWeekdayDate : Pattern DateFields (CalendarDate Gregorian)
+verifiedGermanWeekdayDate = (((pddddVerified' deDE <% string ", ") <+>
+  (pdd {calendar = Gregorian} <% char ' ')) <+>
+  (pMMMM' deDE <% char ' ')) <+> pyyyy {calendar = Gregorian}
+
 localeFormatsAs : Locale -> CalendarDate Gregorian -> String -> Bool
 localeFormatsAs locale date expected = case localeDatePattern locale of
   Left _ => False
@@ -100,48 +105,69 @@ localeCases =
        index 2 (dayNames deDE) == "Dienstag" &&
        amName deDE == "" && pmName deDE == "")
   , MkRuntimeCase "German name patterns format calendar dates"
-      (IotaTime.Pattern.format (pMMMM' deDE) (calendarDate 3 March 2020) ==
+      (IotaTime.Pattern.format (pMMMM' deDE) (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) ==
         "März" &&
-       IotaTime.Pattern.format (pMMM' deDE) (calendarDate 3 March 2020) ==
+       IotaTime.Pattern.format (pMMM' deDE) (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) ==
         "Mär" &&
-       IotaTime.Pattern.format (pdddd' deDE) (calendarDate 3 March 2020) ==
+       IotaTime.Pattern.format (pdddd' deDE) (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) ==
         "Dienstag")
   , MkRuntimeCase "German month names parse case-insensitively"
-      (parsesAs germanDate "03 märz 2020" (calendarDate 3 March 2020))
+      (parsesAs germanDate "03 märz 2020" (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020))
   , MkRuntimeCase "locale name patterns support Julian dates"
-      (let value = julianDate 3 JulianMonths.March 2020 in
+      (let value = IotaTime.Calendar.Julian.calendarDate 3 JulianMonths.March 2020 in
         IotaTime.Pattern.format (pMMMM' {calendar = Julian} deDE) value ==
           "März")
-  , MkRuntimeCase "locale names fall back for Coptic month thirteen"
+  , MkRuntimeCase "Coptic locale patterns retain canonical month names"
       (case compileDatePattern {calendar = Coptic} deDE "%d %B %Y" of
         Left _ => False
         Right pattern =>
-          let expected = copticDate 5 CopticMonths.PiKogiEnavot 1736 in
-            IotaTime.Pattern.format pattern expected ==
+          let first = IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1736
+              last = IotaTime.Calendar.Coptic.calendarDate 5 CopticMonths.PiKogiEnavot 1736 in
+            IotaTime.Pattern.format pattern first == "01 Thout 1736" &&
+            IotaTime.Pattern.format pattern last ==
               "05 PiKogiEnavot 1736" &&
             case IotaTime.Pattern.parse pattern "05 PiKogiEnavot 1736" of
               Left _ => False
-              Right actual => actual == expected)
+              Right actual => actual == last)
+  , MkRuntimeCase "Persian locale patterns retain canonical month names"
+      (IotaTime.Pattern.format (pMMMM' {calendar = Persian} deDE)
+        (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1400) == "Farvardin" &&
+       IotaTime.Pattern.format (pMMM' {calendar = Persian} deDE)
+        (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1400) == "Far")
+  , MkRuntimeCase "Islamic locale patterns retain canonical month names"
+      (IotaTime.Pattern.format (pMMMM' {calendar = IslamicBase15} deDE)
+        (IotaTime.Calendar.Islamic.calendarDate' {pattern = Base15}
+          1 IslamicMonths.Muharram 1443) == "Muharram")
+  , MkRuntimeCase "Hebrew locale patterns retain canonical month names"
+      (IotaTime.Pattern.format (pMMMM' {calendar = HebrewCivil} deDE)
+        (IotaTime.Calendar.Hebrew.calendarDate 1 5784 HebrewMonths.Tishri) == "Tishri")
   , MkRuntimeCase "locale weekdays consume without date validation"
       (parsesAs germanWeekdayDate "Montag, 03 März 2020"
-        (calendarDate 3 March 2020))
+        (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020))
+  , MkRuntimeCase "verified locale weekdays reject inconsistent dates"
+      (parsesAs verifiedGermanWeekdayDate "Dienstag, 03 März 2020"
+         (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) &&
+       case IotaTime.Pattern.parse verifiedGermanWeekdayDate
+         "Montag, 03 März 2020" of
+           Left (InvalidValue "weekday does not match date") => True
+           _ => False)
   , MkRuntimeCase "Japanese month names retain multibyte text"
-      (IotaTime.Pattern.format (pMMMM' jaJP) (calendarDate 3 March 2020) ==
+      (IotaTime.Pattern.format (pMMMM' jaJP) (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020) ==
         "3月")
   , MkRuntimeCase "US locale date layout is month-first"
-      (localeFormatsAs enUS (calendarDate 15 March 2020) "03/15/2020" &&
-       localeParsesAs enUS "03/15/2020" (calendarDate 15 March 2020))
+      (localeFormatsAs enUS (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020) "03/15/2020" &&
+       localeParsesAs enUS "03/15/2020" (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020))
   , MkRuntimeCase "German locale date layout is day-first"
-      (localeFormatsAs deDE (calendarDate 15 March 2020) "15.03.2020" &&
-       localeParsesAs deDE "15.03.2020" (calendarDate 15 March 2020))
+      (localeFormatsAs deDE (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020) "15.03.2020" &&
+       localeParsesAs deDE "15.03.2020" (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020))
   , MkRuntimeCase "Japanese locale date layout preserves separators"
-      (localeFormatsAs jaJP (calendarDate 15 March 2020) "2020年03月15日" &&
-       localeParsesAs jaJP "2020年03月15日" (calendarDate 15 March 2020))
+      (localeFormatsAs jaJP (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020) "2020年03月15日" &&
+       localeParsesAs jaJP "2020年03月15日" (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020))
   , MkRuntimeCase "locale date layouts support Julian dates"
       (case localeDatePattern {calendar = Julian} enUS of
         Left _ => False
         Right pattern =>
-          let expected = julianDate 15 JulianMonths.March 2020 in
+          let expected = IotaTime.Calendar.Julian.calendarDate 15 JulianMonths.March 2020 in
             IotaTime.Pattern.format pattern expected == "03/15/2020" &&
             case IotaTime.Pattern.parse pattern "03/15/2020" of
               Left _ => False
@@ -150,10 +176,10 @@ localeCases =
       (case compileDatePattern enUS "Date: %F %% %A" of
         Left _ => False
         Right pattern =>
-          IotaTime.Pattern.format pattern (calendarDate 15 March 2020) ==
+          IotaTime.Pattern.format pattern (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020) ==
             "Date: 2020-03-15 % Sunday" &&
           parsesAs pattern "Date: 2020-03-15 % Sunday"
-            (calendarDate 15 March 2020))
+            (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020))
   , MkRuntimeCase "date layout compiler rejects unsupported fields"
       (hasStrftimeError (UnsupportedSpecifier 'Q')
         (compileDatePattern enUS "%Q"))
@@ -180,19 +206,19 @@ localeCases =
         (compileTimePattern enUS "%Y"))
   , MkRuntimeCase "US locale date-time drops the zone and round-trips"
       (let value = on (localTime 13 24 35 0)
-            (calendarDate 15 March 2020) in
+            (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020) in
         localeDateTimeFormatsAs enUS value
           "Sun 15 Mar 2020 01:24:35 PM" &&
         localeDateTimeParsesAs enUS
           "Sun 15 Mar 2020 01:24:35 PM" value)
   , MkRuntimeCase "German locale date-time drops the zone and round-trips"
       (let value = on (localTime 13 24 35 0)
-            (calendarDate 15 March 2020) in
+            (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020) in
         localeDateTimeFormatsAs deDE value "So 15 Mär 2020 13:24:35" &&
         localeDateTimeParsesAs deDE "So 15 Mär 2020 13:24:35" value)
   , MkRuntimeCase "Japanese locale date-time round-trips"
       (let value = on (localTime 13 24 35 0)
-            (calendarDate 15 March 2020) in
+            (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020) in
         localeDateTimeFormatsAs jaJP value "2020年03月15日 13時24分35秒" &&
         localeDateTimeParsesAs jaJP "2020年03月15日 13時24分35秒" value)
   , MkRuntimeCase "date-time fields parse independently of field order"
@@ -200,7 +226,7 @@ localeCases =
         Left _ => False
         Right pattern =>
           let expected = on (localTime 13 24 0 0)
-                (calendarDate 15 March 2020) in
+                (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020) in
             IotaTime.Pattern.format pattern expected == "13:24 2020-03-15" &&
             case IotaTime.Pattern.parse pattern "13:24 2020-03-15" of
               Left _ => False
@@ -210,7 +236,7 @@ localeCases =
         Left _ => False
         Right pattern =>
           let expected = on (localTime 13 24 35 0)
-                (julianDate 15 JulianMonths.March 2020) in
+                (IotaTime.Calendar.Julian.calendarDate 15 JulianMonths.March 2020) in
             IotaTime.Pattern.format pattern expected ==
               "2020-03-15 13:24:35" &&
             case IotaTime.Pattern.parse pattern "2020-03-15 13:24:35" of
@@ -221,7 +247,7 @@ localeCases =
         Left _ => False
         Right pattern =>
           IotaTime.Pattern.format pattern
-            (on (localTime 13 24 35 0) (calendarDate 15 March 2020)) ==
+            (on (localTime 13 24 35 0) (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020)) ==
               "2020-03-15 13:24:35")
   , MkRuntimeCase "date-time compiler rejects unsupported fields"
       (hasStrftimeError (UnsupportedSpecifier 'Q')
@@ -231,7 +257,7 @@ localeCases =
         Left _ => False
         Right pattern =>
           let expected = fromCalendarDateTimeWithOffset
-                (on (localTime 13 24 35 0) (calendarDate 15 March 2020))
+                (on (localTime 13 24 35 0) (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020))
                 (fromHours 2) in
             IotaTime.Pattern.format pattern expected ==
               "2020-03-15 13:24:35 +0200 end" &&
@@ -246,7 +272,7 @@ localeCases =
           Right pattern =>
             let expected = fromCalendarDateTimeWithOffset
                   (on (localTime 13 24 35 0)
-                    (julianDate 15 JulianMonths.March 2020))
+                    (IotaTime.Calendar.Julian.calendarDate 15 JulianMonths.March 2020))
                   (fromHours 2) in
               case IotaTime.Pattern.parse pattern
                 "2020-03-15 13:24:35 +0200" of
@@ -330,7 +356,7 @@ zonedLocaleCases utcZone = do
           Right value =>
             zoneId value == "UTC" &&
             sameDateTime (toCalendarDateTime value)
-              (on (localTime 13 24 35 0) (calendarDate 15 March 2020)))
+              (on (localTime 13 24 35 0) (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020)))
     , MkRuntimeCase "locale zoned parser rejects a zoneless layout"
         (case zoneless of
           Left (ZonedLayoutError MissingZoneSpecifier) => True
@@ -352,7 +378,7 @@ zonedLocaleCases utcZone = do
           Left _ => False
           Right value => sameJulianDateTime (toCalendarDateTime value)
             (on (localTime 13 24 35 0)
-              (julianDate 15 JulianMonths.March 2020)))
+              (IotaTime.Calendar.Julian.calendarDate 15 JulianMonths.March 2020)))
     ]
 
 export

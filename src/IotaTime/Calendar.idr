@@ -6,6 +6,8 @@ import Derive.Prelude
 
 %language ElabReflection
 
+%default total
+
 ||| Selects an occurrence of a weekday within a month.
 public export
 data DayNth
@@ -20,6 +22,36 @@ data DayNth
   | Fifth
 
 %runElab derive `{DayNth} [Eq, Show]
+
+||| Number of days in the standard civil week modeled by iotaTime calendars.
+public export
+daysPerWeek : Integer
+daysPerWeek = 7
+
+||| Compute the raw day-of-month candidate for a weekday occurrence.
+||| Calendar implementations remain responsible for validating the candidate
+||| against their supported year and month ranges before constructing a date.
+export
+nthWeekdayDayNumber : DayNth -> (monthLength : Integer) ->
+                      (firstOffset : Integer) -> (lastOffset : Integer) ->
+                      Integer
+nthWeekdayDayNumber FourthToLast monthLength _ lastOffset =
+  monthLength - lastOffset - 3 * daysPerWeek
+nthWeekdayDayNumber ThirdToLast monthLength _ lastOffset =
+  monthLength - lastOffset - 2 * daysPerWeek
+nthWeekdayDayNumber SecondToLast monthLength _ lastOffset =
+  monthLength - lastOffset - daysPerWeek
+nthWeekdayDayNumber Last monthLength _ lastOffset =
+  monthLength - lastOffset
+nthWeekdayDayNumber First _ firstOffset _ = 1 + firstOffset
+nthWeekdayDayNumber Second _ firstOffset _ =
+  1 + daysPerWeek + firstOffset
+nthWeekdayDayNumber Third _ firstOffset _ =
+  1 + 2 * daysPerWeek + firstOffset
+nthWeekdayDayNumber Fourth _ firstOffset _ =
+  1 + 3 * daysPerWeek + firstOffset
+nthWeekdayDayNumber Fifth _ firstOffset _ =
+  1 + 4 * daysPerWeek + firstOffset
 
 ||| A calendar conversion failed because the target calendar cannot represent
 ||| the source date's absolute day count.

@@ -72,6 +72,24 @@ customWeekdayNames : Vect 7 String
 customWeekdayNames =
     [ "SunX", "MonX", "TueX", "WedX", "ThuX", "FriX", "SatX" ]
 
+repeatedMonthNames : Vect 12 String
+repeatedMonthNames =
+    [ "Odd", "Even", "Odd", "Even", "Odd", "Even"
+    , "Odd", "Even", "Odd", "Even", "Odd", "Even"
+    ]
+
+overlappingMonthNames : Vect 12 String
+overlappingMonthNames =
+    [ "Mar", "March", "M03", "M04", "M05", "M06"
+    , "M07", "M08", "M09", "M10", "M11", "M12"
+    ]
+
+emptyMonthNames : Vect 12 String
+emptyMonthNames =
+    [ "", "Named", "M03", "M04", "M05", "M06"
+    , "M07", "M08", "M09", "M10", "M11", "M12"
+    ]
+
 patternCases : List RuntimeCase
 patternCases =
   [ MkRuntimeCase "pR formats an ISO Gregorian date"
@@ -138,6 +156,19 @@ patternCases =
                 (calendarDate 3 March 2020) == "MarX" &&
              IotaTime.Pattern.format (pDayName customWeekdayNames)
                 (calendarDate 3 March 2020) == "TueX")
+    , MkRuntimeCase "duplicate custom names select the first matching month"
+            (IotaTime.Pattern.format (pMonthName repeatedMonthNames)
+                    (calendarDate 1 April 2000) == "Even" &&
+             parsesAs (pMonthName repeatedMonthNames) "Even"
+                 (calendarDate 1 February 2000))
+    , MkRuntimeCase "custom names parse longest prefixes first"
+            (parsesAs (pMonthName overlappingMonthNames) "March"
+                (calendarDate 1 February 2000))
+    , MkRuntimeCase "empty custom names are excluded from parsing"
+            (IotaTime.Pattern.format (pMonthName emptyMonthNames)
+                    (calendarDate 1 January 2000) == "" &&
+             parsesAs (pMonthName emptyMonthNames) "Named"
+                 (calendarDate 1 February 2000))
   , MkRuntimeCase "patterns reject trailing input"
             (isTrailingInputAt 10 (IotaTime.Pattern.parse
                 (pR {calendar = Gregorian}) "2020-03-03Z"))

@@ -75,14 +75,22 @@ before any calendar-specific integer conversion. Direct-interface tests cover
 zero and above-limit values across every built-in calendar family, including
 both Persian arithmetic rules and both Hebrew numbering schemes.
 
-### 5. Ambiguous custom name tables
+### 5. Deterministic custom name parsing - completed
 
-Named patterns currently accept empty, duplicate, and prefix-conflicting
-labels. Empty labels consume no input, duplicates parse as the first matching
-value, and shorter prefixes may win before longer labels.
+Custom names may intentionally be many-to-one, such as alternating `"Odd"` and
+`"Even"` month labels. Duplicate labels are therefore valid and parsing should
+deterministically select the first matching table entry.
 
-Consider a `NameTable n` smart constructor returning `Either NameTableError`.
-Validate non-empty, case-folded uniqueness and parse longest-first.
+Exclude empty labels from parsing because they consume no input, and parse
+prefix-overlapping labels longest-first. Keep the caller-provided `Vect` API
+and formatting behavior unchanged; do not require unique names or a validated
+wrapper.
+
+Implemented in the shared named-choice parser with a stable longest-first sort
+and exclusion of empty labels from parsing. Equal and duplicate labels retain
+caller order, so intentionally many-to-one custom names select their first
+matching entry. Tests cover repeated `"Odd"`/`"Even"` labels, overlapping
+prefixes, and empty-label formatting without zero-width parsing.
 
 ### 6. Weekday text is consumed but not validated
 

@@ -1,5 +1,6 @@
 module IotaTime.Pattern
 
+import Data.List
 import Data.String.Parser
 import Data.String
 
@@ -243,9 +244,19 @@ caseInsensitive value = consume (unpack value)
       consume rest
 
 namedChoice : List (String, field) -> PatternParser field
-namedChoice [] = Parser.fail "named field"
-namedChoice ((name, value) :: rest) =
-  (caseInsensitive name *> pure value) <|> namedChoice rest
+namedChoice choices = choose (sortBy longerFirst (filter nonEmpty choices))
+  where
+    nonEmpty : (String, field) -> Bool
+    nonEmpty (name, _) = name /= ""
+
+    longerFirst : (String, field) -> (String, field) -> Ordering
+    longerFirst (left, _) (right, _) =
+      compare (length (unpack right)) (length (unpack left))
+
+    choose : List (String, field) -> PatternParser field
+    choose [] = Parser.fail "named field"
+    choose ((name, value) :: rest) =
+      (caseInsensitive name *> pure value) <|> choose rest
 
 export
 namedUpdatePart : List (String, field) -> (field -> state -> state) ->

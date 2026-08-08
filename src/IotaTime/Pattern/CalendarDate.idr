@@ -211,6 +211,10 @@ pMM : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
 pMM = pmonthNum 2
 
 ||| A calendar month field using supplied names in calendar order.
+|||
+||| Parsing tries non-empty names longest-first. Equal or duplicate names retain
+||| table order and select the first matching month. Formatting uses the supplied
+||| name verbatim, including an empty name.
 public export
 pMonthName : {default Gregorian calendar : Type} ->
              {auto patterned : CalendarPattern calendar} ->
@@ -261,7 +265,8 @@ pdaySpace = MkPattern
 ||| A calendar weekday field using supplied Sunday-first names.
 |||
 ||| Parsing consumes and validates a name structurally; the date fields determine
-||| the resulting date.
+||| the resulting date. Non-empty names are tried longest-first; formatting uses
+||| the supplied name verbatim.
 public export
 pDayName : {default Gregorian calendar : Type} ->
            {auto patterned : CalendarPattern calendar} ->

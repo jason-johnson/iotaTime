@@ -378,20 +378,12 @@ nthPersianDayOfMonth nth target valueMonth valueYear =
   let monthLength = maxPersianDaysInMonth valueMonth valueYear
       firstOffset = (PersianWeekdays.weekdayNumber target -
         PersianWeekdays.weekdayNumber (persianWeekdayFromDays
-          (persianDaysFromCivil valueYear valueMonth 1))) `mod` 7
+          (persianDaysFromCivil valueYear valueMonth 1))) `mod` daysPerWeek
       lastOffset = (PersianWeekdays.weekdayNumber (persianWeekdayFromDays
         (persianDaysFromCivil valueYear valueMonth monthLength)) -
-        PersianWeekdays.weekdayNumber target) `mod` 7
-      dayNumber = case nth of
-        FourthToLast => dayOfMonthValue monthLength - lastOffset - 21
-        ThirdToLast => dayOfMonthValue monthLength - lastOffset - 14
-        SecondToLast => dayOfMonthValue monthLength - lastOffset - 7
-        Last => dayOfMonthValue monthLength - lastOffset
-        First => 1 + firstOffset
-        Second => 8 + firstOffset
-        Third => 15 + firstOffset
-        Fourth => 22 + firstOffset
-        Fifth => 29 + firstOffset
+        PersianWeekdays.weekdayNumber target) `mod` daysPerWeek
+      dayNumber = nthWeekdayDayNumber nth (dayOfMonthValue monthLength)
+        firstOffset lastOffset
    in dayOfMonthFromInteger dayNumber
 
 public export
@@ -824,21 +816,14 @@ arithmeticPersianNthDayOfMonth {rule} nth target valueMonth valueYear =
   let monthLength = maxArithmeticPersianDaysInMonth {rule} valueMonth valueYear
       firstOffset = (PersianWeekdays.weekdayNumber target -
         PersianWeekdays.weekdayNumber (persianWeekdayFromDays
-          (arithmeticPersianDaysFromCivil {rule} valueYear valueMonth 1))) `mod` 7
+          (arithmeticPersianDaysFromCivil {rule} valueYear valueMonth 1)))
+            `mod` daysPerWeek
       lastOffset = (PersianWeekdays.weekdayNumber (persianWeekdayFromDays
         (arithmeticPersianDaysFromCivil {rule}
           valueYear valueMonth monthLength)) -
-        PersianWeekdays.weekdayNumber target) `mod` 7
-      dayNumber = case nth of
-        FourthToLast => dayOfMonthValue monthLength - lastOffset - 21
-        ThirdToLast => dayOfMonthValue monthLength - lastOffset - 14
-        SecondToLast => dayOfMonthValue monthLength - lastOffset - 7
-        Last => dayOfMonthValue monthLength - lastOffset
-        First => 1 + firstOffset
-        Second => 8 + firstOffset
-        Third => 15 + firstOffset
-        Fourth => 22 + firstOffset
-        Fifth => 29 + firstOffset
+        PersianWeekdays.weekdayNumber target) `mod` daysPerWeek
+      dayNumber = nthWeekdayDayNumber nth (dayOfMonthValue monthLength)
+        firstOffset lastOffset
    in dayOfMonthFromInteger dayNumber
 
 isValidArithmeticPersianNthDay : {rule : PersianArithmeticRule} ->

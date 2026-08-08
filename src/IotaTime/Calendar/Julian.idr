@@ -294,21 +294,14 @@ nthJulianDayOfMonth nth target valueMonth valueYear =
       firstDate = MkJulianDate (daysFromJulianCivil valueYear valueMonth 1)
       firstOffset =
         (JulianWeekdays.weekdayNumber target -
-         JulianWeekdays.weekdayNumber (julianDayOfWeek firstDate)) `mod` 7
+         JulianWeekdays.weekdayNumber (julianDayOfWeek firstDate))
+           `mod` daysPerWeek
       lastDate = MkJulianDate (daysFromJulianCivil valueYear valueMonth monthLength)
       lastOffset =
         (JulianWeekdays.weekdayNumber (julianDayOfWeek lastDate) -
-         JulianWeekdays.weekdayNumber target) `mod` 7
-      dayNumber = case nth of
-        FourthToLast => dayOfMonthValue monthLength - lastOffset - 21
-        ThirdToLast => dayOfMonthValue monthLength - lastOffset - 14
-        SecondToLast => dayOfMonthValue monthLength - lastOffset - 7
-        Last => dayOfMonthValue monthLength - lastOffset
-        First => 1 + firstOffset
-        Second => 8 + firstOffset
-        Third => 15 + firstOffset
-        Fourth => 22 + firstOffset
-        Fifth => 29 + firstOffset
+         JulianWeekdays.weekdayNumber target) `mod` daysPerWeek
+      dayNumber = nthWeekdayDayNumber nth (dayOfMonthValue monthLength)
+        firstOffset lastOffset
    in dayOfMonthFromInteger dayNumber
 
 public export

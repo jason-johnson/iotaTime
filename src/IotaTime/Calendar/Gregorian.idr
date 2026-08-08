@@ -331,19 +331,13 @@ nthDayOfMonth : DayNth -> DayOfWeek -> Month -> Year -> DayOfMonth
 nthDayOfMonth nth target valueMonth valueYear =
   let monthLength = maxDaysInMonth valueMonth valueYear
       firstDate = MkGregorianDate (daysFromCivil valueYear valueMonth 1)
-      firstOffset = (weekdayNumber target - weekdayNumber (gregorianDayOfWeek firstDate)) `mod` 7
+      firstOffset = (weekdayNumber target -
+        weekdayNumber (gregorianDayOfWeek firstDate)) `mod` daysPerWeek
       lastDate = MkGregorianDate (daysFromCivil valueYear valueMonth monthLength)
-      lastOffset = (weekdayNumber (gregorianDayOfWeek lastDate) - weekdayNumber target) `mod` 7
-      dayNumber = case nth of
-        FourthToLast => dayOfMonthValue monthLength - lastOffset - 21
-        ThirdToLast => dayOfMonthValue monthLength - lastOffset - 14
-        SecondToLast => dayOfMonthValue monthLength - lastOffset - 7
-        Last => dayOfMonthValue monthLength - lastOffset
-        First => 1 + firstOffset
-        Second => 8 + firstOffset
-        Third => 15 + firstOffset
-        Fourth => 22 + firstOffset
-        Fifth => 29 + firstOffset
+      lastOffset = (weekdayNumber (gregorianDayOfWeek lastDate) -
+        weekdayNumber target) `mod` daysPerWeek
+      dayNumber = nthWeekdayDayNumber nth (dayOfMonthValue monthLength)
+        firstOffset lastOffset
    in dayOfMonthFromInteger dayNumber
 
 public export

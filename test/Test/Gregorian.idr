@@ -61,6 +61,16 @@ gregorianCases =
         (show (calendarDate 1 March 2000) == "calendarDate 1 March 2000")
     , MkRuntimeCase "weekday occurrence values compare and display"
         (First == First && First /= Last && show Fifth == "Fifth")
+    , MkRuntimeCase "shared nth-weekday arithmetic covers every selector"
+        (nthWeekdayDayNumber FourthToLast 31 2 3 == 7 &&
+         nthWeekdayDayNumber ThirdToLast 31 2 3 == 14 &&
+         nthWeekdayDayNumber SecondToLast 31 2 3 == 21 &&
+         nthWeekdayDayNumber Last 31 2 3 == 28 &&
+         nthWeekdayDayNumber First 31 2 3 == 3 &&
+         nthWeekdayDayNumber Second 31 2 3 == 10 &&
+         nthWeekdayDayNumber Third 31 2 3 == 17 &&
+         nthWeekdayDayNumber Fourth 31 2 3 == 24 &&
+         nthWeekdayDayNumber Fifth 31 2 3 == 31)
     , MkRuntimeCase "flat day conversion round-trips"
             (toDays {calendar = Gregorian} (gregorianFromDays 42) == 42)
         , MkRuntimeCase "valid day conversion round-trips from the Gregorian boundary"

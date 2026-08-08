@@ -125,7 +125,7 @@ provide an out-of-range weekday projection.
 
 ## Maintainability
 
-### 8. Duplicate nth-weekday arithmetic
+### 8. Duplicate nth-weekday arithmetic - completed
 
 The same nine-way `DayNth` calculation appears in Gregorian, Julian, Coptic,
 Islamic, Persian, arithmetic Persian, and Hebrew code.
@@ -133,6 +133,14 @@ Islamic, Persian, arithmetic Persian, and Hebrew code.
 Extract a shared helper that computes the raw candidate from `DayNth`, month
 length, first offset, and last offset. Keep calendar-specific range validation
 in each calendar module.
+
+Implemented as `nthWeekdayDayNumber` in `IotaTime.Calendar`. Gregorian,
+Julian, Coptic, Islamic, Persian, arithmetic Persian, and Hebrew now share the
+nine-way raw candidate calculation while retaining their own offset derivation,
+range validation, and date construction. A direct regression covers every
+`DayNth` selector. The arithmetic uses the named `daysPerWeek` constant, which
+records iotaTime's seven-day standard civil-week invariant without obscuring
+the occurrence offsets behind literals such as 8, 14, 21, or 29.
 
 ### 9. Duplicate `CalendarPattern` data and scaffolding
 

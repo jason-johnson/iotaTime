@@ -616,21 +616,13 @@ nthIslamicDayOfMonthFor nth target valueMonth valueYear =
       firstOffset = (IslamicWeekdays.weekdayNumber target -
         IslamicWeekdays.weekdayNumber (islamicWeekdayFromDays
           (islamicDaysFromCivil {epoch} {pattern}
-            valueYear valueMonth 1))) `mod` 7
+            valueYear valueMonth 1))) `mod` daysPerWeek
       lastOffset = (IslamicWeekdays.weekdayNumber (islamicWeekdayFromDays
         (islamicDaysFromCivil {epoch} {pattern}
           valueYear valueMonth monthLength)) -
-        IslamicWeekdays.weekdayNumber target) `mod` 7
-      dayNumber = case nth of
-        FourthToLast => dayOfMonthValue monthLength - lastOffset - 21
-        ThirdToLast => dayOfMonthValue monthLength - lastOffset - 14
-        SecondToLast => dayOfMonthValue monthLength - lastOffset - 7
-        Last => dayOfMonthValue monthLength - lastOffset
-        First => 1 + firstOffset
-        Second => 8 + firstOffset
-        Third => 15 + firstOffset
-        Fourth => 22 + firstOffset
-        Fifth => 29 + firstOffset
+        IslamicWeekdays.weekdayNumber target) `mod` daysPerWeek
+      dayNumber = nthWeekdayDayNumber nth (dayOfMonthValue monthLength)
+        firstOffset lastOffset
    in dayOfMonthFromInteger dayNumber
 
 public export

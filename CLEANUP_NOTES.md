@@ -1,0 +1,131 @@
+# Temporary Cleanup Notes
+
+> Temporary working document. Delete this file after the listed cleanup work is complete.
+
+## Correctness and semantic risks
+
+### 1. Coptic reverse `DayNth` selectors - completed
+
+`nthCopticDayOfMonth` can calculate a non-positive reverse occurrence in the
+5/6-day epagomenal month. `dayOfMonthFromInteger` then clamps that value to day
+1, after which `isValidCopticNthDay` may accept it.
+
+Compute an unbounded `Integer` candidate, validate it against the actual month
+length, and only then construct `DayOfMonth`. Add tests for absent `Last`,
+`SecondToLast`, `ThirdToLast`, and `FourthToLast` occurrences in common and leap
+epagomenal months.
+
+Implemented by separating raw candidate calculation from `DayOfMonth`
+construction, requiring validity evidence for `nthCopticDayOfMonth`, and adding
+runtime and compile-fail coverage for reverse epagomenal occurrences.
+
+### 2. Non-Gregorian locale month names
+
+`pMMMM'` and `pMMM'` currently overlay the locale's twelve Gregorian month
+names onto every calendar by ordinal position. This can label Coptic Thout,
+Persian Farvardin, or Islamic Muharram as January in the selected language.
+
+Choose explicit semantics:
+
+- introduce calendar-indexed localization data such as `CalendarLocale calendar`;
+- restrict operating-system month-name localization to Gregorian and Julian; or
+- use canonical calendar names where localized names are unavailable.
+
+Do not describe ordinal Gregorian overlays as localized non-Gregorian names.
+
+### 3. Under-constrained `CalendarPattern` instances
+
+`patternMonthLimit`, month-name lists, abbreviations, and numeric projections
+are independent values. External instances can provide mismatched lengths or
+out-of-range projections.
+
+Consider a stronger interface based on:
+
+```idris
+patternMonthCount : Nat
+patternMonthNames : Vect patternMonthCount String
+patternMonthAbbreviations : Vect patternMonthCount String
+patternMonthIndex : CalendarDate calendar -> Fin patternMonthCount
+```
+
+This is an API-breaking change and should be evaluated deliberately.
+
+### 4. Invalid month normalization in `refinePatternDate`
+
+Calendar month conversion helpers commonly map every unmatched integer to the
+last month. Pattern parsers enforce numeric bounds first, but the public
+`refinePatternDate` interface method can be called directly with invalid month
+numbers.
+
+Return a typed failure for out-of-range values or accept a bounded month index.
+
+### 5. Ambiguous custom name tables
+
+Named patterns currently accept empty, duplicate, and prefix-conflicting
+labels. Empty labels consume no input, duplicates parse as the first matching
+value, and shorter prefixes may win before longer labels.
+
+Consider a `NameTable n` smart constructor returning `Either NameTableError`.
+Validate non-empty, case-folded uniqueness and parse longest-first.
+
+### 6. Weekday text is consumed but not validated
+
+`pDayName` recognizes and consumes a weekday label but does not compare it with
+the resulting date. A weekday inconsistent with the parsed date is accepted.
+
+Either:
+
+- add `parsedWeekday : Maybe (Fin 7)` to `DateFields` and validate it after date
+  refinement; or
+- document and name the operation clearly as a structurally consumed field.
+
+### 7. `nameAt` hides invalid indexes
+
+`nameAt` returns an empty string for an exhausted table and maps non-positive
+indexes to the first entry. This keeps formatting total while concealing
+malformed `CalendarPattern` instances.
+
+Prefer `Vect` indexed by `Fin` so invalid formatting states are unrepresentable.
+
+## Maintainability
+
+### 8. Duplicate nth-weekday arithmetic
+
+The same nine-way `DayNth` calculation appears in Gregorian, Julian, Coptic,
+Islamic, Persian, arithmetic Persian, and Hebrew code.
+
+Extract a shared helper that computes the raw candidate from `DayNth`, month
+length, first offset, and last offset. Keep calendar-specific range validation
+in each calendar module.
+
+### 9. Duplicate `CalendarPattern` data and scaffolding
+
+Islamic/civil Islamic and Persian/arithmetic Persian instances duplicate month
+names, abbreviations, projections, and refinement structure.
+
+Share constants and parameterized refinement helpers where this reduces drift
+without obscuring calendar-specific behavior.
+
+### 10. Broad fallback in `dateTimeConversion`
+
+`dateTimeConversion` uses `Left _` from `dateConversion` to try a time field.
+This is currently harmless because the only failure is `UnsupportedSpecifier`,
+but it could silently discard future date-specific errors.
+
+Use an explicit `UnsupportedSpecifier` match or make field lookup return
+`Maybe`, constructing the final unsupported-specifier error once.
+
+### 11. Combined test cases
+
+Several `PatternCalendar` runtime cases combine unrelated calendars in one
+Boolean expression. Split them into individual `RuntimeCase` values so failures
+identify the affected calendar immediately.
+
+## Suggested order
+
+1. Fix Coptic reverse nth-weekday validation.
+2. Define non-Gregorian locale-name semantics.
+3. Strengthen `CalendarPattern` around `Nat`, `Vect`, and `Fin`.
+4. Validate custom name tables.
+5. Extract duplicated nth-weekday and calendar-pattern helpers.
+6. Split broad tests and tighten fallback control flow.

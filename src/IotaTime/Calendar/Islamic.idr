@@ -390,7 +390,7 @@ public export
 
   isValidDays = (>= epochDay {epoch})
   fromDays days = makeIslamicDate {epoch} {pattern} days
-  toDays date = date.daysSinceEpoch
+  toDaysFor date = date.daysSinceEpoch
   calendarName = "Islamic"
 
   year' date = let (value, _, _) =
@@ -409,7 +409,7 @@ public export
   applyCalendarPeriod' = applyIslamicPeriod {epoch} {pattern}
   shiftCalendarDays' = shiftIslamicDays {epoch} {pattern}
 
-  dayOfWeek = islamicDayOfWeek
+  dayOfWeekFor = islamicDayOfWeek
   next = nextIslamic {epoch} {pattern}
   previous = previousIslamic {epoch} {pattern}
 
@@ -439,8 +439,13 @@ public export
   KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
   CalendarValue (IslamicDate epoch pattern) where
   CalendarMonth _ = IslamicMonth
-  calendarValueYearMonthDay =
-    yearMonthDayFor {calendar = IslamicByEpoch epoch pattern}
+  CalendarWeekday = IslamicDayOfWeek
+  calendarValueToDays = toDaysFor {calendar = IslamicByEpoch epoch pattern}
+  calendarValueYear = yearFor {calendar = IslamicByEpoch epoch pattern}
+  calendarValueMonth = monthFor {calendar = IslamicByEpoch epoch pattern}
+  calendarValueDay = dayFor {calendar = IslamicByEpoch epoch pattern}
+  calendarValueDayOfWeek =
+    dayOfWeekFor {calendar = IslamicByEpoch epoch pattern}
   calendarValueBetweenWith =
     betweenWithFor {calendar = IslamicByEpoch epoch pattern}
 

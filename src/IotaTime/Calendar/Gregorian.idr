@@ -262,7 +262,7 @@ Calendar Gregorian where
 
   isValidDays = (>= epochDay)
   fromDays days = MkGregorianDate days
-  toDays date = date.daysSinceEpoch
+  toDaysFor date = date.daysSinceEpoch
   calendarName = "Gregorian"
 
   year' date = let (value, _, _) = civilFromDays date.daysSinceEpoch in value
@@ -274,14 +274,19 @@ Calendar Gregorian where
   applyCalendarPeriod' = applyGregorianPeriod
   shiftCalendarDays' = shiftGregorianDays
 
-  dayOfWeek = gregorianDayOfWeek
+  dayOfWeekFor = gregorianDayOfWeek
   next = nextGregorian
   previous = previousGregorian
 
 public export
 CalendarValue GregorianDate where
   CalendarMonth _ = Month
-  calendarValueYearMonthDay = yearMonthDayFor {calendar = Gregorian}
+  CalendarWeekday = DayOfWeek
+  calendarValueToDays = toDaysFor {calendar = Gregorian}
+  calendarValueYear = yearFor {calendar = Gregorian}
+  calendarValueMonth = monthFor {calendar = Gregorian}
+  calendarValueDay = dayFor {calendar = Gregorian}
+  calendarValueDayOfWeek = dayOfWeekFor {calendar = Gregorian}
   calendarValueBetweenWith = betweenWithFor {calendar = Gregorian}
 
 public export

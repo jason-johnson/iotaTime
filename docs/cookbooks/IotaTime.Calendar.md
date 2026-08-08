@@ -56,6 +56,10 @@ has a `Calendar calendar` dictionary rather than a concrete representation can
 use `betweenFor {calendar}`, `betweenDaysFor {calendar}`, or
 `betweenWithFor {calendar}`.
 
+The same rule applies to date observers: concrete values use `toDays`, `year`,
+`month`, `day`, `dayOfWeek`, and `yearMonthDay` directly. Abstract calendar code
+uses their `...For {calendar}` variants.
+
 This period contains one month and 30 days. A direct two-month application
 would produce 31 March, which passes the endpoint.
 

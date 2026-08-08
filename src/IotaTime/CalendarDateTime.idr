@@ -114,5 +114,5 @@ between : {calendar : Type} -> {auto cal : Calendar calendar} ->
           (end : CalendarDateTime calendar @{cal}) ->
           Period (CalendarDateTime calendar @{cal})
 between @{cal} start end = nanoseconds
-  ((toDays @{cal} end.date - toDays @{cal} start.date) * nanosecondsPerDay +
+  ((toDaysFor @{cal} end.date - toDaysFor @{cal} start.date) * nanosecondsPerDay +
    toNanosecondsSinceMidnight end.time - toNanosecondsSinceMidnight start.time)

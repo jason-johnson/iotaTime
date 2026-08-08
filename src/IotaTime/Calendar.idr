@@ -89,7 +89,7 @@ interface Calendar calendar where
 
   isValidDays : Integer -> Bool
   fromDays : (days : Integer) -> {auto 0 valid : So (isValidDays days)} -> DateRep
-  toDays : DateRep -> Integer
+  toDaysFor : DateRep -> Integer
   calendarName : String
 
   year' : DateRep -> Year
@@ -100,7 +100,7 @@ interface Calendar calendar where
   applyCalendarPeriod' : Period target -> DateRep -> DateRep
   shiftCalendarDays' : Integer -> DateRep -> DateRep
 
-  dayOfWeek : DateRep -> WeekdayRep
+  dayOfWeekFor : DateRep -> WeekdayRep
   next : Integer -> WeekdayRep -> DateRep -> DateRep
   previous : Integer -> WeekdayRep -> DateRep -> DateRep
 
@@ -124,30 +124,34 @@ interface HasCalendarDate date where
 public export
 interface CalendarValue date where
   CalendarMonth : Year -> Type
-  calendarValueYearMonthDay :
-    (value : date) ->
-    (valueYear : Year ** (CalendarMonth valueYear, DayOfMonth))
+  CalendarWeekday : Type
+  calendarValueToDays : date -> Integer
+  calendarValueYear : date -> Year
+  calendarValueMonth : (value : date) ->
+                       CalendarMonth (calendarValueYear value)
+  calendarValueDay : date -> DayOfMonth
+  calendarValueDayOfWeek : date -> CalendarWeekday
   calendarValueBetweenWith :
     DateDifferencePolicy -> date -> date -> Period date
 
 ||| Extract the calendar year from a date.
 public export
-year : {calendar : Type} -> {auto cal : Calendar calendar} ->
+yearFor : {calendar : Type} -> {auto cal : Calendar calendar} ->
   CalendarDate calendar @{cal} -> Year
-year @{cal} = year' @{cal}
+yearFor @{cal} = year' @{cal}
 
 ||| Extract the year-indexed calendar month from a date.
 public export
-month : {calendar : Type} -> {auto cal : Calendar calendar} ->
+monthFor : {calendar : Type} -> {auto cal : Calendar calendar} ->
   (date : CalendarDate calendar @{cal}) ->
-  MonthRep @{cal} (year {calendar} @{cal} date)
-month @{cal} = month' @{cal}
+  MonthRep @{cal} (yearFor {calendar} @{cal} date)
+monthFor @{cal} = month' @{cal}
 
 ||| Extract the day of month from a date.
 public export
-day : {calendar : Type} -> {auto cal : Calendar calendar} ->
+dayFor : {calendar : Type} -> {auto cal : Calendar calendar} ->
   CalendarDate calendar @{cal} -> DayOfMonth
-day @{cal} = day' @{cal}
+dayFor @{cal} = day' @{cal}
 
 export
 applyCalendarPeriod : {calendar : Type} -> {auto cal : Calendar calendar} ->
@@ -167,18 +171,18 @@ betweenDaysFor : {calendar : Type} -> {auto cal : Calendar calendar} ->
               (start : CalendarDate calendar @{cal}) ->
               (end : CalendarDate calendar @{cal}) ->
               Period (CalendarDate calendar @{cal})
-betweenDaysFor @{cal} start end = days (toDays @{cal} end - toDays @{cal} start)
+betweenDaysFor @{cal} start end = days (toDaysFor @{cal} end - toDaysFor @{cal} start)
 
 yearsBetween : {calendar : Type} -> {auto cal : Calendar calendar} ->
                {auto target : HasCalendar (CalendarDate calendar @{cal})} ->
                CalendarDate calendar @{cal} -> CalendarDate calendar @{cal} -> Integer
 yearsBetween @{cal} start end =
-  let estimate = yearValue (year @{cal} end) - yearValue (year @{cal} start)
+  let estimate = yearValue (yearFor @{cal} end) - yearValue (yearFor @{cal} start)
       estimatedDate = applyCalendarPeriod @{cal}
         (years {target = CalendarDate calendar @{cal}} estimate) start
-      estimatedDays = toDays @{cal} estimatedDate
-      startDays = toDays @{cal} start
-      endDays = toDays @{cal} end
+      estimatedDays = toDaysFor @{cal} estimatedDate
+      startDays = toDaysFor @{cal} start
+      endDays = toDaysFor @{cal} end
    in if startDays <= endDays
         then if estimatedDays <= endDays then estimate else estimate - 1
         else if estimatedDays >= endDays then estimate else estimate + 1
@@ -187,8 +191,8 @@ monthsBetween : {calendar : Type} -> {auto cal : Calendar calendar} ->
                 {auto target : HasCalendar (CalendarDate calendar @{cal})} ->
                 CalendarDate calendar @{cal} -> CalendarDate calendar @{cal} -> Integer
 monthsBetween @{cal} start end =
-  let startDays = toDays @{cal} start
-      endDays = toDays @{cal} end
+  let startDays = toDaysFor @{cal} start
+      endDays = toDaysFor @{cal} end
       fuel = cast (abs (endDays - startDays) + 1)
    in if startDays <= endDays
         then forward fuel 0
@@ -198,11 +202,11 @@ monthsBetween @{cal} start end =
     forward Z count = count
     forward (S fuel) count =
       let candidate = count + 1
-          candidateDays = toDays @{cal}
+          candidateDays = toDaysFor @{cal}
             (applyCalendarPeriod @{cal}
               (months {target = CalendarDate calendar @{cal}} candidate) start)
-       in if candidateDays <= toDays @{cal} end
-            then if candidateDays == toDays @{cal} end
+       in if candidateDays <= toDaysFor @{cal} end
+            then if candidateDays == toDaysFor @{cal} end
               then candidate
               else forward fuel candidate
             else count
@@ -211,11 +215,11 @@ monthsBetween @{cal} start end =
     backward Z count = count
     backward (S fuel) count =
       let candidate = count - 1
-          candidateDays = toDays @{cal}
+          candidateDays = toDaysFor @{cal}
             (applyCalendarPeriod @{cal}
               (months {target = CalendarDate calendar @{cal}} candidate) start)
-       in if candidateDays >= toDays @{cal} end
-            then if candidateDays == toDays @{cal} end
+       in if candidateDays >= toDaysFor @{cal} end
+            then if candidateDays == toDaysFor @{cal} end
               then candidate
               else backward fuel candidate
             else count
@@ -238,7 +242,7 @@ betweenWithFor @{cal} (MkDateDifferencePolicy YearsMonthsDays ClampToMonth) star
       monthCount = monthsBetween @{cal} afterYears end
       afterMonths = applyCalendarPeriod @{cal}
         (months {target = CalendarDate calendar @{cal}} monthCount) afterYears
-      dayCount = toDays @{cal} end - toDays @{cal} afterMonths
+      dayCount = toDaysFor @{cal} end - toDaysFor @{cal} afterMonths
    in years {target = CalendarDate calendar @{cal}} yearCount <+>
       months {target = CalendarDate calendar @{cal}} monthCount <+>
       days {target = CalendarDate calendar @{cal}} dayCount
@@ -288,7 +292,36 @@ public export
 yearMonthDay : (value : date) -> {auto rep : CalendarValue date} ->
                (valueYear : Year **
                  (CalendarMonth @{rep} valueYear, DayOfMonth))
-yearMonthDay value @{rep} = calendarValueYearMonthDay @{rep} value
+yearMonthDay value @{rep} =
+  (calendarValueYear @{rep} value **
+    (calendarValueMonth @{rep} value, calendarValueDay @{rep} value))
+
+||| Return the calendar-relative day count for a concrete date value.
+public export
+toDays : (value : date) -> {auto rep : CalendarValue date} -> Integer
+toDays value @{rep} = calendarValueToDays @{rep} value
+
+||| Extract the calendar year from a concrete date value.
+public export
+year : (value : date) -> {auto rep : CalendarValue date} -> Year
+year value @{rep} = calendarValueYear @{rep} value
+
+||| Extract the year-indexed calendar month from a concrete date value.
+public export
+month : (value : date) -> {auto rep : CalendarValue date} ->
+        CalendarMonth @{rep} (calendarValueYear @{rep} value)
+month value @{rep} = calendarValueMonth @{rep} value
+
+||| Extract the day of month from a concrete date value.
+public export
+day : (value : date) -> {auto rep : CalendarValue date} -> DayOfMonth
+day value @{rep} = calendarValueDay @{rep} value
+
+||| Extract the calendar-specific weekday from a concrete date value.
+public export
+dayOfWeek : (value : date) -> {auto rep : CalendarValue date} ->
+            CalendarWeekday @{rep}
+dayOfWeek value @{rep} = calendarValueDayOfWeek @{rep} value
 
 ||| Convert a date to another calendar while preserving its absolute day.
 ||| Returns `TargetCalendarOutOfRange` when the target cannot represent it.

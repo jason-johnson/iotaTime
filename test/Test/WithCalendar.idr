@@ -52,8 +52,7 @@ withCalendarCases =
           case backToGregorian hebrewDate of
             Left _ => False
             Right gregorianDate =>
-              toDays {calendar = Gregorian} gregorianDate ==
-                toDays {calendar = HebrewCivil} hebrewDate)
+              toDays gregorianDate == toDays hebrewDate)
   , MkRuntimeCase "calendar conversion rejects a day before the target range"
       (case hebrewEpochInGregorian of
           Left (TargetCalendarOutOfRange "Gregorian" (-2103607)) => True

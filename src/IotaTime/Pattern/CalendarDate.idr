@@ -90,7 +90,7 @@ setMonth value fields = { parsedMonth := monthNumber value } fields
 
 calendarYear : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
                CalendarDate calendar -> Integer
-calendarYear date = yearValue (year {calendar} date)
+calendarYear date = yearValue (yearFor {calendar} date)
 
 calendarMonthIndex : {calendar : Type} ->
                      {auto patterned : CalendarPattern calendar} ->
@@ -107,7 +107,7 @@ calendarMonth {calendar} @{patterned} date =
 
 calendarDay : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
               CalendarDate calendar -> Integer
-calendarDay date = dayOfMonthValue (day {calendar} date)
+calendarDay date = dayOfMonthValue (dayFor {calendar} date)
 
 gregorianMonths : Vect 12 Month
 gregorianMonths =

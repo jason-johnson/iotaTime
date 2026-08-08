@@ -24,7 +24,7 @@ copticRoundTrips current final =
          in case IotaTime.Calendar.Coptic.refineDate valueDay valueMonth valueYear of
               Left _ => False
               Right rebuilt =>
-                toDays {calendar = Coptic} rebuilt == current &&
+                toDays rebuilt == current &&
                 copticRoundTrips (current + 1) final
 
 timeComponents : LocalTime -> (Hour, Minute, Second, Nanosecond)
@@ -50,7 +50,7 @@ copticCases =
   , MkRuntimeCase "Coptic civil conversion round-trips two leap cycles"
       (copticRoundTrips (-626575) (-623653))
   , MkRuntimeCase "Coptic epoch matches Julian August 29 284"
-      (toDays {calendar = Coptic} (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1) ==
+      (toDays (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1) ==
        calendarDays (IotaTime.Calendar.Julian.calendarDate 29 JulianMonths.August 284))
   , MkRuntimeCase "Nayrouz 1738 is Gregorian September 11 2021"
       (calendarDays (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1738) ==
@@ -80,11 +80,11 @@ copticCases =
         (IotaTime.Calendar.Coptic.calendarDate 6 CopticMonths.PiKogiEnavot 1731)) ==
         (1732, CopticMonths.PiKogiEnavot, 5))
   , MkRuntimeCase "Coptic epoch weekday is Friday"
-      (dayOfWeek {calendar = Coptic}
+      (dayOfWeek
         (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1) ==
         CopticWeekdays.Friday)
   , MkRuntimeCase "first Monday of Thout 1716"
-      (dayOfWeek {calendar = Coptic}
+      (dayOfWeek
         (IotaTime.Calendar.Coptic.fromNthDay First CopticWeekdays.Monday
           CopticMonths.Thout 1716) == CopticWeekdays.Monday)
   , MkRuntimeCase "absent epagomenal weekday is rejected"
@@ -108,7 +108,7 @@ copticCases =
           Right date => cymd date ==
             (1732, CopticMonths.PiKogiEnavot, 5))
   , MkRuntimeCase "Coptic week one starts on Sunday"
-      (dayOfWeek {calendar = Coptic}
+      (dayOfWeek
         (IotaTime.Calendar.Coptic.fromWeekDate
           1 CopticWeekdays.Sunday 1716) ==
         CopticWeekdays.Sunday)

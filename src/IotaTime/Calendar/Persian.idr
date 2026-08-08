@@ -294,7 +294,7 @@ Calendar Persian where
 
   isValidDays value = value >= epoch && value <= lastDay
   fromDays days = MkPersianDate days
-  toDays date = date.daysSinceEpoch
+  toDaysFor date = date.daysSinceEpoch
   calendarName = "Persian"
 
   year' date = let (value, _, _) = persianCivilFromDays date.daysSinceEpoch in value
@@ -307,7 +307,7 @@ Calendar Persian where
   applyCalendarPeriod' = applyPersianPeriod
   shiftCalendarDays' = shiftPersianDays
 
-  dayOfWeek = persianDayOfWeek
+  dayOfWeekFor = persianDayOfWeek
   next = nextPersian
   previous = previousPersian
 
@@ -329,7 +329,12 @@ ApplyPeriod PersianDate where
 public export
 CalendarValue PersianDate where
   CalendarMonth _ = PersianMonth
-  calendarValueYearMonthDay = yearMonthDayFor {calendar = Persian}
+  CalendarWeekday = PersianDayOfWeek
+  calendarValueToDays = toDaysFor {calendar = Persian}
+  calendarValueYear = yearFor {calendar = Persian}
+  calendarValueMonth = monthFor {calendar = Persian}
+  calendarValueDay = dayFor {calendar = Persian}
+  calendarValueDayOfWeek = dayOfWeekFor {calendar = Persian}
   calendarValueBetweenWith = betweenWithFor {calendar = Persian}
 
 ||| Construct a statically validated Persian date in years 1-1500.
@@ -708,7 +713,7 @@ public export
   isValidDays value = value >= ruleEpoch {rule} &&
     value <= arithmeticLastDay {rule}
   fromDays days = MkArithmeticPersianDate days
-  toDays date = date.arithmeticDaysSinceEpoch
+  toDaysFor date = date.arithmeticDaysSinceEpoch
   calendarName = ruleName {rule}
 
   year' date = let (value, _, _) = arithmeticPersianCivilFromDays {rule}
@@ -724,7 +729,7 @@ public export
 
   applyCalendarPeriod' = applyArithmeticPersianPeriod {rule}
   shiftCalendarDays' = shiftArithmeticPersianDays {rule}
-  dayOfWeek = arithmeticPersianDayOfWeek
+  dayOfWeekFor = arithmeticPersianDayOfWeek
   next = nextArithmeticPersian {rule}
   previous = previousArithmeticPersian {rule}
 
@@ -750,8 +755,12 @@ public export
 {rule : PersianArithmeticRule} -> KnownPersianArithmeticRule rule =>
   CalendarValue (ArithmeticPersianDate rule) where
   CalendarMonth _ = PersianMonth
-  calendarValueYearMonthDay =
-    yearMonthDayFor {calendar = ArithmeticPersian rule}
+  CalendarWeekday = PersianDayOfWeek
+  calendarValueToDays = toDaysFor {calendar = ArithmeticPersian rule}
+  calendarValueYear = yearFor {calendar = ArithmeticPersian rule}
+  calendarValueMonth = monthFor {calendar = ArithmeticPersian rule}
+  calendarValueDay = dayFor {calendar = ArithmeticPersian rule}
+  calendarValueDayOfWeek = dayOfWeekFor {calendar = ArithmeticPersian rule}
   calendarValueBetweenWith =
     betweenWithFor {calendar = ArithmeticPersian rule}
 

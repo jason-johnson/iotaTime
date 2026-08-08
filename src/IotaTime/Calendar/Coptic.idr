@@ -233,7 +233,7 @@ Calendar Coptic where
 
   isValidDays = (>= epochDay)
   fromDays days = MkCopticDate days
-  toDays date = date.daysSinceEpoch
+  toDaysFor date = date.daysSinceEpoch
   calendarName = "Coptic"
 
   year' date = let (value, _, _) = copticCivilFromDays date.daysSinceEpoch in value
@@ -246,7 +246,7 @@ Calendar Coptic where
   applyCalendarPeriod' = applyCopticPeriod
   shiftCalendarDays' = shiftCopticDays
 
-  dayOfWeek = copticDayOfWeek
+  dayOfWeekFor = copticDayOfWeek
   next = nextCoptic
   previous = previousCoptic
 
@@ -268,7 +268,12 @@ ApplyPeriod CopticDate where
 public export
 CalendarValue CopticDate where
   CalendarMonth _ = CopticMonth
-  calendarValueYearMonthDay = yearMonthDayFor {calendar = Coptic}
+  CalendarWeekday = CopticDayOfWeek
+  calendarValueToDays = toDaysFor {calendar = Coptic}
+  calendarValueYear = yearFor {calendar = Coptic}
+  calendarValueMonth = monthFor {calendar = Coptic}
+  calendarValueDay = dayFor {calendar = Coptic}
+  calendarValueDayOfWeek = dayOfWeekFor {calendar = Coptic}
   calendarValueBetweenWith = betweenWithFor {calendar = Coptic}
 
 ||| Construct a statically validated Coptic date.

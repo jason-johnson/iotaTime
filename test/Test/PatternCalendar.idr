@@ -10,7 +10,8 @@ roundTrips {calendar} value expected =
   IotaTime.Pattern.format (pR {calendar}) value == expected &&
   case IotaTime.Pattern.parse (pR {calendar}) expected of
     Left _ => False
-    Right actual => toDays actual == toDays value
+    Right actual =>
+      toDaysFor {calendar} actual == toDaysFor {calendar} value
 
 rejects : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
           String -> Bool
@@ -28,8 +29,9 @@ rejectsMonthRefinement {calendar} year month =
 
 sameDateTime : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
                CalendarDateTime calendar -> CalendarDateTime calendar -> Bool
-sameDateTime left right =
-  toDays (datePart left) == toDays (datePart right) &&
+sameDateTime {calendar} left right =
+  toDaysFor {calendar} (datePart left) ==
+    toDaysFor {calendar} (datePart right) &&
   localTimeOfDay left == localTimeOfDay right
 
 namedPattern : {calendar : Type} ->
@@ -46,7 +48,8 @@ namedRoundTrips {calendar} value expected =
   IotaTime.Pattern.format (namedPattern {calendar}) value == expected &&
   case IotaTime.Pattern.parse (namedPattern {calendar}) expected of
     Left _ => False
-    Right actual => toDays actual == toDays value
+    Right actual =>
+      toDaysFor {calendar} actual == toDaysFor {calendar} value
 
 customCopticMonthNames : Vect 13 String
 customCopticMonthNames =

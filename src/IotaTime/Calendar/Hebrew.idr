@@ -544,7 +544,7 @@ public export
 
   isValidDays = (>= epochDay)
   fromDays days = makeHebrewDate days
-  toDays date = date.daysSinceEpoch
+  toDaysFor date = date.daysSinceEpoch
   calendarName = "Hebrew"
 
   year' = dateYear
@@ -555,7 +555,7 @@ public export
   applyCalendarPeriod' = applyHebrewPeriod
   shiftCalendarDays' = shiftHebrewDays
 
-  dayOfWeek = hebrewDayOfWeek
+  dayOfWeekFor = hebrewDayOfWeek
   next = nextHebrew
   previous = previousHebrew
 
@@ -571,7 +571,12 @@ public export
 {numbering : HebrewNumbering} -> KnownHebrewNumbering numbering =>
   CalendarValue (HebrewDate numbering) where
   CalendarMonth valueYear = HebrewMonth numbering valueYear
-  calendarValueYearMonthDay = yearMonthDayFor {calendar = Hebrew numbering}
+  CalendarWeekday = HebrewDayOfWeek numbering
+  calendarValueToDays = toDaysFor {calendar = Hebrew numbering}
+  calendarValueYear = yearFor {calendar = Hebrew numbering}
+  calendarValueMonth = monthFor {calendar = Hebrew numbering}
+  calendarValueDay = dayFor {calendar = Hebrew numbering}
+  calendarValueDayOfWeek = dayOfWeekFor {calendar = Hebrew numbering}
   calendarValueBetweenWith = betweenWithFor {calendar = Hebrew numbering}
 
 ||| Construct a statically validated Hebrew date in the selected numbering.

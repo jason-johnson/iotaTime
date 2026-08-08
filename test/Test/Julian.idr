@@ -22,7 +22,7 @@ julianRoundTrips current final =
          in case IotaTime.Calendar.Julian.refineDate valueDay valueMonth valueYear of
               Left _ => False
               Right rebuilt =>
-                toDays {calendar = Julian} rebuilt == current &&
+                toDays rebuilt == current &&
                 julianRoundTrips (current + 1) final
 
 timeComponents : LocalTime -> (Hour, Minute, Second, Nanosecond)
@@ -45,7 +45,7 @@ julianCases =
       (jymd (IotaTime.Calendar.Julian.calendarDate 1 JulianMonths.January (-44)) ==
         (-44, JulianMonths.January, 1))
     , MkRuntimeCase "Julian introduction has the documented flat day"
-      (toDays {calendar = Julian} (IotaTime.Calendar.Julian.calendarDate 1 JulianMonths.January (-44)) == -746631)
+      (toDays (IotaTime.Calendar.Julian.calendarDate 1 JulianMonths.January (-44)) == -746631)
   , MkRuntimeCase "dynamic date before Julian introduction is rejected"
       (isLeft (IotaTime.Calendar.Julian.refineDate 31 JulianMonths.December (-45)))
     , MkRuntimeCase "dynamic flat day before Julian introduction is rejected"
@@ -66,7 +66,7 @@ julianCases =
       (jymd (applyPeriod (years 1) (IotaTime.Calendar.Julian.calendarDate 29 JulianMonths.February 1900)) ==
         (1901, JulianMonths.February, 28))
   , MkRuntimeCase "Julian epoch begins on Tuesday"
-      (dayOfWeek {calendar = Julian} (IotaTime.Calendar.Julian.fromDays 0) == JulianWeekdays.Tuesday)
+      (dayOfWeek (IotaTime.Calendar.Julian.fromDays 0) == JulianWeekdays.Tuesday)
   , MkRuntimeCase "third Julian Monday of January 2000"
       (jymd (IotaTime.Calendar.Julian.fromNthDay Third JulianWeekdays.Monday JulianMonths.January 2000) ==
         (2000, JulianMonths.January, 18))

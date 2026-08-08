@@ -36,7 +36,7 @@ pCalendarDays {calendar} @{cal} = MkPattern
   0
   (finishCalendarDays {calendar} @{cal})
   pSignedInteger.parsePart
-  (show . toDays {calendar} @{cal})
+  (show . toDaysFor {calendar} @{cal})
 
 isZoneTokenCharacter : Char -> Bool
 isZoneTokenCharacter value =

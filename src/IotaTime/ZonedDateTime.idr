@@ -75,18 +75,18 @@ toLocalTime = localTimeOfDay . zonedLocalDateTime
 public export
 year : {calendar : Type} -> {auto cal : Calendar calendar} ->
   ZonedDateTime calendar @{cal} -> Year
-year = IotaTime.Calendar.year . toCalendarDate
+year = IotaTime.Calendar.yearFor . toCalendarDate
 
 public export
 month : {calendar : Type} -> {auto cal : Calendar calendar} ->
    (value : ZonedDateTime calendar @{cal}) ->
    MonthRep @{cal} (IotaTime.ZonedDateTime.year value)
-month value = IotaTime.Calendar.month (toCalendarDate value)
+month value = IotaTime.Calendar.monthFor (toCalendarDate value)
 
 public export
 day : {calendar : Type} -> {auto cal : Calendar calendar} ->
       ZonedDateTime calendar @{cal} -> DayOfMonth
-day = IotaTime.Calendar.day . toCalendarDate
+day = IotaTime.Calendar.dayFor . toCalendarDate
 
 public export
 hour : {calendar : Type} -> {auto cal : Calendar calendar} ->

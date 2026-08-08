@@ -25,7 +25,7 @@ hebrewRoundTrips current final =
          in case IotaTime.Calendar.Hebrew.refineDate valueDay valueMonthName valueYear of
               Left _ => False
               Right rebuilt =>
-                toDays {calendar = HebrewCivil} rebuilt == current &&
+                toDays rebuilt == current &&
                 hebrewRoundTrips (current + 1) final
 
 civilNisan : CalendarDate HebrewCivil
@@ -52,16 +52,16 @@ hebrewCases =
   , MkRuntimeCase "Hebrew flat conversion round-trips around the shared epoch"
       (hebrewRoundTrips (-800) 800)
   , MkRuntimeCase "Hebrew conversion remains exact in distant future years"
-          (let days = toDays {calendar = HebrewCivil} (IotaTime.Calendar.Hebrew.calendarDate 1 100000 HebrewMonths.Tishri) in
+          (let days = toDays (IotaTime.Calendar.Hebrew.calendarDate 1 100000 HebrewMonths.Tishri) in
         case IotaTime.Calendar.Hebrew.refineDays days of
           Left _ => False
           Right rebuilt => hymd rebuilt == (100000, TishriName, 1))
   , MkRuntimeCase "16 September 2023 is 1 Tishri 5784"
-      (toDays {calendar = HebrewCivil} (IotaTime.Calendar.Hebrew.calendarDate 1 5784 HebrewMonths.Tishri) ==
-        toDays {calendar = Gregorian} (IotaTime.Calendar.Gregorian.calendarDate 16 September 2023))
+      (toDays (IotaTime.Calendar.Hebrew.calendarDate 1 5784 HebrewMonths.Tishri) ==
+        toDays (IotaTime.Calendar.Gregorian.calendarDate 16 September 2023))
   , MkRuntimeCase "23 April 2024 is 15 Nisan 5784"
-      (toDays {calendar = HebrewCivil} civilNisan ==
-        toDays {calendar = Gregorian} (IotaTime.Calendar.Gregorian.calendarDate 23 April 2024))
+      (toDays civilNisan ==
+        toDays (IotaTime.Calendar.Gregorian.calendarDate 23 April 2024))
   , MkRuntimeCase "5784 is a Hebrew leap year"
       (IotaTime.Calendar.Hebrew.isLeapYear 5784)
   , MkRuntimeCase "5786 is a common Hebrew year"
@@ -92,15 +92,14 @@ hebrewCases =
         (5785, AdarName, 29))
   , MkRuntimeCase "civil numbering starts at Tishri"
       (IotaTime.Calendar.Hebrew.monthNumber {numbering = Civil}
-        (month {calendar = HebrewCivil} civilNisan) == 8)
+        (month civilNisan) == 8)
   , MkRuntimeCase "scriptural numbering starts at Nisan"
       (IotaTime.Calendar.Hebrew.monthNumber {numbering = Scriptural}
-        (month {calendar = HebrewScriptural} scripturalNisan) == 1)
+        (month scripturalNisan) == 1)
   , MkRuntimeCase "numbering variants share the same flat day"
-      (toDays {calendar = HebrewCivil} civilNisan ==
-        toDays {calendar = HebrewScriptural} scripturalNisan)
+      (toDays civilNisan == toDays scripturalNisan)
   , MkRuntimeCase "1 Tishri 5784 is Saturday"
-      (dayOfWeek {calendar = HebrewCivil}
+      (dayOfWeek
         (IotaTime.Calendar.Hebrew.calendarDate 1 5784 HebrewMonths.Tishri) == HebrewWeekdays.Saturday)
   , MkRuntimeCase "third Monday of Tishri 5784 is day 17"
       (hymd (IotaTime.Calendar.Hebrew.fromNthDay Third HebrewWeekdays.Monday 5784 HebrewMonths.Tishri) ==

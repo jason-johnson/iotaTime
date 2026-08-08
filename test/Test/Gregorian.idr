@@ -8,7 +8,7 @@ ymd date = case yearMonthDay date of
     (valueYear ** (valueMonth, valueDay)) => (valueYear, valueMonth, valueDay)
 
 weekday : CalendarDate Gregorian -> DayOfWeek
-weekday = dayOfWeek {calendar = Gregorian}
+weekday date = dayOfWeek date
 
 isLeft : Either left right -> Bool
 isLeft (Left _) = True
@@ -31,7 +31,7 @@ rawDayRoundTrips : Bool
 rawDayRoundTrips = all
     (\value => case IotaTime.Calendar.Gregorian.refineDays value of
         Left _ => False
-        Right date => toDays {calendar = Gregorian} date == value)
+        Right date => toDays date == value)
     rawDaySamples
 
 civilRoundTrips : Integer -> Integer -> Bool
@@ -46,7 +46,7 @@ civilRoundTrips current final =
                      in case IotaTime.Calendar.Gregorian.refineDate valueDay valueMonth valueYear of
                             Left _ => False
                             Right rebuilt =>
-                                if toDays {calendar = Gregorian} rebuilt == current
+                                if toDays rebuilt == current
                                     then civilRoundTrips (current + 1) final
                                     else False
 
@@ -73,17 +73,17 @@ gregorianCases =
          nthWeekdayDayNumber Fourth 31 2 3 == 24 &&
          nthWeekdayDayNumber Fifth 31 2 3 == 31)
     , MkRuntimeCase "flat day conversion round-trips"
-            (toDays {calendar = Gregorian} (IotaTime.Calendar.Gregorian.fromDays 42) == 42)
+            (toDays (IotaTime.Calendar.Gregorian.fromDays 42) == 42)
         , MkRuntimeCase "valid day conversion round-trips from the Gregorian boundary"
             rawDayRoundTrips
         , MkRuntimeCase "civil conversion round-trips every valid day through February 2400"
             validCivilRoundTrips
         , MkRuntimeCase "day getter views the typed day of month"
-            (day {calendar = Gregorian} (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) == 31)
+            (day (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) == 31)
         , MkRuntimeCase "month getter views the typed Gregorian month"
-            (month {calendar = Gregorian} (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) == January)
+            (month (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) == January)
         , MkRuntimeCase "year getter views the typed year"
-            (year {calendar = Gregorian} (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) == 2000)
+            (year (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) == 2000)
     , MkRuntimeCase "Gregorian changeover is the first valid date"
             (ymd (IotaTime.Calendar.Gregorian.calendarDate 15 October 1582) == (1582, October, 15))
         , MkRuntimeCase "dynamic date before Gregorian changeover is rejected"

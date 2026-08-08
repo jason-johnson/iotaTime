@@ -216,7 +216,7 @@ Calendar Julian where
 
   isValidDays = (>= epochDay)
   fromDays days = MkJulianDate days
-  toDays date = date.daysSinceEpoch
+  toDaysFor date = date.daysSinceEpoch
   calendarName = "Julian"
 
   year' date = let (value, _, _) = julianCivilFromDays date.daysSinceEpoch in value
@@ -228,7 +228,7 @@ Calendar Julian where
   applyCalendarPeriod' = applyJulianPeriod
   shiftCalendarDays' = shiftJulianDays
 
-  dayOfWeek = julianDayOfWeek
+  dayOfWeekFor = julianDayOfWeek
   next = nextJulian
   previous = previousJulian
 
@@ -250,7 +250,12 @@ ApplyPeriod JulianDate where
 public export
 CalendarValue JulianDate where
   CalendarMonth _ = JulianMonth
-  calendarValueYearMonthDay = yearMonthDayFor {calendar = Julian}
+  CalendarWeekday = JulianDayOfWeek
+  calendarValueToDays = toDaysFor {calendar = Julian}
+  calendarValueYear = yearFor {calendar = Julian}
+  calendarValueMonth = monthFor {calendar = Julian}
+  calendarValueDay = dayFor {calendar = Julian}
+  calendarValueDayOfWeek = dayOfWeekFor {calendar = Julian}
   calendarValueBetweenWith = betweenWithFor {calendar = Julian}
 
 ||| Construct a statically validated Julian date.

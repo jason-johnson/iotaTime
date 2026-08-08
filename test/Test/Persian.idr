@@ -32,7 +32,7 @@ persianRoundTrips final current =
          in case IotaTime.Calendar.Persian.refineDate valueDay valueMonth valueYear of
               Left _ => False
               Right rebuilt =>
-                toDays {calendar = Persian} rebuilt == current &&
+                toDays rebuilt == current &&
                 persianRoundTrips final (current + 97)
 
 arithmeticPersianRoundTrips : {rule : PersianArithmeticRule} ->
@@ -48,7 +48,7 @@ arithmeticPersianRoundTrips {rule} final current =
               valueDay valueMonth valueYear of
                 Left _ => False
                 Right rebuilt =>
-                  toDays {calendar = ArithmeticPersian rule} rebuilt == current &&
+                  toDays rebuilt == current &&
                   arithmeticPersianRoundTrips {rule} final (current + 997)
 
 timeComponents : LocalTime -> (Hour, Minute, Second, Nanosecond)
@@ -71,9 +71,9 @@ persianCases =
       (show (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1) ==
         "calendarDate 1 Farvardin 1")
   , MkRuntimeCase "Persian conversion samples the complete supported range"
-      (let first = toDays {calendar = Persian}
+      (let first = toDays
              (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1)
-           final = toDays {calendar = Persian}
+           final = toDays
              (IotaTime.Calendar.Persian.calendarDate 29 PersianMonths.Esfand 1500)
         in persianRoundTrips final first &&
        case IotaTime.Calendar.Persian.refineDays final of
@@ -173,15 +173,15 @@ persianCases =
         (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1500)) ==
         (1500, PersianMonths.Esfand, 29))
   , MkRuntimeCase "Persian epoch weekday is Friday"
-      (dayOfWeek {calendar = Persian}
+      (dayOfWeek
         (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1) ==
         PersianWeekdays.Friday)
   , MkRuntimeCase "first Monday of Farvardin 1400"
-      (dayOfWeek {calendar = Persian}
+      (dayOfWeek
         (IotaTime.Calendar.Persian.fromNthDay First PersianWeekdays.Monday
           PersianMonths.Farvardin 1400) == PersianWeekdays.Monday)
   , MkRuntimeCase "Persian week one starts on Saturday"
-      (dayOfWeek {calendar = Persian}
+      (dayOfWeek
         (IotaTime.Calendar.Persian.fromWeekDate
           1 PersianWeekdays.Saturday 1400) ==
         PersianWeekdays.Saturday)

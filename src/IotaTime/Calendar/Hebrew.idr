@@ -38,8 +38,8 @@ HebrewScriptural = Hebrew Scriptural
 
 public export
 total
-isHebrewLeapYear : Year -> Bool
-isHebrewLeapYear value = (7 * yearValue value + 1) `mod` 19 < 7
+isLeapYear : Year -> Bool
+isLeapYear value = (7 * yearValue value + 1) `mod` 19 < 7
 
 namespace HebrewMonths
   public export
@@ -55,7 +55,7 @@ namespace HebrewMonths
     Shevat : {numbering : HebrewNumbering} -> {valueYear : Year} ->
        HebrewMonth numbering valueYear
     AdarI : {numbering : HebrewNumbering} -> {valueYear : Year} ->
-      {auto 0 leap : So (isHebrewLeapYear valueYear)} ->
+      {auto 0 leap : So (isLeapYear valueYear)} ->
       HebrewMonth numbering valueYear
     Adar : {numbering : HebrewNumbering} -> {valueYear : Year} ->
      HebrewMonth numbering valueYear
@@ -211,14 +211,14 @@ weekdayFromNumber value = case value `mod` 7 of
   _ => HebrewWeekdays.Saturday
 
 public export
-hebrewMonthNumber : {numbering : HebrewNumbering} -> {year : Year} ->
+monthNumber : {numbering : HebrewNumbering} -> {year : Year} ->
                     KnownHebrewNumbering numbering =>
                     HebrewMonth numbering year -> Integer
-hebrewMonthNumber value =
+monthNumber value =
   (HebrewMonths.calendarIndex value - numberingStart {numbering} + 13) `mod` 13 + 1
 
 monthsInHebrewYear : Year -> Integer
-monthsInHebrewYear value = if isHebrewLeapYear value then 13 else 12
+monthsInHebrewYear value = if isLeapYear value then 13 else 12
 
 public export
 total
@@ -231,8 +231,8 @@ monthsElapsed value =
 
 public export
 total
-elapsedHebrewDays : Year -> Integer
-elapsedHebrewDays value =
+elapsedDays : Year -> Integer
+elapsedDays value =
   let elapsedMonths = monthsElapsed value
       partsElapsed = 204 + 793 * (elapsedMonths `mod` 1080)
       hoursElapsed = 5 + 12 * elapsedMonths + 793 * (elapsedMonths `div` 1080) +
@@ -241,10 +241,10 @@ elapsedHebrewDays value =
       moladParts = 1080 * (hoursElapsed `mod` 24) + partsElapsed `mod` 1080
       postponed = if moladParts >= 19440
         then moladDay + 1
-        else if moladDay `mod` 7 == 2 && moladParts >= 9924 && not (isHebrewLeapYear value)
+        else if moladDay `mod` 7 == 2 && moladParts >= 9924 && not (isLeapYear value)
           then moladDay + 1
           else if moladDay `mod` 7 == 1 && moladParts >= 16789 &&
-              isHebrewLeapYear (Year.fromInteger (yearValue value - 1))
+              isLeapYear (Year.fromInteger (yearValue value - 1))
             then moladDay + 1
             else moladDay
    in if postponed `mod` 7 == 0 || postponed `mod` 7 == 3 || postponed `mod` 7 == 5
@@ -253,75 +253,75 @@ elapsedHebrewDays value =
 
 public export
 total
-firstHebrewDayOfYear : Year -> Integer
-firstHebrewDayOfYear value = -2103608 + elapsedHebrewDays value
+firstDayOfYear : Year -> Integer
+firstDayOfYear value = -2103608 + elapsedDays value
 
 public export
 total
-daysInHebrewYear : Year -> Integer
-daysInHebrewYear value =
-  firstHebrewDayOfYear (Year.fromInteger (yearValue value + 1)) -
-  firstHebrewDayOfYear value
+daysInYear : Year -> Integer
+daysInYear value =
+  firstDayOfYear (Year.fromInteger (yearValue value + 1)) -
+  firstDayOfYear value
 
 public export
 total
 isCheshvanLong : Year -> Bool
-isCheshvanLong value = daysInHebrewYear value `mod` 10 == 5
+isCheshvanLong value = daysInYear value `mod` 10 == 5
 
 public export
 total
 isKislevShort : Year -> Bool
-isKislevShort value = daysInHebrewYear value `mod` 10 == 3
+isKislevShort value = daysInYear value `mod` 10 == 3
 
 public export
 total
-hebrewMonthLengthByIndex : Year -> Integer -> Integer
-hebrewMonthLengthByIndex _ 0 = 30
-hebrewMonthLengthByIndex value 1 = if isCheshvanLong value then 30 else 29
-hebrewMonthLengthByIndex value 2 = if isKislevShort value then 29 else 30
-hebrewMonthLengthByIndex _ 3 = 29
-hebrewMonthLengthByIndex _ 4 = 30
-hebrewMonthLengthByIndex value 5 = if isHebrewLeapYear value then 30 else 0
-hebrewMonthLengthByIndex _ 6 = 29
-hebrewMonthLengthByIndex _ 7 = 30
-hebrewMonthLengthByIndex _ 8 = 29
-hebrewMonthLengthByIndex _ 9 = 30
-hebrewMonthLengthByIndex _ 10 = 29
-hebrewMonthLengthByIndex _ 11 = 30
-hebrewMonthLengthByIndex _ 12 = 29
-hebrewMonthLengthByIndex _ _ = 0
+monthLengthByIndex : Year -> Integer -> Integer
+monthLengthByIndex _ 0 = 30
+monthLengthByIndex value 1 = if isCheshvanLong value then 30 else 29
+monthLengthByIndex value 2 = if isKislevShort value then 29 else 30
+monthLengthByIndex _ 3 = 29
+monthLengthByIndex _ 4 = 30
+monthLengthByIndex value 5 = if isLeapYear value then 30 else 0
+monthLengthByIndex _ 6 = 29
+monthLengthByIndex _ 7 = 30
+monthLengthByIndex _ 8 = 29
+monthLengthByIndex _ 9 = 30
+monthLengthByIndex _ 10 = 29
+monthLengthByIndex _ 11 = 30
+monthLengthByIndex _ 12 = 29
+monthLengthByIndex _ _ = 0
 
 public export
 total
-maxHebrewDaysInMonth : {numbering : HebrewNumbering} -> {year : Year} ->
+maxDaysInMonth : {numbering : HebrewNumbering} -> {year : Year} ->
                        (value : HebrewMonth numbering year) -> DayOfMonth
-maxHebrewDaysInMonth {year} value =
-  dayOfMonthFromInteger (hebrewMonthLengthByIndex year (HebrewMonths.calendarIndex value))
+maxDaysInMonth {year} value =
+  dayOfMonthFromInteger (monthLengthByIndex year (HebrewMonths.calendarIndex value))
 
 public export
 total
-isValidHebrewDay : DayOfMonth -> (valueYear : Year) ->
+isValidDay : DayOfMonth -> (valueYear : Year) ->
                    HebrewMonth numbering valueYear -> Bool
-isValidHebrewDay valueDay valueYear HebrewMonths.Cheshvan =
+isValidDay valueDay valueYear HebrewMonths.Cheshvan =
   valueDay <= if isCheshvanLong valueYear then 30 else 29
-isValidHebrewDay valueDay valueYear HebrewMonths.Kislev =
+isValidDay valueDay valueYear HebrewMonths.Kislev =
   valueDay <= if isKislevShort valueYear then 29 else 30
-isValidHebrewDay valueDay _ HebrewMonths.Tevet = valueDay <= 29
-isValidHebrewDay valueDay _ HebrewMonths.Adar = valueDay <= 29
-isValidHebrewDay valueDay _ HebrewMonths.Iyar = valueDay <= 29
-isValidHebrewDay valueDay _ HebrewMonths.Tammuz = valueDay <= 29
-isValidHebrewDay valueDay _ HebrewMonths.Elul = valueDay <= 29
-isValidHebrewDay valueDay _ _ = valueDay <= 30
+isValidDay valueDay _ HebrewMonths.Tevet = valueDay <= 29
+isValidDay valueDay _ HebrewMonths.Adar = valueDay <= 29
+isValidDay valueDay _ HebrewMonths.Iyar = valueDay <= 29
+isValidDay valueDay _ HebrewMonths.Tammuz = valueDay <= 29
+isValidDay valueDay _ HebrewMonths.Elul = valueDay <= 29
+isValidDay valueDay _ _ = valueDay <= 30
 
 total
 daysBeforeHebrewMonth : Year -> Integer -> Integer
 daysBeforeHebrewMonth _ 0 = 0
 daysBeforeHebrewMonth _ 1 = 30
-daysBeforeHebrewMonth value 2 = 30 + hebrewMonthLengthByIndex value 1
+daysBeforeHebrewMonth value 2 = 30 + monthLengthByIndex value 1
 daysBeforeHebrewMonth value target =
-  let variableDays = hebrewMonthLengthByIndex value 1 +
-        hebrewMonthLengthByIndex value 2
-      adarIDays = hebrewMonthLengthByIndex value 5
+  let variableDays = monthLengthByIndex value 1 +
+        monthLengthByIndex value 2
+      adarIDays = monthLengthByIndex value 5
    in case target of
         3 => 30 + variableDays
         4 => 59 + variableDays
@@ -340,7 +340,7 @@ hebrewYearMonthDayToDays : {numbering : HebrewNumbering} ->
                            (valueYear : Year) -> HebrewMonth numbering valueYear ->
                            DayOfMonth -> Integer
 hebrewYearMonthDayToDays valueYear valueMonth valueDay =
-  firstHebrewDayOfYear valueYear +
+  firstDayOfYear valueYear +
   daysBeforeHebrewMonth valueYear (HebrewMonths.calendarIndex valueMonth) +
   dayOfMonthValue valueDay - 1
 
@@ -351,7 +351,7 @@ monthFromCalendarIndex _ 1 = HebrewMonths.Cheshvan
 monthFromCalendarIndex _ 2 = HebrewMonths.Kislev
 monthFromCalendarIndex _ 3 = HebrewMonths.Tevet
 monthFromCalendarIndex _ 4 = HebrewMonths.Shevat
-monthFromCalendarIndex valueYear 5 = case choose (isHebrewLeapYear valueYear) of
+monthFromCalendarIndex valueYear 5 = case choose (isLeapYear valueYear) of
   Left leap => HebrewMonths.AdarI @{leap}
   Right _ => HebrewMonths.Adar
 monthFromCalendarIndex _ 6 = HebrewMonths.Adar
@@ -365,10 +365,10 @@ monthFromCalendarIndex _ _ = HebrewMonths.Elul
 findHebrewYear : Nat -> Integer -> Year -> Year
 findHebrewYear Z days candidate = candidate
 findHebrewYear (S fuel) days candidate =
-  if firstHebrewDayOfYear candidate > days
+  if firstDayOfYear candidate > days
     then findHebrewYear fuel days (yearFromInteger (yearValue candidate - 1))
     else let following = yearFromInteger (yearValue candidate + 1)
-          in if firstHebrewDayOfYear following <= days
+          in if firstDayOfYear following <= days
                then findHebrewYear fuel days following
                else candidate
 
@@ -376,7 +376,7 @@ findHebrewMonth : Nat -> Year -> Integer -> Integer -> (Integer, DayOfMonth)
 findHebrewMonth Z valueYear index remaining =
   (index, dayOfMonthFromInteger (remaining + 1))
 findHebrewMonth (S fuel) valueYear index remaining =
-  let monthLength = hebrewMonthLengthByIndex valueYear index
+  let monthLength = monthLengthByIndex valueYear index
    in if remaining < monthLength
         then (index, dayOfMonthFromInteger (remaining + 1))
         else findHebrewMonth fuel valueYear (index + 1) (remaining - monthLength)
@@ -384,12 +384,12 @@ findHebrewMonth (S fuel) valueYear index remaining =
 hebrewCivilFromDays : {numbering : HebrewNumbering} -> Integer ->
   (valueYear : Year ** (HebrewMonth numbering valueYear, DayOfMonth))
 hebrewCivilFromDays days =
-  let firstYearDay = firstHebrewDayOfYear 1
+  let firstYearDay = firstDayOfYear 1
       estimate = max 1 ((days - firstYearDay) `div` 366 + 1)
       valueYear = findHebrewYear (cast (abs estimate + 2)) days
         (yearFromInteger estimate)
       (monthIndex, valueDay) = findHebrewMonth 13 valueYear 0
-        (days - firstHebrewDayOfYear valueYear)
+        (days - firstDayOfYear valueYear)
   in (valueYear ** (monthFromCalendarIndex {numbering} valueYear monthIndex, valueDay))
 
 export
@@ -411,7 +411,7 @@ Ord (HebrewDate numbering) where
 public export
 Show (HebrewDate numbering) where
   show (MkHebrewDate _ valueYear valueMonth valueDay) =
-    "hebrewDate' " ++ show valueDay ++ " " ++
+    "calendarDate' " ++ show valueDay ++ " " ++
     show valueYear ++ " " ++ HebrewMonths.showMonth valueMonth
 
 makeHebrewDate : {numbering : HebrewNumbering} -> Integer -> HebrewDate numbering
@@ -419,25 +419,23 @@ makeHebrewDate days = case hebrewCivilFromDays {numbering} days of
   (valueYear ** (valueMonth, valueDay)) =>
     MkHebrewDate days valueYear valueMonth valueDay
 
-firstHebrewDay : Integer
-firstHebrewDay = -2103607
-
+||| The Hebrew calendar epoch day, representing 1 Tishri 1.
 public export
-isValidHebrewDays : Integer -> Bool
-isValidHebrewDays value = value >= -2103607
+epochDay : Integer
+epochDay = -2103607
 
 public export
 {numbering : HebrewNumbering} -> HasCalendarDate (HebrewDate numbering) where
   calendarDays = daysSinceEpoch
-  acceptsCalendarDays = isValidHebrewDays
+  acceptsCalendarDays value = value >= epochDay
   calendarDateFromDays days = makeHebrewDate days
   calendarDateName = "Hebrew"
 
 public export
 total
-isValidHebrewDate : (valueDay : DayOfMonth) -> (valueYear : Year) ->
+isValidDate : (valueDay : DayOfMonth) -> (valueYear : Year) ->
                     HebrewMonth numbering valueYear -> Bool
-isValidHebrewDate valueDay valueYear valueMonth =
+isValidDate valueDay valueYear valueMonth =
   let dayNumber = dayOfMonthValue valueDay
       yearNumber = yearValue valueYear
       maxDay = case valueMonth of
@@ -452,7 +450,7 @@ isValidHebrewDate valueDay valueYear valueMonth =
    in yearNumber >= 1 && dayNumber <= maxDay
 
 clampToHebrew : Integer -> Integer
-clampToHebrew = max firstHebrewDay
+clampToHebrew = max epochDay
 
 shiftHebrewDays : {numbering : HebrewNumbering} ->
                   Integer -> HebrewDate numbering -> HebrewDate numbering
@@ -460,11 +458,11 @@ shiftHebrewDays amount date = makeHebrewDate (clampToHebrew (date.daysSinceEpoch
 
 calendarIndexToPosition : Year -> Integer -> Integer
 calendarIndexToPosition valueYear index =
-  if isHebrewLeapYear valueYear || index < 5 then index else index - 1
+  if isLeapYear valueYear || index < 5 then index else index - 1
 
 positionToCalendarIndex : Year -> Integer -> Integer
 positionToCalendarIndex valueYear position =
-  if isHebrewLeapYear valueYear || position < 5 then position else position + 1
+  if isLeapYear valueYear || position < 5 then position else position + 1
 
 addHebrewMonths : Year -> Integer -> Integer -> (Year, Integer)
 addHebrewMonths valueYear index amount =
@@ -493,7 +491,7 @@ shiftHebrewMonths amount date =
   let (targetYear, targetIndex) = addHebrewMonths date.dateYear
         (HebrewMonths.calendarIndex date.dateMonth) amount
       targetMonth = monthFromCalendarIndex {numbering} targetYear targetIndex
-      targetDay = min date.dateDay (maxHebrewDaysInMonth targetMonth)
+      targetDay = min date.dateDay (maxDaysInMonth targetMonth)
    in makeHebrewDate (hebrewYearMonthDayToDays targetYear targetMonth targetDay)
 
 shiftHebrewYears : {numbering : HebrewNumbering} ->
@@ -501,9 +499,9 @@ shiftHebrewYears : {numbering : HebrewNumbering} ->
 shiftHebrewYears amount date =
   let targetYear = yearFromInteger (max 1 (yearValue date.dateYear + amount))
       sourceIndex = HebrewMonths.calendarIndex date.dateMonth
-      targetIndex = if sourceIndex == 5 && not (isHebrewLeapYear targetYear) then 6 else sourceIndex
+      targetIndex = if sourceIndex == 5 && not (isLeapYear targetYear) then 6 else sourceIndex
       targetMonth = monthFromCalendarIndex {numbering} targetYear targetIndex
-      targetDay = min date.dateDay (maxHebrewDaysInMonth targetMonth)
+      targetDay = min date.dateDay (maxDaysInMonth targetMonth)
    in makeHebrewDate (hebrewYearMonthDayToDays targetYear targetMonth targetDay)
 
 applyHebrewPeriod : {numbering : HebrewNumbering} ->
@@ -544,7 +542,7 @@ public export
   MonthRep valueYear = HebrewMonth numbering valueYear
   WeekdayRep = HebrewDayOfWeek numbering
 
-  isValidDays = isValidHebrewDays
+  isValidDays value = value >= epochDay
   fromDays days = makeHebrewDate days
   toDays date = date.daysSinceEpoch
   calendarName = "Hebrew"
@@ -572,22 +570,22 @@ public export
 ||| Construct a statically validated Hebrew date in the selected numbering.
 ||| The month is indexed by the year, making Adar I unavailable in common years.
 public export
-hebrewDate' : {numbering : HebrewNumbering} ->
+calendarDate' : {numbering : HebrewNumbering} ->
               {auto known : KnownHebrewNumbering numbering} ->
               (valueDay : DayOfMonth) -> (valueYear : Year) ->
               (valueMonth : HebrewMonth numbering valueYear) ->
-              {auto 0 valid : So (isValidHebrewDate valueDay valueYear valueMonth)} ->
+              {auto 0 valid : So (isValidDate valueDay valueYear valueMonth)} ->
               CalendarDate (Hebrew numbering)
-hebrewDate' valueDay valueYear valueMonth =
+calendarDate' valueDay valueYear valueMonth =
   makeHebrewDate (hebrewYearMonthDayToDays valueYear valueMonth valueDay)
 
 ||| Construct a statically validated civil-numbered Hebrew date.
 public export
-hebrewDate : (valueDay : DayOfMonth) -> (valueYear : Year) ->
+calendarDate : (valueDay : DayOfMonth) -> (valueYear : Year) ->
              (valueMonth : HebrewMonth Civil valueYear) ->
-             {auto 0 valid : So (isValidHebrewDate valueDay valueYear valueMonth)} ->
+             {auto 0 valid : So (isValidDate valueDay valueYear valueMonth)} ->
              CalendarDate HebrewCivil
-hebrewDate = hebrewDate'
+calendarDate = calendarDate'
 
 ||| Failures produced while refining untrusted Hebrew date data.
 public export
@@ -601,76 +599,81 @@ data HebrewDateError
 ||| Refine a runtime month name into a year-indexed Hebrew month.
 ||| Adar I is rejected when the supplied year is not leap.
 public export
-refineHebrewMonth : {numbering : HebrewNumbering} -> (valueYear : Year) -> HebrewMonthName ->
+refineMonth : {numbering : HebrewNumbering} -> (valueYear : Year) -> HebrewMonthName ->
                     Either HebrewDateError (HebrewMonth numbering valueYear)
-refineHebrewMonth _ TishriName = Right HebrewMonths.Tishri
-refineHebrewMonth _ CheshvanName = Right HebrewMonths.Cheshvan
-refineHebrewMonth _ KislevName = Right HebrewMonths.Kislev
-refineHebrewMonth _ TevetName = Right HebrewMonths.Tevet
-refineHebrewMonth _ ShevatName = Right HebrewMonths.Shevat
-refineHebrewMonth valueYear AdarIName = case choose (isHebrewLeapYear valueYear) of
+refineMonth _ TishriName = Right HebrewMonths.Tishri
+refineMonth _ CheshvanName = Right HebrewMonths.Cheshvan
+refineMonth _ KislevName = Right HebrewMonths.Kislev
+refineMonth _ TevetName = Right HebrewMonths.Tevet
+refineMonth _ ShevatName = Right HebrewMonths.Shevat
+refineMonth valueYear AdarIName = case choose (isLeapYear valueYear) of
   Left leap => Right (HebrewMonths.AdarI @{leap})
   Right _ => Left (InvalidHebrewMonth AdarIName valueYear)
-refineHebrewMonth _ AdarName = Right HebrewMonths.Adar
-refineHebrewMonth _ NisanName = Right HebrewMonths.Nisan
-refineHebrewMonth _ IyarName = Right HebrewMonths.Iyar
-refineHebrewMonth _ SivanName = Right HebrewMonths.Sivan
-refineHebrewMonth _ TammuzName = Right HebrewMonths.Tammuz
-refineHebrewMonth _ AvName = Right HebrewMonths.Av
-refineHebrewMonth _ ElulName = Right HebrewMonths.Elul
+refineMonth _ AdarName = Right HebrewMonths.Adar
+refineMonth _ NisanName = Right HebrewMonths.Nisan
+refineMonth _ IyarName = Right HebrewMonths.Iyar
+refineMonth _ SivanName = Right HebrewMonths.Sivan
+refineMonth _ TammuzName = Right HebrewMonths.Tammuz
+refineMonth _ AvName = Right HebrewMonths.Av
+refineMonth _ ElulName = Right HebrewMonths.Elul
 
 ||| Validate runtime date components in the selected Hebrew numbering.
 public export
-refineHebrewDate' : {numbering : HebrewNumbering} ->
+refineDate' : {numbering : HebrewNumbering} ->
                     {auto known : KnownHebrewNumbering numbering} ->
                     DayOfMonth -> HebrewMonthName -> Year ->
                     Either HebrewDateError (CalendarDate (Hebrew numbering))
-refineHebrewDate' @{known} valueDay valueMonthName valueYear =
-  case refineHebrewMonth {numbering} valueYear valueMonthName of
+refineDate' @{known} valueDay valueMonthName valueYear =
+  case refineMonth {numbering} valueYear valueMonthName of
     Left error => Left error
-    Right valueMonth => case choose (isValidHebrewDate valueDay valueYear valueMonth) of
-      Left valid => Right (hebrewDate' @{known} valueDay valueYear valueMonth @{valid})
+    Right valueMonth => case choose (isValidDate valueDay valueYear valueMonth) of
+      Left valid => Right
+        (calendarDate' @{known} valueDay valueYear valueMonth @{valid})
       Right _ => Left (InvalidHebrewDate valueDay valueMonthName valueYear)
 
 ||| Validate runtime date components using civil Hebrew numbering.
 public export
-refineHebrewDate : DayOfMonth -> HebrewMonthName -> Year ->
+refineDate : DayOfMonth -> HebrewMonthName -> Year ->
                    Either HebrewDateError (CalendarDate HebrewCivil)
-refineHebrewDate = refineHebrewDate'
+refineDate = refineDate'
 
 ||| Construct a Hebrew date in the selected numbering from a statically valid
 ||| calendar-relative day count.
 public export
-hebrewFromDays' : {numbering : HebrewNumbering} ->
+fromDays' : {numbering : HebrewNumbering} ->
                   {auto known : KnownHebrewNumbering numbering} ->
-                  (days : Integer) -> {auto 0 valid : So (isValidHebrewDays days)} ->
+                  (days : Integer) -> {auto 0 valid : So
+                    (IotaTime.Calendar.isValidDays
+                      {calendar = Hebrew numbering} days)} ->
                   CalendarDate (Hebrew numbering)
-hebrewFromDays' days = makeHebrewDate days
+fromDays' days = makeHebrewDate days
 
 public export
-hebrewFromDays : (days : Integer) -> {auto 0 valid : So (isValidHebrewDays days)} ->
+fromDays : (days : Integer) -> {auto 0 valid : So
+  (IotaTime.Calendar.isValidDays {calendar = HebrewCivil} days)} ->
                  CalendarDate HebrewCivil
-hebrewFromDays = hebrewFromDays'
+fromDays = fromDays'
 
 ||| Validate a runtime Hebrew day count in the selected numbering.
 public export
-refineHebrewDays' : {numbering : HebrewNumbering} ->
+refineDays' : {numbering : HebrewNumbering} ->
                     {auto known : KnownHebrewNumbering numbering} ->
                     Integer -> Either HebrewDateError (CalendarDate (Hebrew numbering))
-refineHebrewDays' @{known} days = case choose (isValidHebrewDays days) of
-  Left valid => Right (hebrewFromDays' @{known} days @{valid})
+refineDays' @{known} days = case choose
+  (IotaTime.Calendar.isValidDays {calendar = Hebrew numbering} days) of
+  Left valid => Right (fromDays' @{known} days @{valid})
   Right _ => Left (InvalidHebrewDayCount days)
 
 public export
-refineHebrewDays : Integer -> Either HebrewDateError (CalendarDate HebrewCivil)
-refineHebrewDays = refineHebrewDays'
+refineDays : Integer -> Either HebrewDateError (CalendarDate HebrewCivil)
+refineDays = refineDays'
 
 public export
 total
-nthHebrewDayOfMonth : {numbering : HebrewNumbering} -> DayNth -> HebrewDayOfWeek numbering ->
+nthDayOfMonth : {numbering : HebrewNumbering} -> DayNth -> HebrewDayOfWeek numbering ->
                       (valueYear : Year) -> HebrewMonth numbering valueYear -> DayOfMonth
-nthHebrewDayOfMonth nth target valueYear valueMonth =
-  let monthLength = maxHebrewDaysInMonth valueMonth
+nthDayOfMonth nth target valueYear valueMonth =
+  let monthLength = maxDaysInMonth valueMonth
       firstDays = hebrewYearMonthDayToDays valueYear valueMonth 1
       firstOffset =
         (HebrewWeekdays.weekdayNumber target -
@@ -685,111 +688,112 @@ nthHebrewDayOfMonth nth target valueYear valueMonth =
 
 public export
 total
-isValidHebrewNthDay : {numbering : HebrewNumbering} -> DayNth -> HebrewDayOfWeek numbering ->
+isValidNthDay : {numbering : HebrewNumbering} -> DayNth -> HebrewDayOfWeek numbering ->
                       (valueYear : Year) -> HebrewMonth numbering valueYear -> Bool
-isValidHebrewNthDay First _ valueYear _ = yearValue valueYear >= 1
-isValidHebrewNthDay Second _ valueYear _ = yearValue valueYear >= 1
-isValidHebrewNthDay Third _ valueYear _ = yearValue valueYear >= 1
-isValidHebrewNthDay Fourth _ valueYear _ = yearValue valueYear >= 1
-isValidHebrewNthDay Last _ valueYear _ = yearValue valueYear >= 1
-isValidHebrewNthDay SecondToLast _ valueYear _ = yearValue valueYear >= 1
-isValidHebrewNthDay ThirdToLast _ valueYear _ = yearValue valueYear >= 1
-isValidHebrewNthDay FourthToLast _ valueYear _ = yearValue valueYear >= 1
-isValidHebrewNthDay Fifth target valueYear valueMonth =
+isValidNthDay First _ valueYear _ = yearValue valueYear >= 1
+isValidNthDay Second _ valueYear _ = yearValue valueYear >= 1
+isValidNthDay Third _ valueYear _ = yearValue valueYear >= 1
+isValidNthDay Fourth _ valueYear _ = yearValue valueYear >= 1
+isValidNthDay Last _ valueYear _ = yearValue valueYear >= 1
+isValidNthDay SecondToLast _ valueYear _ = yearValue valueYear >= 1
+isValidNthDay ThirdToLast _ valueYear _ = yearValue valueYear >= 1
+isValidNthDay FourthToLast _ valueYear _ = yearValue valueYear >= 1
+isValidNthDay Fifth target valueYear valueMonth =
   yearValue valueYear >= 1 &&
-  dayOfMonthValue (nthHebrewDayOfMonth Fifth target valueYear valueMonth) <=
-    dayOfMonthValue (maxHebrewDaysInMonth valueMonth)
+  dayOfMonthValue (nthDayOfMonth Fifth target valueYear valueMonth) <=
+    dayOfMonthValue (maxDaysInMonth valueMonth)
 
 ||| Construct the nth requested weekday in a Hebrew month using the selected
 ||| numbering convention.
 public export
-hebrewFromNthDay' : {numbering : HebrewNumbering} -> KnownHebrewNumbering numbering =>
+fromNthDay' : {numbering : HebrewNumbering} -> KnownHebrewNumbering numbering =>
                      (nth : DayNth) -> (target : HebrewDayOfWeek numbering) ->
                      (valueYear : Year) -> (valueMonth : HebrewMonth numbering valueYear) ->
                      {auto 0 valid : So
-                       (isValidHebrewNthDay nth target valueYear valueMonth)} ->
+                       (isValidNthDay nth target valueYear valueMonth)} ->
                      CalendarDate (Hebrew numbering)
-hebrewFromNthDay' nth target valueYear valueMonth =
+fromNthDay' nth target valueYear valueMonth =
   makeHebrewDate
     (hebrewYearMonthDayToDays valueYear valueMonth
-      (nthHebrewDayOfMonth nth target valueYear valueMonth))
+      (nthDayOfMonth nth target valueYear valueMonth))
 
 public export
-hebrewFromNthDay : (nth : DayNth) -> (target : HebrewDayOfWeek Civil) ->
+fromNthDay : (nth : DayNth) -> (target : HebrewDayOfWeek Civil) ->
                    (valueYear : Year) -> (valueMonth : HebrewMonth Civil valueYear) ->
                    {auto 0 valid : So
-                     (isValidHebrewNthDay nth target valueYear valueMonth)} ->
+                     (isValidNthDay nth target valueYear valueMonth)} ->
                    CalendarDate HebrewCivil
-hebrewFromNthDay = hebrewFromNthDay'
+fromNthDay = fromNthDay'
 
 ||| Validate an nth-weekday request in the selected Hebrew numbering.
 public export
-refineHebrewNthDay' : {numbering : HebrewNumbering} ->
+refineNthDay' : {numbering : HebrewNumbering} ->
                       {auto known : KnownHebrewNumbering numbering} ->
                       DayNth -> HebrewDayOfWeek numbering -> Year -> HebrewMonthName ->
                       Either HebrewDateError (CalendarDate (Hebrew numbering))
-refineHebrewNthDay' @{known} nth target valueYear valueMonthName =
-  case refineHebrewMonth {numbering} valueYear valueMonthName of
+refineNthDay' @{known} nth target valueYear valueMonthName =
+  case refineMonth {numbering} valueYear valueMonthName of
     Left error => Left error
     Right valueMonth =>
-      case choose (isValidHebrewNthDay nth target valueYear valueMonth) of
+      case choose (isValidNthDay nth target valueYear valueMonth) of
         Left valid => Right
-          (hebrewFromNthDay' @{known} nth target valueYear valueMonth @{valid})
+          (fromNthDay' @{known} nth target valueYear valueMonth @{valid})
         Right _ => Left (InvalidHebrewNthDay nth valueMonthName valueYear)
 
 public export
-refineHebrewNthDay : DayNth -> HebrewDayOfWeek Civil -> Year -> HebrewMonthName ->
+refineNthDay : DayNth -> HebrewDayOfWeek Civil -> Year -> HebrewMonthName ->
                      Either HebrewDateError (CalendarDate HebrewCivil)
-refineHebrewNthDay = refineHebrewNthDay'
+refineNthDay = refineNthDay'
 
 public export
 total
-hebrewWeekDateDays : {numbering : HebrewNumbering} ->
+weekDateDays : {numbering : HebrewNumbering} ->
                      WeekNumber -> HebrewDayOfWeek numbering -> Year -> Integer
-hebrewWeekDateDays week target valueYear =
-  let firstDay = firstHebrewDayOfYear valueYear
+weekDateDays week target valueYear =
+  let firstDay = firstDayOfYear valueYear
       firstWeekStart = firstDay - (firstDay + 3) `mod` 7
    in firstWeekStart + 7 * (weekNumberValue week - 1) +
       HebrewWeekdays.weekdayNumber target
 
 public export
 total
-isValidHebrewWeekDate : {numbering : HebrewNumbering} ->
-                        WeekNumber -> HebrewDayOfWeek numbering -> Year -> Bool
-isValidHebrewWeekDate week target valueYear =
-  if yearValue valueYear > 1
-    then True
-    else isValidHebrewDays (hebrewWeekDateDays week target valueYear)
+isValidWeekDate : {numbering : HebrewNumbering} ->
+                  KnownHebrewNumbering numbering =>
+                  WeekNumber -> HebrewDayOfWeek numbering -> Year -> Bool
+isValidWeekDate week target valueYear =
+  (yearValue valueYear > 1 && weekNumberValue week >= 0) ||
+    IotaTime.Calendar.isValidDays {calendar = Hebrew numbering}
+      (weekDateDays week target valueYear)
 
 ||| Construct a Sunday-based Hebrew week date in the selected numbering.
 public export
-hebrewFromWeekDate' : {numbering : HebrewNumbering} -> KnownHebrewNumbering numbering =>
-                      (week : WeekNumber) -> (target : HebrewDayOfWeek numbering) ->
-                      (valueYear : Year) ->
-                      {auto 0 valid : So (isValidHebrewWeekDate week target valueYear)} ->
-                      CalendarDate (Hebrew numbering)
-hebrewFromWeekDate' week target valueYear =
-  makeHebrewDate (hebrewWeekDateDays week target valueYear)
+fromWeekDate' : {numbering : HebrewNumbering} -> KnownHebrewNumbering numbering =>
+                (week : WeekNumber) -> (target : HebrewDayOfWeek numbering) ->
+                (valueYear : Year) ->
+                {auto 0 valid : So (isValidWeekDate week target valueYear)} ->
+                CalendarDate (Hebrew numbering)
+fromWeekDate' week target valueYear =
+  makeHebrewDate (weekDateDays week target valueYear)
 
 public export
-hebrewFromWeekDate : (week : WeekNumber) -> (target : HebrewDayOfWeek Civil) ->
-                     (valueYear : Year) ->
-                     {auto 0 valid : So (isValidHebrewWeekDate week target valueYear)} ->
-                     CalendarDate HebrewCivil
-hebrewFromWeekDate = hebrewFromWeekDate'
+fromWeekDate : (week : WeekNumber) -> (target : HebrewDayOfWeek Civil) ->
+               (valueYear : Year) ->
+               {auto 0 valid : So (isValidWeekDate week target valueYear)} ->
+               CalendarDate HebrewCivil
+fromWeekDate = fromWeekDate'
 
 ||| Validate a runtime Hebrew week date in the selected numbering.
 public export
-refineHebrewWeekDate' : {numbering : HebrewNumbering} ->
-                        {auto known : KnownHebrewNumbering numbering} ->
-                        WeekNumber -> HebrewDayOfWeek numbering -> Year ->
-                        Either HebrewDateError (CalendarDate (Hebrew numbering))
-refineHebrewWeekDate' @{known} week target valueYear =
-  case choose (isValidHebrewWeekDate week target valueYear) of
-    Left valid => Right (hebrewFromWeekDate' @{known} week target valueYear @{valid})
+refineWeekDate' : {numbering : HebrewNumbering} ->
+                  {auto known : KnownHebrewNumbering numbering} ->
+                  WeekNumber -> HebrewDayOfWeek numbering -> Year ->
+                  Either HebrewDateError (CalendarDate (Hebrew numbering))
+refineWeekDate' @{known} week target valueYear =
+  case choose (isValidWeekDate week target valueYear) of
+    Left valid => Right (fromWeekDate' @{known} week target valueYear @{valid})
     Right _ => Left (InvalidHebrewWeekDate week valueYear)
 
 public export
-refineHebrewWeekDate : WeekNumber -> HebrewDayOfWeek Civil -> Year ->
-                       Either HebrewDateError (CalendarDate HebrewCivil)
-refineHebrewWeekDate = refineHebrewWeekDate'
+refineWeekDate : WeekNumber -> HebrewDayOfWeek Civil -> Year ->
+                 Either HebrewDateError (CalendarDate HebrewCivil)
+refineWeekDate = refineWeekDate'

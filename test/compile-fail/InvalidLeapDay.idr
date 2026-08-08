@@ -4,4 +4,4 @@ module InvalidLeapDay
 import IotaTime
 
 invalidLeapDay : CalendarDate Gregorian
-invalidLeapDay = calendarDate 29 February 2021
+invalidLeapDay = IotaTime.Calendar.Gregorian.calendarDate 29 February 2021

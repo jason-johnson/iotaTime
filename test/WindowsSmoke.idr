@@ -85,7 +85,7 @@ main = do
       Right locale => case localeDatePattern locale of
         Left _ => False
         Right pattern =>
-          IotaTime.Pattern.format pattern (calendarDate 15 March 2020) ==
+          IotaTime.Pattern.format pattern (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020) ==
             "15.03.2020")
   currentLocalePassed <- report "current Windows locale is structurally complete"
     (case currentLocaleResult of

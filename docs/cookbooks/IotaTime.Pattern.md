@@ -7,7 +7,7 @@ A `Pattern` handles both directions. The round-trip calendar-date pattern format
 ```idris
 roundTripText : String
 roundTripText = format (pR {calendar = Gregorian})
-  (calendarDate 3 March 2020)
+  (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020)
 
 roundTripDate : Either PatternError (CalendarDate Gregorian)
 roundTripDate = parse (pR {calendar = Gregorian}) "2020-03-03"

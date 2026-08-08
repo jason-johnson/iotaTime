@@ -9,8 +9,8 @@ zoneCases utcZone timeZoneValue =
         (fromSecondsSinceUnixEpoch 1704067200) timeZoneValue
       beforeSpring = IotaTime.ZonedDateTime.fromInstant {calendar = Gregorian}
         (fromSecondsSinceUnixEpoch 1710052200) timeZoneValue
-      skipped = on (localTime 2 30 0 0) (calendarDate 10 March 2024)
-      ambiguous = on (localTime 1 30 0 0) (calendarDate 3 November 2024)
+      skipped = on (localTime 2 30 0 0) (IotaTime.Calendar.Gregorian.calendarDate 10 March 2024)
+      ambiguous = on (localTime 1 30 0 0) (IotaTime.Calendar.Gregorian.calendarDate 3 November 2024)
       skippedGregorian = the (CalendarDateTime Gregorian) skipped
       ambiguousGregorian = the (CalendarDateTime Gregorian) ambiguous
    in [ MkRuntimeCase "instant conversion exposes local components"

@@ -4,5 +4,5 @@ module AbsentReverseCopticWeekday
 import IotaTime
 
 invalid : CalendarDate Coptic
-invalid = copticFromNthDay FourthToLast CopticWeekdays.Friday
+invalid = IotaTime.Calendar.Coptic.fromNthDay FourthToLast CopticWeekdays.Friday
   CopticMonths.PiKogiEnavot 1732

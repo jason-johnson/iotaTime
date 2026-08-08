@@ -83,48 +83,48 @@ patternCalendarCases : List RuntimeCase
 patternCalendarCases =
   [ MkRuntimeCase "Gregorian numeric date pattern remains polymorphic"
       (roundTrips {calendar = Gregorian}
-        (calendarDate 29 February 2000) "2000-02-29")
+        (IotaTime.Calendar.Gregorian.calendarDate 29 February 2000) "2000-02-29")
   , MkRuntimeCase "Julian numeric date pattern round-trips"
       (roundTrips {calendar = Julian}
-        (julianDate 29 JulianMonths.February 1900) "1900-02-29")
+        (IotaTime.Calendar.Julian.calendarDate 29 JulianMonths.February 1900) "1900-02-29")
   , MkRuntimeCase "Coptic numeric date pattern supports month thirteen"
       (roundTrips {calendar = Coptic}
-        (copticDate 6 CopticMonths.PiKogiEnavot 1731) "1731-13-06")
+        (IotaTime.Calendar.Coptic.calendarDate 6 CopticMonths.PiKogiEnavot 1731) "1731-13-06")
   , MkRuntimeCase "Islamic numeric date patterns retain their leap index"
       (roundTrips {calendar = IslamicBase15}
-        (islamicDate' {pattern = Base15}
+        (IotaTime.Calendar.Islamic.calendarDate' {pattern = Base15}
           30 IslamicMonths.DhulHijjah 15) "0015-12-30")
   , MkRuntimeCase "civil Islamic patterns retain epoch and leap indexes"
       (roundTrips {calendar = CivilIslamicBase15}
-        (civilIslamicDate' {pattern = Base15}
+        (IotaTime.Calendar.Islamic.civilCalendarDate' {pattern = Base15}
           30 IslamicMonths.DhulHijjah 15) "0015-12-30")
   , MkRuntimeCase "Persian numeric date pattern round-trips"
       (roundTrips {calendar = Persian}
-        (persianDate 30 PersianMonths.Esfand 1403) "1403-12-30")
+        (IotaTime.Calendar.Persian.calendarDate 30 PersianMonths.Esfand 1403) "1403-12-30")
   , MkRuntimeCase "Hebrew civil numeric pattern resolves year-indexed months"
       (roundTrips {calendar = HebrewCivil}
-        (hebrewDate 1 5784 HebrewMonths.AdarI) "5784-06-01")
+        (IotaTime.Calendar.Hebrew.calendarDate 1 5784 HebrewMonths.AdarI) "5784-06-01")
   , MkRuntimeCase "Hebrew scriptural numbering changes the numeric month"
       (roundTrips {calendar = HebrewScriptural}
-        (hebrewDate' {numbering = Scriptural}
+        (IotaTime.Calendar.Hebrew.calendarDate' {numbering = Scriptural}
           1 5784 HebrewMonths.AdarI) "5784-12-01")
   , MkRuntimeCase "Coptic canonical month names round-trip"
       (namedRoundTrips {calendar = Coptic}
-        (copticDate 6 CopticMonths.PiKogiEnavot 1731)
+        (IotaTime.Calendar.Coptic.calendarDate 6 CopticMonths.PiKogiEnavot 1731)
         "1731-PiKogiEnavot-06")
   , MkRuntimeCase "Islamic canonical month names round-trip"
       (namedRoundTrips {calendar = IslamicBase15}
-        (islamicDate' {pattern = Base15} 1 IslamicMonths.Ramadan 1443)
+        (IotaTime.Calendar.Islamic.calendarDate' {pattern = Base15} 1 IslamicMonths.Ramadan 1443)
         "1443-Ramadan-01")
   , MkRuntimeCase "civil Islamic canonical month names round-trip"
       (namedRoundTrips {calendar = CivilIslamicBase15}
-        (civilIslamicDate' {pattern = Base15}
+        (IotaTime.Calendar.Islamic.civilCalendarDate' {pattern = Base15}
           1 IslamicMonths.Ramadan 1443) "1443-Ramadan-01")
   , MkRuntimeCase "Hebrew canonical month names round-trip"
       (namedRoundTrips {calendar = HebrewCivil}
-        (hebrewDate 1 5784 HebrewMonths.AdarI) "5784-AdarI-01")
+        (IotaTime.Calendar.Hebrew.calendarDate 1 5784 HebrewMonths.AdarI) "5784-AdarI-01")
   , MkRuntimeCase "custom month names require the calendar's month count"
-      (let expected = copticDate 6 CopticMonths.PiKogiEnavot 1731 in
+      (let expected = IotaTime.Calendar.Coptic.calendarDate 6 CopticMonths.PiKogiEnavot 1731 in
         IotaTime.Pattern.format customCopticPattern expected == "1731-M13-06" &&
         case IotaTime.Pattern.parse customCopticPattern "1731-M13-06" of
           Left _ => False
@@ -132,18 +132,18 @@ patternCalendarCases =
   , MkRuntimeCase "Julian date-time patterns round-trip"
       (dateTimeRoundTrips {calendar = Julian}
         (on (localTime 23 59 58 0)
-          (julianDate 29 JulianMonths.February 1900))
+          (IotaTime.Calendar.Julian.calendarDate 29 JulianMonths.February 1900))
         "1900-02-29T23:59:58")
   , MkRuntimeCase "Coptic date-time patterns round-trip"
       (dateTimeRoundTrips {calendar = Coptic}
         (on (localTime 1 2 3 0)
-          (copticDate 6 CopticMonths.PiKogiEnavot 1731))
+          (IotaTime.Calendar.Coptic.calendarDate 6 CopticMonths.PiKogiEnavot 1731))
         "1731-13-06T01:02:03")
   , MkRuntimeCase "offset date-time patterns preserve non-Gregorian values"
       (offsetRoundTrips {calendar = Persian}
         (fromCalendarDateTimeWithOffset
           (on (localTime 12 30 0 0)
-            (persianDate 30 PersianMonths.Esfand 1403))
+            (IotaTime.Calendar.Persian.calendarDate 30 PersianMonths.Esfand 1403))
           (IotaTime.Offset.fromMinutes 210))
         "1403-12-30T12:30:00+03:30")
     , MkRuntimeCase "Julian refinement rejects invalid dates"

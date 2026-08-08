@@ -128,8 +128,8 @@ maxDaysInMonth November _ = 30
 maxDaysInMonth _ _ = 31
 
 public export
-isValidGregorianDate : DayOfMonth -> Month -> Year -> Bool
-isValidGregorianDate valueDay valueMonth valueYear =
+isValidDate : DayOfMonth -> Month -> Year -> Bool
+isValidDate valueDay valueMonth valueYear =
   let dayNumber = dayOfMonthValue valueDay
       yearNumber = yearValue valueYear
    in dayNumber >= 1 &&
@@ -168,22 +168,20 @@ civilFromDays value =
       valueYear = partialYear + if monthValue <= 2 then 1 else 0
   in (yearFromInteger valueYear, monthFromNumber monthValue, dayOfMonthFromInteger valueDay)
 
-firstGregorianDay : Integer
-firstGregorianDay = -152444
-
+||| The Gregorian calendar epoch day relative to March 1, 2000.
 public export
-isValidGregorianDays : Integer -> Bool
-isValidGregorianDays value = value >= -152444
+epochDay : Integer
+epochDay = -152444
 
 public export
 HasCalendarDate GregorianDate where
   calendarDays = daysSinceEpoch
-  acceptsCalendarDays = isValidGregorianDays
+  acceptsCalendarDays value = value >= epochDay
   calendarDateFromDays days = MkGregorianDate days
   calendarDateName = "Gregorian"
 
 clampToGregorian : Integer -> Integer
-clampToGregorian value = max firstGregorianDay value
+clampToGregorian value = max epochDay value
 
 makeDate : Year -> Month -> DayOfMonth -> GregorianDate
 makeDate valueYear valueMonth valueDay =
@@ -260,7 +258,7 @@ Calendar Gregorian where
   MonthRep _ = Month
   WeekdayRep = DayOfWeek
 
-  isValidDays = isValidGregorianDays
+  isValidDays value = value >= epochDay
   fromDays days = MkGregorianDate days
   toDays date = date.daysSinceEpoch
   calendarName = "Gregorian"
@@ -286,10 +284,10 @@ Show GregorianDate where
       show valueMonth ++ " " ++ show valueYear
 
 ||| Construct a Gregorian date whose validity is known statically.
-||| Use `refineGregorianDate` for values learned at runtime.
+||| Use `refineDate` for values learned at runtime.
 public export
 calendarDate : (valueDay : DayOfMonth) -> (valueMonth : Month) -> (valueYear : Year) ->
-               {auto 0 valid : So (isValidGregorianDate valueDay valueMonth valueYear)} ->
+               {auto 0 valid : So (isValidDate valueDay valueMonth valueYear)} ->
                CalendarDate Gregorian
 calendarDate valueDay valueMonth valueYear =
   MkGregorianDate (daysFromCivil valueYear valueMonth valueDay)
@@ -304,27 +302,28 @@ data GregorianDateError
 
 ||| Validate runtime day, month, and year components as a Gregorian date.
 public export
-refineGregorianDate : DayOfMonth -> Month -> Year ->
+refineDate : DayOfMonth -> Month -> Year ->
                       Either GregorianDateError (CalendarDate Gregorian)
-refineGregorianDate valueDay valueMonth valueYear =
-  case choose (isValidGregorianDate valueDay valueMonth valueYear) of
+refineDate valueDay valueMonth valueYear =
+  case choose (isValidDate valueDay valueMonth valueYear) of
     Left valid => Right (calendarDate valueDay valueMonth valueYear @{valid})
     Right _ => Left (InvalidGregorianDate valueDay valueMonth valueYear)
 
 ||| Construct a Gregorian date from a statically valid day count relative to
 ||| March 1, 2000.
 public export
-gregorianFromDays : (days : Integer) ->
-                    {auto 0 valid : So (isValidGregorianDays days)} ->
+fromDays : (days : Integer) ->
+                    {auto 0 valid : So
+                      (IotaTime.Calendar.isValidDays {calendar = Gregorian} days)} ->
                     CalendarDate Gregorian
-gregorianFromDays days = MkGregorianDate days
+fromDays days = MkGregorianDate days
 
 ||| Validate a runtime day count relative to March 1, 2000.
 public export
-refineGregorianDays : (days : Integer) -> Either GregorianDateError (CalendarDate Gregorian)
-refineGregorianDays days =
-  case choose (isValidGregorianDays days) of
-    Left valid => Right (gregorianFromDays days @{valid})
+refineDays : (days : Integer) -> Either GregorianDateError (CalendarDate Gregorian)
+refineDays days =
+  case choose (IotaTime.Calendar.isValidDays {calendar = Gregorian} days) of
+    Left valid => Right (fromDays days @{valid})
     Right _ => Left (InvalidGregorianDayCount days)
 
 nthDayOfMonth : DayNth -> DayOfWeek -> Month -> Year -> DayOfMonth
@@ -341,13 +340,13 @@ nthDayOfMonth nth target valueMonth valueYear =
    in dayOfMonthFromInteger dayNumber
 
 public export
-isValidGregorianNthDay : DayNth -> DayOfWeek -> Month -> Year -> Bool
-isValidGregorianNthDay nth target valueMonth valueYear =
+isValidNthDay : DayNth -> DayOfWeek -> Month -> Year -> Bool
+isValidNthDay nth target valueMonth valueYear =
   if yearValue valueYear > 1582
     then case nth of
       Fifth => nthDayOfMonth nth target valueMonth valueYear <= maxDaysInMonth valueMonth valueYear
       _ => True
-    else isValidGregorianDate
+    else isValidDate
       (nthDayOfMonth nth target valueMonth valueYear) valueMonth valueYear
 
 ||| Construct the nth requested weekday in a Gregorian month under static
@@ -355,7 +354,7 @@ isValidGregorianNthDay nth target valueMonth valueYear =
 public export
 fromNthDay : (nth : DayNth) -> (target : DayOfWeek) ->
              (valueMonth : Month) -> (valueYear : Year) ->
-             {auto 0 valid : So (isValidGregorianNthDay nth target valueMonth valueYear)} ->
+             {auto 0 valid : So (isValidNthDay nth target valueMonth valueYear)} ->
              CalendarDate Gregorian
 fromNthDay nth target valueMonth valueYear =
   MkGregorianDate
@@ -363,10 +362,10 @@ fromNthDay nth target valueMonth valueYear =
 
 ||| Validate an nth-weekday request for a Gregorian month.
 public export
-refineGregorianNthDay : DayNth -> DayOfWeek -> Month -> Year ->
+refineNthDay : DayNth -> DayOfWeek -> Month -> Year ->
                         Either GregorianDateError (CalendarDate Gregorian)
-refineGregorianNthDay nth target valueMonth valueYear =
-  case choose (isValidGregorianNthDay nth target valueMonth valueYear) of
+refineNthDay nth target valueMonth valueYear =
+  case choose (isValidNthDay nth target valueMonth valueYear) of
     Left valid => Right (fromNthDay nth target valueMonth valueYear @{valid})
     Right _ => Left (InvalidGregorianNthDay nth target valueMonth valueYear)
 
@@ -377,24 +376,25 @@ weekDateDays week target valueYear =
   in firstWeekStart + 7 * (weekNumberValue week - 1) + weekdayNumber target
 
 public export
-isValidGregorianWeekDate : WeekNumber -> DayOfWeek -> Year -> Bool
-isValidGregorianWeekDate week target valueYear =
+isValidWeekDate : WeekNumber -> DayOfWeek -> Year -> Bool
+isValidWeekDate week target valueYear =
   (yearValue valueYear > 1582 && weekNumberValue week >= 0) ||
-    isValidGregorianDays (weekDateDays week target valueYear)
+    IotaTime.Calendar.isValidDays {calendar = Gregorian}
+      (weekDateDays week target valueYear)
 
 ||| Construct a Gregorian Sunday-based week date under static validity evidence.
 public export
 fromWeekDate : (week : WeekNumber) -> (target : DayOfWeek) -> (valueYear : Year) ->
-               {auto 0 valid : So (isValidGregorianWeekDate week target valueYear)} ->
+               {auto 0 valid : So (isValidWeekDate week target valueYear)} ->
                CalendarDate Gregorian
 fromWeekDate week target valueYear =
   MkGregorianDate (weekDateDays week target valueYear)
 
 ||| Validate a runtime Gregorian Sunday-based week date.
 public export
-refineGregorianWeekDate : WeekNumber -> DayOfWeek -> Year ->
-                          Either GregorianDateError (CalendarDate Gregorian)
-refineGregorianWeekDate week target valueYear =
-  case choose (isValidGregorianWeekDate week target valueYear) of
+refineWeekDate : WeekNumber -> DayOfWeek -> Year ->
+                 Either GregorianDateError (CalendarDate Gregorian)
+refineWeekDate week target valueYear =
+  case choose (isValidWeekDate week target valueYear) of
     Left valid => Right (fromWeekDate week target valueYear @{valid})
     Right _ => Left (InvalidGregorianWeekDate week target valueYear)

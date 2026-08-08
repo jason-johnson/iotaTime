@@ -4,4 +4,4 @@ module InvalidJulianLeapDay
 import IotaTime
 
 invalid : CalendarDate Julian
-invalid = julianDate 29 JulianMonths.February 1901
+invalid = IotaTime.Calendar.Julian.calendarDate 29 JulianMonths.February 1901

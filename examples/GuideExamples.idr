@@ -3,10 +3,10 @@ module GuideExamples
 import IotaTime
 
 leapDay : CalendarDate Gregorian
-leapDay = calendarDate 29 February 2020
+leapDay = IotaTime.Calendar.Gregorian.calendarDate 29 February 2020
 
 runtimeLeapDay : Either GregorianDateError (CalendarDate Gregorian)
-runtimeLeapDay = refineGregorianDate 29 February 2020
+runtimeLeapDay = IotaTime.Calendar.Gregorian.refineDate 29 February 2020
 
 start : Instant
 start = fromSecondsSinceUnixEpoch 0
@@ -47,7 +47,7 @@ runtimeTime : Either LocalTimeError LocalTime
 runtimeTime = refineLocalTime 9 30 0 0
 
 endOfMonth : CalendarDateTime Gregorian
-endOfMonth = at (calendarDate 31 January 2000) late
+endOfMonth = at (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) late
 
 calendarAndClockPeriod : Period (CalendarDateTime Gregorian)
 calendarAndClockPeriod = months 1 <+> hours 2
@@ -68,33 +68,33 @@ displayAtUtc = IotaTime.OffsetDateTime.withOffset
 
 calendarDifference : Period (CalendarDate Gregorian)
 calendarDifference = IotaTime.Calendar.between {calendar = Gregorian}
-  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+  (IotaTime.Calendar.Gregorian.calendarDate 31 January 2025) (IotaTime.Calendar.Gregorian.calendarDate 30 March 2025)
 
 exactDayDifference : Period (CalendarDate Gregorian)
 exactDayDifference = IotaTime.Calendar.betweenDays {calendar = Gregorian}
-  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+  (IotaTime.Calendar.Gregorian.calendarDate 31 January 2025) (IotaTime.Calendar.Gregorian.calendarDate 30 March 2025)
 
 explicitDayDifference : Period (CalendarDate Gregorian)
 explicitDayDifference = IotaTime.Calendar.betweenWith {calendar = Gregorian}
   (MkDateDifferencePolicy DaysOnly ClampToMonth)
-  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+  (IotaTime.Calendar.Gregorian.calendarDate 31 January 2025) (IotaTime.Calendar.Gregorian.calendarDate 30 March 2025)
 
 gregorianChristmas : CalendarDate Gregorian
-gregorianChristmas = calendarDate 25 December 2024
+gregorianChristmas = IotaTime.Calendar.Gregorian.calendarDate 25 December 2024
 
 julianChristmas : Either CalendarConversionError (CalendarDate Julian)
 julianChristmas = IotaTime.Calendar.withCalendar gregorianChristmas
 
 astronomicalNowruz1404 : CalendarDate Persian
-astronomicalNowruz1404 = persianDate 1 PersianMonths.Farvardin 1404
+astronomicalNowruz1404 = IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1404
 
 arithmeticNowruz1404 : CalendarDate PersianArithmetic
 arithmeticNowruz1404 =
-  arithmeticPersianDate 1 PersianMonths.Farvardin 1404
+  IotaTime.Calendar.Persian.arithmeticCalendarDate 1 PersianMonths.Farvardin 1404
 
 simplePersianRuntime : Either PersianDateError (CalendarDate PersianSimple)
 simplePersianRuntime =
-  refineSimplePersianDate 30 PersianMonths.Esfand 1404
+  IotaTime.Calendar.Persian.refineSimpleDate 30 PersianMonths.Esfand 1404
 
 cachedProvider : IO TimeZoneProvider
 cachedProvider = cachedTimeZoneProvider
@@ -134,7 +134,7 @@ windowsSnapshotProvider : IO (Either TzdbError TimeZoneProvider)
 windowsSnapshotProvider = windowsSnapshotTimeZoneProvider
 
 roundTripText : String
-roundTripText = format (pR {calendar = Gregorian}) (calendarDate 3 March 2020)
+roundTripText = format (pR {calendar = Gregorian}) (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020)
 
 roundTripDate : Either PatternError (CalendarDate Gregorian)
 roundTripDate = parse (pR {calendar = Gregorian}) "2020-03-03"

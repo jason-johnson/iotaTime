@@ -6,4 +6,4 @@ import IotaTime
 invalid : CalendarDate Gregorian
 invalid = applyPeriod
   (months 2 <+> minutes 20)
-  (calendarDate 1 January 2000)
+  (IotaTime.Calendar.Gregorian.calendarDate 1 January 2000)

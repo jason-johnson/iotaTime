@@ -5,4 +5,4 @@ import IotaTime
 import IotaTime.Calendar.Islamic
 
 invalid : CalendarDate CivilIslamicBcl
-invalid = civilIslamicFromDays (-503166)
+invalid = IotaTime.Calendar.Islamic.civilFromDays (-503166)

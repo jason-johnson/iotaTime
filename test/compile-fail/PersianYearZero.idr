@@ -5,4 +5,4 @@ import IotaTime
 import IotaTime.Calendar.Persian
 
 invalid : CalendarDate Persian
-invalid = persianDate 1 PersianMonths.Farvardin 0
+invalid = IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 0

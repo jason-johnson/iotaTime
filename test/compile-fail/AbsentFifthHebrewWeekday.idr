@@ -4,4 +4,4 @@ module AbsentFifthHebrewWeekday
 import IotaTime
 
 invalid : CalendarDate HebrewCivil
-invalid = hebrewFromNthDay Fifth HebrewWeekdays.Monday 5784 HebrewMonths.Tishri
+invalid = IotaTime.Calendar.Hebrew.fromNthDay Fifth HebrewWeekdays.Monday 5784 HebrewMonths.Tishri

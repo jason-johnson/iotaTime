@@ -4,4 +4,4 @@ module InvalidGregorianDayCount
 import IotaTime
 
 invalidGregorianDayCount : CalendarDate Gregorian
-invalidGregorianDayCount = gregorianFromDays (-152445)
+invalidGregorianDayCount = IotaTime.Calendar.Gregorian.fromDays (-152445)

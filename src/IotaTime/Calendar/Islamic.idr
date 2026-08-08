@@ -41,18 +41,18 @@ data IslamicEpoch = Astronomical | Civil
 ||| Evidence for the first timeline day represented by an Islamic epoch.
 public export
 interface KnownIslamicEpoch (epoch : IslamicEpoch) where
-  islamicEpochDay : Integer
-  islamicDateConstructorName : String
+  epochDay : Integer
+  dateConstructorName : String
 
 public export
 KnownIslamicEpoch Astronomical where
-  islamicEpochDay = -503166
-  islamicDateConstructorName = "islamicDate'"
+  epochDay = -503166
+  dateConstructorName = "calendarDate'"
 
 public export
 KnownIslamicEpoch Civil where
-  islamicEpochDay = -503165
-  islamicDateConstructorName = "civilIslamicDate'"
+  epochDay = -503165
+  dateConstructorName = "civilCalendarDate'"
 
 ||| A tabular Islamic calendar indexed by its epoch and leap-cycle pattern.
 public export
@@ -204,9 +204,9 @@ Ord (IslamicDate epoch pattern) where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
 
 public export
-isIslamicLeapYear : {pattern : IslamicLeapPattern} ->
+isLeapYear : {pattern : IslamicLeapPattern} ->
                     KnownIslamicLeapPattern pattern => Year -> Bool
-isIslamicLeapYear value =
+isLeapYear value =
   let cycleYear = yearValue value `mod` 30
    in elem cycleYear (leapCycleYears {pattern})
 
@@ -225,22 +225,22 @@ leapsBeforeIslamicYear value =
    in cycles * 11 + countCycleLeaps yearsInCycle (leapCycleYears {pattern})
 
 public export
-maxIslamicDaysInMonth : {pattern : IslamicLeapPattern} ->
+maxDaysInMonth : {pattern : IslamicLeapPattern} ->
                         KnownIslamicLeapPattern pattern =>
                         IslamicMonth -> Year -> DayOfMonth
-maxIslamicDaysInMonth IslamicMonths.DhulHijjah value =
-  if isIslamicLeapYear {pattern} value then 30 else 29
-maxIslamicDaysInMonth valueMonth _ =
+maxDaysInMonth IslamicMonths.DhulHijjah value =
+  if isLeapYear {pattern} value then 30 else 29
+maxDaysInMonth valueMonth _ =
   if IslamicMonths.monthNumber valueMonth `mod` 2 == 1 then 30 else 29
 
 public export
-isValidIslamicDate : {pattern : IslamicLeapPattern} ->
+isValidDate : {pattern : IslamicLeapPattern} ->
                      KnownIslamicLeapPattern pattern =>
                      DayOfMonth -> IslamicMonth -> Year -> Bool
-isValidIslamicDate valueDay valueMonth valueYear =
+isValidDate valueDay valueMonth valueYear =
   let dayNumber = dayOfMonthValue valueDay
       maxDay = dayOfMonthValue
-        (maxIslamicDaysInMonth {pattern} valueMonth valueYear)
+        (maxDaysInMonth {pattern} valueMonth valueYear)
    in dayNumber >= 1 && dayNumber <= maxDay && yearValue valueYear >= 1
 
 monthOffset : IslamicMonth -> Integer
@@ -251,7 +251,7 @@ islamicDaysFromCivil : {epoch : IslamicEpoch} ->
                        KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
                        Year -> IslamicMonth -> DayOfMonth -> Integer
 islamicDaysFromCivil valueYear valueMonth valueDay =
-  islamicEpochDay {epoch} + (yearValue valueYear - 1) * 354 +
+  epochDay {epoch} + (yearValue valueYear - 1) * 354 +
     leapsBeforeIslamicYear {pattern} valueYear + monthOffset valueMonth +
     dayOfMonthValue valueDay - 1
 
@@ -275,7 +275,7 @@ islamicCivilFromDays : {epoch : IslamicEpoch} ->
                        KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
                        Integer -> (Year, IslamicMonth, DayOfMonth)
 islamicCivilFromDays value =
-  let relative = value - islamicEpochDay {epoch}
+  let relative = value - epochDay {epoch}
       cycles = relative `div` 10631
       remaining = relative `mod` 10631
       (yearInCycle, dayOfYear) = findIslamicYear {pattern} 30 0 remaining
@@ -287,23 +287,11 @@ islamicCivilFromDays value =
        dayOfMonthFromInteger dayNumber)
 
 public export
-isValidIslamicDays : Integer -> Bool
-isValidIslamicDays value = value >= islamicEpochDay {epoch = Astronomical}
-
-public export
-isValidCivilIslamicDays : Integer -> Bool
-isValidCivilIslamicDays value = value >= islamicEpochDay {epoch = Civil}
-
-isValidIslamicDaysFor : {epoch : IslamicEpoch} -> KnownIslamicEpoch epoch =>
-                        Integer -> Bool
-isValidIslamicDaysFor value = value >= islamicEpochDay {epoch}
-
-public export
 {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
   KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
   HasCalendarDate (IslamicDate epoch pattern) where
   calendarDays = daysSinceEpoch
-  acceptsCalendarDays = isValidIslamicDaysFor {epoch}
+  acceptsCalendarDays value = value >= epochDay {epoch}
   calendarDateFromDays days = MkIslamicDate days
   calendarDateName = "Islamic"
 
@@ -314,7 +302,7 @@ makeIslamicDate days = MkIslamicDate days
 
 clampToIslamic : {epoch : IslamicEpoch} -> KnownIslamicEpoch epoch =>
                  Integer -> Integer
-clampToIslamic = max (islamicEpochDay {epoch})
+clampToIslamic = max (epochDay {epoch})
 
 shiftIslamicDays : {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
                    KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
@@ -334,7 +322,7 @@ shiftIslamicMonths amount date =
         (yearValue valueYear + monthOrdinal `div` 12)
       targetMonth = monthFromNumber (monthOrdinal `mod` 12 + 1)
       targetDay = min valueDay
-        (maxIslamicDaysInMonth {pattern} targetMonth targetYear)
+        (maxDaysInMonth {pattern} targetMonth targetYear)
    in makeIslamicDate {epoch} {pattern}
         (clampToIslamic {epoch}
           (islamicDaysFromCivil {epoch} {pattern}
@@ -348,7 +336,7 @@ shiftIslamicYears amount date =
       islamicCivilFromDays {epoch} {pattern} date.daysSinceEpoch
       targetYear = yearFromInteger (yearValue valueYear + amount)
       targetDay = min valueDay
-        (maxIslamicDaysInMonth {pattern} valueMonth targetYear)
+        (maxDaysInMonth {pattern} valueMonth targetYear)
    in makeIslamicDate {epoch} {pattern}
         (clampToIslamic {epoch}
           (islamicDaysFromCivil {epoch} {pattern}
@@ -398,7 +386,7 @@ public export
   MonthRep _ = IslamicMonth
   WeekdayRep = IslamicDayOfWeek
 
-  isValidDays = isValidIslamicDaysFor {epoch}
+  isValidDays value = value >= epochDay {epoch}
   fromDays days = makeIslamicDate {epoch} {pattern} days
   toDays date = date.daysSinceEpoch
   calendarName = "Islamic"
@@ -430,7 +418,7 @@ public export
   show date = case islamicCivilFromDays {epoch} {pattern}
     date.daysSinceEpoch of
     (valueYear, valueMonth, valueDay) =>
-      islamicDateConstructorName {epoch} ++ " " ++ show valueDay ++ " " ++
+      dateConstructorName {epoch} ++ " " ++ show valueDay ++ " " ++
       show valueMonth ++ " " ++ show valueYear
 
 public export
@@ -446,27 +434,27 @@ public export
 
 ||| Construct a statically validated Islamic date for the selected leap pattern.
 public export
-islamicDate' : {pattern : IslamicLeapPattern} ->
+calendarDate' : {pattern : IslamicLeapPattern} ->
                {auto known : KnownIslamicLeapPattern pattern} ->
                (valueDay : DayOfMonth) -> (valueMonth : IslamicMonth) ->
                (valueYear : Year) ->
                {auto 0 valid : So
-                 (isValidIslamicDate {pattern} valueDay valueMonth valueYear)} ->
+                 (isValidDate {pattern} valueDay valueMonth valueYear)} ->
                CalendarDate (Islamic pattern)
-islamicDate' valueDay valueMonth valueYear =
+calendarDate' valueDay valueMonth valueYear =
   makeIslamicDate {epoch = Astronomical} {pattern}
     (islamicDaysFromCivil {epoch = Astronomical} {pattern}
       valueYear valueMonth valueDay)
 
 ||| Construct a statically validated Base16/BCL Islamic date.
 public export
-islamicDate : (valueDay : DayOfMonth) -> (valueMonth : IslamicMonth) ->
+calendarDate : (valueDay : DayOfMonth) -> (valueMonth : IslamicMonth) ->
               (valueYear : Year) ->
               {auto 0 valid : So
-                (isValidIslamicDate {pattern = Base16}
+                (isValidDate {pattern = Base16}
                   valueDay valueMonth valueYear)} ->
               CalendarDate IslamicBcl
-islamicDate = islamicDate' {pattern = Base16}
+calendarDate = calendarDate' {pattern = Base16}
 
 ||| Failures produced while refining untrusted Islamic date data.
 public export
@@ -478,132 +466,143 @@ data IslamicDateError
 
 ||| Validate runtime date components for the selected Islamic leap pattern.
 public export
-refineIslamicDate' : {pattern : IslamicLeapPattern} ->
+refineDate' : {pattern : IslamicLeapPattern} ->
                      {auto known : KnownIslamicLeapPattern pattern} ->
                      DayOfMonth -> IslamicMonth -> Year ->
                      Either IslamicDateError (CalendarDate (Islamic pattern))
-refineIslamicDate' @{known} valueDay valueMonth valueYear =
-  case choose (isValidIslamicDate {pattern} valueDay valueMonth valueYear) of
+refineDate' @{known} valueDay valueMonth valueYear =
+  case choose (isValidDate {pattern} valueDay valueMonth valueYear) of
     Left valid => Right
-      (islamicDate' {pattern} @{known} valueDay valueMonth valueYear @{valid})
+      (calendarDate' {pattern} @{known}
+        valueDay valueMonth valueYear @{valid})
     Right _ => Left (InvalidIslamicDate valueDay valueMonth valueYear)
 
 ||| Validate runtime date components using the Base16/BCL leap pattern.
 public export
-refineIslamicDate : DayOfMonth -> IslamicMonth -> Year ->
+refineDate : DayOfMonth -> IslamicMonth -> Year ->
                     Either IslamicDateError (CalendarDate IslamicBcl)
-refineIslamicDate = refineIslamicDate' {pattern = Base16}
+refineDate = refineDate' {pattern = Base16}
 
 ||| Construct a date in the selected Islamic pattern from a statically valid
 ||| calendar-relative day count.
 public export
-islamicFromDays' : {pattern : IslamicLeapPattern} ->
+fromDays' : {pattern : IslamicLeapPattern} ->
                    {auto known : KnownIslamicLeapPattern pattern} ->
                    (days : Integer) ->
-                   {auto 0 valid : So (isValidIslamicDays days)} ->
+                   {auto 0 valid : So
+                     (IotaTime.Calendar.isValidDays
+                       {calendar = Islamic pattern} days)} ->
                    CalendarDate (Islamic pattern)
-islamicFromDays' days = makeIslamicDate {pattern} days
+fromDays' days = makeIslamicDate {pattern} days
 
 public export
-islamicFromDays : (days : Integer) ->
-                  {auto 0 valid : So (isValidIslamicDays days)} ->
+fromDays : (days : Integer) ->
+                  {auto 0 valid : So
+                    (IotaTime.Calendar.isValidDays
+                      {calendar = IslamicBcl} days)} ->
                   CalendarDate IslamicBcl
-islamicFromDays = islamicFromDays' {pattern = Base16}
+fromDays = fromDays' {pattern = Base16}
 
 ||| Validate a runtime day count for the selected Islamic leap pattern.
 public export
-refineIslamicDays' : {pattern : IslamicLeapPattern} ->
+refineDays' : {pattern : IslamicLeapPattern} ->
                      {auto known : KnownIslamicLeapPattern pattern} ->
                      Integer -> Either IslamicDateError
                        (CalendarDate (Islamic pattern))
-refineIslamicDays' @{known} days = case choose (isValidIslamicDays days) of
-  Left valid => Right (islamicFromDays' {pattern} @{known} days @{valid})
+refineDays' @{known} days = case choose
+  (IotaTime.Calendar.isValidDays {calendar = Islamic pattern} days) of
+  Left valid => Right (fromDays' {pattern} @{known} days @{valid})
   Right _ => Left (InvalidIslamicDayCount days)
 
 public export
-refineIslamicDays : Integer -> Either IslamicDateError
+refineDays : Integer -> Either IslamicDateError
                       (CalendarDate IslamicBcl)
-refineIslamicDays = refineIslamicDays' {pattern = Base16}
+refineDays = refineDays' {pattern = Base16}
 
 ||| Construct a statically validated civil-epoch Islamic date for the selected
 ||| leap pattern.
 public export
-civilIslamicDate' : {pattern : IslamicLeapPattern} ->
+civilCalendarDate' : {pattern : IslamicLeapPattern} ->
                     {auto known : KnownIslamicLeapPattern pattern} ->
                     (valueDay : DayOfMonth) ->
                     (valueMonth : IslamicMonth) -> (valueYear : Year) ->
                     {auto 0 valid : So
-                      (isValidIslamicDate {pattern}
+                      (isValidDate {pattern}
                         valueDay valueMonth valueYear)} ->
                     CalendarDate (CivilIslamic pattern)
-civilIslamicDate' valueDay valueMonth valueYear =
+civilCalendarDate' valueDay valueMonth valueYear =
   makeIslamicDate {epoch = Civil} {pattern}
     (islamicDaysFromCivil {epoch = Civil} {pattern}
       valueYear valueMonth valueDay)
 
 ||| Construct a statically validated Base16 civil-epoch Islamic date.
 public export
-civilIslamicDate : (valueDay : DayOfMonth) ->
+civilCalendarDate : (valueDay : DayOfMonth) ->
                    (valueMonth : IslamicMonth) -> (valueYear : Year) ->
                    {auto 0 valid : So
-                     (isValidIslamicDate {pattern = Base16}
+                     (isValidDate {pattern = Base16}
                        valueDay valueMonth valueYear)} ->
                    CalendarDate CivilIslamicBcl
-civilIslamicDate = civilIslamicDate' {pattern = Base16}
+civilCalendarDate = civilCalendarDate' {pattern = Base16}
 
 ||| Validate runtime date components for a selected civil-epoch leap pattern.
 public export
-refineCivilIslamicDate' : {pattern : IslamicLeapPattern} ->
+refineCivilDate' : {pattern : IslamicLeapPattern} ->
                           {auto known : KnownIslamicLeapPattern pattern} ->
                           DayOfMonth -> IslamicMonth -> Year ->
                           Either IslamicDateError
                             (CalendarDate (CivilIslamic pattern))
-refineCivilIslamicDate' @{known} valueDay valueMonth valueYear =
-  case choose (isValidIslamicDate {pattern}
+refineCivilDate' @{known} valueDay valueMonth valueYear =
+  case choose (isValidDate {pattern}
     valueDay valueMonth valueYear) of
-      Left valid => Right (civilIslamicDate' {pattern} @{known}
+      Left valid => Right (civilCalendarDate' {pattern} @{known}
         valueDay valueMonth valueYear @{valid})
       Right _ => Left (InvalidIslamicDate valueDay valueMonth valueYear)
 
 ||| Validate runtime civil-epoch date components using the Base16 pattern.
 public export
-refineCivilIslamicDate : DayOfMonth -> IslamicMonth -> Year ->
+refineCivilDate : DayOfMonth -> IslamicMonth -> Year ->
                          Either IslamicDateError
                            (CalendarDate CivilIslamicBcl)
-refineCivilIslamicDate = refineCivilIslamicDate' {pattern = Base16}
+refineCivilDate = refineCivilDate' {pattern = Base16}
 
 ||| Construct a civil-epoch date from a statically valid timeline day count.
 public export
-civilIslamicFromDays' : {pattern : IslamicLeapPattern} ->
+civilFromDays' : {pattern : IslamicLeapPattern} ->
                         {auto known : KnownIslamicLeapPattern pattern} ->
                         (days : Integer) ->
-                        {auto 0 valid : So (isValidCivilIslamicDays days)} ->
+                        {auto 0 valid : So
+                          (IotaTime.Calendar.isValidDays
+                            {calendar = CivilIslamic pattern} days)} ->
                         CalendarDate (CivilIslamic pattern)
-civilIslamicFromDays' days = makeIslamicDate {epoch = Civil} {pattern} days
+civilFromDays' days = makeIslamicDate {epoch = Civil} {pattern} days
 
 public export
-civilIslamicFromDays : (days : Integer) ->
+civilFromDays : (days : Integer) ->
                        {auto 0 valid : So
-                         (isValidCivilIslamicDays days)} ->
+                         (IotaTime.Calendar.isValidDays
+                           {calendar = CivilIslamicBcl} days)} ->
                        CalendarDate CivilIslamicBcl
-civilIslamicFromDays = civilIslamicFromDays' {pattern = Base16}
+civilFromDays = civilFromDays' {pattern = Base16}
 
 ||| Validate a runtime timeline day count for a selected civil leap pattern.
 public export
-refineCivilIslamicDays' : {pattern : IslamicLeapPattern} ->
+refineCivilDays' : {pattern : IslamicLeapPattern} ->
                           {auto known : KnownIslamicLeapPattern pattern} ->
                           Integer -> Either IslamicDateError
                             (CalendarDate (CivilIslamic pattern))
-refineCivilIslamicDays' @{known} days =
-  case choose (isValidCivilIslamicDays days) of
+refineCivilDays' @{known} days =
+  case choose
+    (IotaTime.Calendar.isValidDays
+      {calendar = CivilIslamic pattern} days) of
     Left valid => Right
-      (civilIslamicFromDays' {pattern} @{known} days @{valid})
+      (civilFromDays' {pattern} @{known} days @{valid})
     Right _ => Left (InvalidIslamicDayCount days)
 
 public export
-refineCivilIslamicDays : Integer -> Either IslamicDateError
+refineCivilDays : Integer -> Either IslamicDateError
                            (CalendarDate CivilIslamicBcl)
-refineCivilIslamicDays = refineCivilIslamicDays' {pattern = Base16}
+refineCivilDays = refineCivilDays' {pattern = Base16}
 
 nthIslamicDayOfMonthFor : {epoch : IslamicEpoch} ->
                           {pattern : IslamicLeapPattern} ->
@@ -612,7 +611,7 @@ nthIslamicDayOfMonthFor : {epoch : IslamicEpoch} ->
                           DayNth -> IslamicDayOfWeek -> IslamicMonth -> Year ->
                           DayOfMonth
 nthIslamicDayOfMonthFor nth target valueMonth valueYear =
-  let monthLength = maxIslamicDaysInMonth {pattern} valueMonth valueYear
+  let monthLength = maxDaysInMonth {pattern} valueMonth valueYear
       firstOffset = (IslamicWeekdays.weekdayNumber target -
         IslamicWeekdays.weekdayNumber (islamicWeekdayFromDays
           (islamicDaysFromCivil {epoch} {pattern}
@@ -626,134 +625,134 @@ nthIslamicDayOfMonthFor nth target valueMonth valueYear =
    in dayOfMonthFromInteger dayNumber
 
 public export
-nthIslamicDayOfMonth : {pattern : IslamicLeapPattern} ->
+nthDayOfMonth : {pattern : IslamicLeapPattern} ->
                        KnownIslamicLeapPattern pattern =>
                        DayNth -> IslamicDayOfWeek -> IslamicMonth -> Year ->
                        DayOfMonth
-nthIslamicDayOfMonth =
+nthDayOfMonth =
   nthIslamicDayOfMonthFor {epoch = Astronomical} {pattern}
 
 public export
-nthCivilIslamicDayOfMonth : {pattern : IslamicLeapPattern} ->
+civilNthDayOfMonth : {pattern : IslamicLeapPattern} ->
                             KnownIslamicLeapPattern pattern =>
                             DayNth -> IslamicDayOfWeek -> IslamicMonth ->
                             Year -> DayOfMonth
-nthCivilIslamicDayOfMonth =
+civilNthDayOfMonth =
   nthIslamicDayOfMonthFor {epoch = Civil} {pattern}
 
 public export
-isValidIslamicNthDay : {pattern : IslamicLeapPattern} ->
+isValidNthDay : {pattern : IslamicLeapPattern} ->
                        KnownIslamicLeapPattern pattern =>
                        DayNth -> IslamicDayOfWeek -> IslamicMonth -> Year -> Bool
-isValidIslamicNthDay nth target valueMonth valueYear =
+isValidNthDay nth target valueMonth valueYear =
   yearValue valueYear >= 1 && case nth of
-    Fifth => nthIslamicDayOfMonth {pattern} nth target valueMonth valueYear <=
-      maxIslamicDaysInMonth {pattern} valueMonth valueYear
+    Fifth => nthDayOfMonth {pattern} nth target valueMonth valueYear <=
+      maxDaysInMonth {pattern} valueMonth valueYear
     _ => True
 
 public export
-isValidCivilIslamicNthDay : {pattern : IslamicLeapPattern} ->
+isValidCivilNthDay : {pattern : IslamicLeapPattern} ->
                             KnownIslamicLeapPattern pattern =>
                             DayNth -> IslamicDayOfWeek -> IslamicMonth ->
                             Year -> Bool
-isValidCivilIslamicNthDay nth target valueMonth valueYear =
+isValidCivilNthDay nth target valueMonth valueYear =
   yearValue valueYear >= 1 && case nth of
-    Fifth => nthCivilIslamicDayOfMonth {pattern}
+    Fifth => civilNthDayOfMonth {pattern}
       nth target valueMonth valueYear <=
-        maxIslamicDaysInMonth {pattern} valueMonth valueYear
+        maxDaysInMonth {pattern} valueMonth valueYear
     _ => True
 
 ||| Construct the nth requested weekday in an Islamic month for the selected
 ||| leap pattern.
 public export
-islamicFromNthDay' : {pattern : IslamicLeapPattern} ->
+fromNthDay' : {pattern : IslamicLeapPattern} ->
                      {auto known : KnownIslamicLeapPattern pattern} ->
                      (nth : DayNth) -> (target : IslamicDayOfWeek) ->
                      (valueMonth : IslamicMonth) -> (valueYear : Year) ->
                      {auto 0 valid : So
-                       (isValidIslamicNthDay {pattern}
+                       (isValidNthDay {pattern}
                          nth target valueMonth valueYear)} ->
                      CalendarDate (Islamic pattern)
-islamicFromNthDay' nth target valueMonth valueYear =
+fromNthDay' nth target valueMonth valueYear =
   makeIslamicDate {epoch = Astronomical} {pattern}
     (islamicDaysFromCivil {epoch = Astronomical} {pattern}
       valueYear valueMonth
-      (nthIslamicDayOfMonth {pattern} nth target valueMonth valueYear))
+      (nthDayOfMonth {pattern} nth target valueMonth valueYear))
 
 public export
-islamicFromNthDay : (nth : DayNth) -> (target : IslamicDayOfWeek) ->
+fromNthDay : (nth : DayNth) -> (target : IslamicDayOfWeek) ->
                     (valueMonth : IslamicMonth) -> (valueYear : Year) ->
                     {auto 0 valid : So
-                      (isValidIslamicNthDay {pattern = Base16}
+                      (isValidNthDay {pattern = Base16}
                         nth target valueMonth valueYear)} ->
                     CalendarDate IslamicBcl
-islamicFromNthDay = islamicFromNthDay' {pattern = Base16}
+fromNthDay = fromNthDay' {pattern = Base16}
 
 ||| Validate an nth-weekday request for the selected Islamic leap pattern.
 public export
-refineIslamicNthDay' : {pattern : IslamicLeapPattern} ->
+refineNthDay' : {pattern : IslamicLeapPattern} ->
                        {auto known : KnownIslamicLeapPattern pattern} ->
                        DayNth -> IslamicDayOfWeek -> IslamicMonth -> Year ->
                        Either IslamicDateError (CalendarDate (Islamic pattern))
-refineIslamicNthDay' @{known} nth target valueMonth valueYear =
-  case choose (isValidIslamicNthDay {pattern}
+refineNthDay' @{known} nth target valueMonth valueYear =
+  case choose (isValidNthDay {pattern}
     nth target valueMonth valueYear) of
       Left valid => Right
-        (islamicFromNthDay' {pattern}
+        (fromNthDay' {pattern}
           @{known} nth target valueMonth valueYear @{valid})
       Right _ => Left (InvalidIslamicNthDay nth target valueMonth valueYear)
 
 public export
-refineIslamicNthDay : DayNth -> IslamicDayOfWeek -> IslamicMonth -> Year ->
+refineNthDay : DayNth -> IslamicDayOfWeek -> IslamicMonth -> Year ->
                       Either IslamicDateError (CalendarDate IslamicBcl)
-refineIslamicNthDay = refineIslamicNthDay' {pattern = Base16}
+refineNthDay = refineNthDay' {pattern = Base16}
 
 ||| Construct the nth requested weekday in a civil-epoch Islamic month.
 public export
-civilIslamicFromNthDay' : {pattern : IslamicLeapPattern} ->
+civilFromNthDay' : {pattern : IslamicLeapPattern} ->
                           {auto known : KnownIslamicLeapPattern pattern} ->
                           (nth : DayNth) -> (target : IslamicDayOfWeek) ->
                           (valueMonth : IslamicMonth) -> (valueYear : Year) ->
                           {auto 0 valid : So
-                            (isValidCivilIslamicNthDay {pattern}
+                            (isValidCivilNthDay {pattern}
                               nth target valueMonth valueYear)} ->
                           CalendarDate (CivilIslamic pattern)
-civilIslamicFromNthDay' nth target valueMonth valueYear =
+civilFromNthDay' nth target valueMonth valueYear =
   makeIslamicDate {epoch = Civil} {pattern}
     (islamicDaysFromCivil {epoch = Civil} {pattern}
       valueYear valueMonth
-      (nthCivilIslamicDayOfMonth {pattern}
+      (civilNthDayOfMonth {pattern}
         nth target valueMonth valueYear))
 
 public export
-civilIslamicFromNthDay : (nth : DayNth) ->
+civilFromNthDay : (nth : DayNth) ->
                          (target : IslamicDayOfWeek) ->
                          (valueMonth : IslamicMonth) -> (valueYear : Year) ->
                          {auto 0 valid : So
-                           (isValidCivilIslamicNthDay {pattern = Base16}
+                           (isValidCivilNthDay {pattern = Base16}
                              nth target valueMonth valueYear)} ->
                          CalendarDate CivilIslamicBcl
-civilIslamicFromNthDay = civilIslamicFromNthDay' {pattern = Base16}
+civilFromNthDay = civilFromNthDay' {pattern = Base16}
 
 public export
-refineCivilIslamicNthDay' : {pattern : IslamicLeapPattern} ->
+refineCivilNthDay' : {pattern : IslamicLeapPattern} ->
                             {auto known : KnownIslamicLeapPattern pattern} ->
                             DayNth -> IslamicDayOfWeek -> IslamicMonth -> Year ->
                             Either IslamicDateError
                               (CalendarDate (CivilIslamic pattern))
-refineCivilIslamicNthDay' @{known} nth target valueMonth valueYear =
-  case choose (isValidCivilIslamicNthDay {pattern}
+refineCivilNthDay' @{known} nth target valueMonth valueYear =
+  case choose (isValidCivilNthDay {pattern}
     nth target valueMonth valueYear) of
-      Left valid => Right (civilIslamicFromNthDay' {pattern} @{known}
+      Left valid => Right (civilFromNthDay' {pattern} @{known}
         nth target valueMonth valueYear @{valid})
       Right _ => Left
         (InvalidIslamicNthDay nth target valueMonth valueYear)
 
 public export
-refineCivilIslamicNthDay : DayNth -> IslamicDayOfWeek -> IslamicMonth ->
+refineCivilNthDay : DayNth -> IslamicDayOfWeek -> IslamicMonth ->
                            Year -> Either IslamicDateError
                              (CalendarDate CivilIslamicBcl)
-refineCivilIslamicNthDay = refineCivilIslamicNthDay' {pattern = Base16}
+refineCivilNthDay = refineCivilNthDay' {pattern = Base16}
 
 islamicWeekDateDaysFor : {epoch : IslamicEpoch} ->
                          {pattern : IslamicLeapPattern} ->
@@ -770,117 +769,111 @@ islamicWeekDateDaysFor week target valueYear =
    in firstWeekStart + 7 * (weekNumberValue week - 1) + targetOffset
 
 public export
-islamicWeekDateDays : {pattern : IslamicLeapPattern} ->
+weekDateDays : {pattern : IslamicLeapPattern} ->
                       KnownIslamicLeapPattern pattern =>
                       WeekNumber -> IslamicDayOfWeek -> Year -> Integer
-islamicWeekDateDays =
+weekDateDays =
   islamicWeekDateDaysFor {epoch = Astronomical} {pattern}
 
 public export
-civilIslamicWeekDateDays : {pattern : IslamicLeapPattern} ->
+civilWeekDateDays : {pattern : IslamicLeapPattern} ->
                            KnownIslamicLeapPattern pattern =>
                            WeekNumber -> IslamicDayOfWeek -> Year -> Integer
-civilIslamicWeekDateDays =
+civilWeekDateDays =
   islamicWeekDateDaysFor {epoch = Civil} {pattern}
 
 public export
-isValidIslamicWeekDate : {pattern : IslamicLeapPattern} ->
-                         KnownIslamicLeapPattern pattern =>
-                         WeekNumber -> IslamicDayOfWeek -> Year -> Bool
-isValidIslamicWeekDate week target valueYear =
-  yearValue valueYear > 1 ||
-  isValidIslamicDays (islamicWeekDateDays {pattern} week target valueYear)
+isValidWeekDate : {pattern : IslamicLeapPattern} ->
+                  KnownIslamicLeapPattern pattern =>
+                  WeekNumber -> IslamicDayOfWeek -> Year -> Bool
+isValidWeekDate week target valueYear =
+  (yearValue valueYear > 1 && weekNumberValue week >= 0) ||
+    IotaTime.Calendar.isValidDays {calendar = Islamic pattern}
+      (weekDateDays {pattern} week target valueYear)
 
 public export
-isValidCivilIslamicWeekDate : {pattern : IslamicLeapPattern} ->
-                              KnownIslamicLeapPattern pattern =>
-                              WeekNumber -> IslamicDayOfWeek -> Year -> Bool
-isValidCivilIslamicWeekDate week target valueYear =
-  yearValue valueYear > 1 ||
-  isValidCivilIslamicDays
-    (civilIslamicWeekDateDays {pattern} week target valueYear)
+isValidCivilWeekDate : {pattern : IslamicLeapPattern} ->
+                       KnownIslamicLeapPattern pattern =>
+                       WeekNumber -> IslamicDayOfWeek -> Year -> Bool
+isValidCivilWeekDate week target valueYear =
+  (yearValue valueYear > 1 && weekNumberValue week >= 0) ||
+    IotaTime.Calendar.isValidDays {calendar = CivilIslamic pattern}
+      (civilWeekDateDays {pattern} week target valueYear)
 
 ||| Construct a Saturday-based Islamic week date for the selected leap pattern.
 public export
-islamicFromWeekDate' : {pattern : IslamicLeapPattern} ->
-                       {auto known : KnownIslamicLeapPattern pattern} ->
-                       (week : WeekNumber) -> (target : IslamicDayOfWeek) ->
-                       (valueYear : Year) ->
-                       {auto 0 valid : So
-                         (isValidIslamicWeekDate {pattern}
-                           week target valueYear)} ->
-                       CalendarDate (Islamic pattern)
-islamicFromWeekDate' week target valueYear =
+fromWeekDate' : {pattern : IslamicLeapPattern} ->
+                {auto known : KnownIslamicLeapPattern pattern} ->
+                (week : WeekNumber) -> (target : IslamicDayOfWeek) ->
+                (valueYear : Year) ->
+                {auto 0 valid : So
+                  (isValidWeekDate {pattern} week target valueYear)} ->
+                CalendarDate (Islamic pattern)
+fromWeekDate' week target valueYear =
   makeIslamicDate {epoch = Astronomical} {pattern}
-    (islamicWeekDateDays {pattern} week target valueYear)
+    (weekDateDays {pattern} week target valueYear)
 
 public export
-islamicFromWeekDate : (week : WeekNumber) ->
-                      (target : IslamicDayOfWeek) -> (valueYear : Year) ->
-                      {auto 0 valid : So
-                        (isValidIslamicWeekDate {pattern = Base16}
-                          week target valueYear)} ->
-                      CalendarDate IslamicBcl
-islamicFromWeekDate = islamicFromWeekDate' {pattern = Base16}
+fromWeekDate : (week : WeekNumber) ->
+               (target : IslamicDayOfWeek) -> (valueYear : Year) ->
+               {auto 0 valid : So
+                 (isValidWeekDate {pattern = Base16} week target valueYear)} ->
+               CalendarDate IslamicBcl
+fromWeekDate = fromWeekDate' {pattern = Base16}
 
 ||| Validate a runtime Islamic week date for the selected leap pattern.
 public export
-refineIslamicWeekDate' : {pattern : IslamicLeapPattern} ->
-                         {auto known : KnownIslamicLeapPattern pattern} ->
-                         WeekNumber -> IslamicDayOfWeek -> Year ->
-                         Either IslamicDateError
-                           (CalendarDate (Islamic pattern))
-refineIslamicWeekDate' @{known} week target valueYear =
-  case choose (isValidIslamicWeekDate {pattern} week target valueYear) of
+refineWeekDate' : {pattern : IslamicLeapPattern} ->
+                  {auto known : KnownIslamicLeapPattern pattern} ->
+                  WeekNumber -> IslamicDayOfWeek -> Year ->
+                  Either IslamicDateError (CalendarDate (Islamic pattern))
+refineWeekDate' @{known} week target valueYear =
+  case choose (isValidWeekDate {pattern} week target valueYear) of
     Left valid => Right
-      (islamicFromWeekDate' {pattern} @{known} week target valueYear @{valid})
+      (fromWeekDate' {pattern} @{known} week target valueYear @{valid})
     Right _ => Left (InvalidIslamicWeekDate week target valueYear)
 
 public export
-refineIslamicWeekDate : WeekNumber -> IslamicDayOfWeek -> Year ->
-                        Either IslamicDateError (CalendarDate IslamicBcl)
-refineIslamicWeekDate = refineIslamicWeekDate' {pattern = Base16}
+refineWeekDate : WeekNumber -> IslamicDayOfWeek -> Year ->
+                 Either IslamicDateError (CalendarDate IslamicBcl)
+refineWeekDate = refineWeekDate' {pattern = Base16}
 
 ||| Construct a Saturday-based civil-epoch Islamic week date.
 public export
-civilIslamicFromWeekDate' : {pattern : IslamicLeapPattern} ->
-                            {auto known : KnownIslamicLeapPattern pattern} ->
-                            (week : WeekNumber) ->
-                            (target : IslamicDayOfWeek) ->
-                            (valueYear : Year) ->
-                            {auto 0 valid : So
-                              (isValidCivilIslamicWeekDate {pattern}
-                                week target valueYear)} ->
-                            CalendarDate (CivilIslamic pattern)
-civilIslamicFromWeekDate' week target valueYear =
+civilFromWeekDate' : {pattern : IslamicLeapPattern} ->
+                     {auto known : KnownIslamicLeapPattern pattern} ->
+                     (week : WeekNumber) -> (target : IslamicDayOfWeek) ->
+                     (valueYear : Year) ->
+                     {auto 0 valid : So
+                       (isValidCivilWeekDate {pattern} week target valueYear)} ->
+                     CalendarDate (CivilIslamic pattern)
+civilFromWeekDate' week target valueYear =
   makeIslamicDate {epoch = Civil} {pattern}
-    (civilIslamicWeekDateDays {pattern} week target valueYear)
+    (civilWeekDateDays {pattern} week target valueYear)
 
 public export
-civilIslamicFromWeekDate : (week : WeekNumber) ->
-                           (target : IslamicDayOfWeek) ->
-                           (valueYear : Year) ->
-                           {auto 0 valid : So
-                             (isValidCivilIslamicWeekDate {pattern = Base16}
-                               week target valueYear)} ->
-                           CalendarDate CivilIslamicBcl
-civilIslamicFromWeekDate = civilIslamicFromWeekDate' {pattern = Base16}
+civilFromWeekDate : (week : WeekNumber) ->
+                    (target : IslamicDayOfWeek) -> (valueYear : Year) ->
+                    {auto 0 valid : So
+                      (isValidCivilWeekDate {pattern = Base16}
+                        week target valueYear)} ->
+                    CalendarDate CivilIslamicBcl
+civilFromWeekDate = civilFromWeekDate' {pattern = Base16}
 
 public export
-refineCivilIslamicWeekDate' : {pattern : IslamicLeapPattern} ->
-                              {auto known : KnownIslamicLeapPattern pattern} ->
-                              WeekNumber -> IslamicDayOfWeek -> Year ->
-                              Either IslamicDateError
-                                (CalendarDate (CivilIslamic pattern))
-refineCivilIslamicWeekDate' @{known} week target valueYear =
-  case choose (isValidCivilIslamicWeekDate {pattern}
+refineCivilWeekDate' : {pattern : IslamicLeapPattern} ->
+                       {auto known : KnownIslamicLeapPattern pattern} ->
+                       WeekNumber -> IslamicDayOfWeek -> Year ->
+                       Either IslamicDateError
+                         (CalendarDate (CivilIslamic pattern))
+refineCivilWeekDate' @{known} week target valueYear =
+  case choose (isValidCivilWeekDate {pattern}
     week target valueYear) of
-      Left valid => Right (civilIslamicFromWeekDate' {pattern} @{known}
+      Left valid => Right (civilFromWeekDate' {pattern} @{known}
         week target valueYear @{valid})
       Right _ => Left (InvalidIslamicWeekDate week target valueYear)
 
 public export
-refineCivilIslamicWeekDate : WeekNumber -> IslamicDayOfWeek -> Year ->
-                             Either IslamicDateError
-                               (CalendarDate CivilIslamicBcl)
-refineCivilIslamicWeekDate = refineCivilIslamicWeekDate' {pattern = Base16}
+refineCivilWeekDate : WeekNumber -> IslamicDayOfWeek -> Year ->
+                      Either IslamicDateError (CalendarDate CivilIslamicBcl)
+refineCivilWeekDate = refineCivilWeekDate' {pattern = Base16}

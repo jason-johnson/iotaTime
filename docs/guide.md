@@ -10,14 +10,14 @@ A statically known valid date needs no runtime check:
 
 ```idris
 leapDay : CalendarDate Gregorian
-leapDay = calendarDate 29 February 2020
+leapDay = IotaTime.Calendar.Gregorian.calendarDate 29 February 2020
 ```
 
 The corresponding invalid declaration does not compile because Idris cannot produce `So False`:
 
 ```idris
 invalid : CalendarDate Gregorian
-invalid = calendarDate 29 February 2021
+invalid = IotaTime.Calendar.Gregorian.calendarDate 29 February 2021
 ```
 
 Values learned from text, files, the operating system, or users remain fallible. Runtime refiners return `Either Error ValidValue`, after which normal operations preserve the invariant.
@@ -52,7 +52,7 @@ module GuidedMeeting
 import IotaTime
 
 meetingDate : CalendarDate Gregorian
-meetingDate = calendarDate 23 April 2024
+meetingDate = IotaTime.Calendar.Gregorian.calendarDate 23 April 2024
 
 meetingTime : LocalTime
 meetingTime = localTime 9 0 0 0
@@ -82,7 +82,7 @@ main = do
 
 In April, the two lines describe the same instant as 09:00 in Zürich and 03:00 in New York. The conversion is explicit:
 
-1. `calendarDate` and `localTime` construct valid civil values.
+1. `IotaTime.Calendar.Gregorian.calendarDate` and `localTime` construct valid civil values.
 2. `at` combines them without pretending they identify an instant.
 3. `fromCalendarDateTimeStrictly` supplies Zürich's rules and refuses to guess for skipped or ambiguous local times.
 4. `toInstant` crosses into physical time.
@@ -110,14 +110,14 @@ checked = difference finish start
 
 ## Civil time and periods
 
-Date and clock components are opaque refined values. Valid literals elaborate directly; runtime integers use refiners such as `refineGregorianDate` and `refineLocalTime`.
+Date and clock components are opaque refined values. Valid literals elaborate directly; runtime integers use refiners such as `IotaTime.Calendar.Gregorian.refineDate` and `refineLocalTime`.
 
 ```idris
 late : LocalTime
 late = localTime 23 30 0 0
 
 endOfMonth : CalendarDateTime Gregorian
-endOfMonth = at (calendarDate 31 January 2000) late
+endOfMonth = at (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) late
 
 advanced : CalendarDateTime Gregorian
 advanced = applyPeriod (months 1 <+> hours 2) endOfMonth
@@ -142,7 +142,7 @@ The calendar is part of the date type. `CalendarDate Gregorian`, `CalendarDate J
 
 ```idris
 gregorianChristmas : CalendarDate Gregorian
-gregorianChristmas = calendarDate 25 December 2024
+gregorianChristmas = IotaTime.Calendar.Gregorian.calendarDate 25 December 2024
 
 julianChristmas : Either CalendarConversionError (CalendarDate Julian)
 julianChristmas =
@@ -159,7 +159,8 @@ A [`Pattern`](docs/IotaTime.Pattern.html) carries a parser and formatter togethe
 
 ```idris
 text : String
-text = format (pR {calendar = Gregorian}) (calendarDate 3 March 2020)
+text = format (pR {calendar = Gregorian})
+  (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020)
 
 parsed : Either PatternError (CalendarDate Gregorian)
 parsed = parse (pR {calendar = Gregorian}) "2020-03-03"

@@ -43,30 +43,30 @@ patternScalarCases =
       roundTrips pOffsetFull (IotaTime.Offset.fromSeconds 64800))
   , MkRuntimeCase "Gregorian and Julian day-count patterns round-trip"
       (calendarRoundTrips {calendar = Gregorian}
-        (calendarDate 29 February 2000) &&
+        (IotaTime.Calendar.Gregorian.calendarDate 29 February 2000) &&
       calendarRoundTrips {calendar = Julian}
-        (julianDate 29 JulianMonths.February 1900))
+        (IotaTime.Calendar.Julian.calendarDate 29 JulianMonths.February 1900))
   , MkRuntimeCase "Coptic and Persian day-count patterns round-trip"
       (calendarRoundTrips {calendar = Coptic}
-        (copticDate 6 CopticMonths.PiKogiEnavot 1731) &&
+        (IotaTime.Calendar.Coptic.calendarDate 6 CopticMonths.PiKogiEnavot 1731) &&
       calendarRoundTrips {calendar = Persian}
-        (persianDate 30 PersianMonths.Esfand 1403))
+        (IotaTime.Calendar.Persian.calendarDate 30 PersianMonths.Esfand 1403))
   , MkRuntimeCase "Hebrew numbering remains in the selected calendar type"
       (calendarRoundTrips {calendar = HebrewCivil}
-        (hebrewDate 1 5784 HebrewMonths.AdarI) &&
+        (IotaTime.Calendar.Hebrew.calendarDate 1 5784 HebrewMonths.AdarI) &&
       calendarRoundTrips {calendar = HebrewScriptural}
-        (hebrewDate' {numbering = Scriptural}
+        (IotaTime.Calendar.Hebrew.calendarDate' {numbering = Scriptural}
           1 5784 HebrewMonths.AdarI))
   , MkRuntimeCase "Islamic epoch and pattern remain in the selected type"
       (calendarRoundTrips {calendar = IslamicBase15}
-        (islamicDate' {pattern = Base15}
+        (IotaTime.Calendar.Islamic.calendarDate' {pattern = Base15}
           30 IslamicMonths.DhulHijjah 15) &&
       calendarRoundTrips {calendar = CivilIslamicBase16}
-        (civilIslamicDate 30 IslamicMonths.DhulHijjah 16) &&
+        (IotaTime.Calendar.Islamic.civilCalendarDate 30 IslamicMonths.DhulHijjah 16) &&
       case IotaTime.Pattern.parse
         (pCalendarDays {calendar = CivilIslamicBase16}) "-503165" of
           Right date => date ==
-            civilIslamicDate 1 IslamicMonths.Muharram 1
+            IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1
           Left _ => False)
   , MkRuntimeCase "calendar day patterns enforce the selected range"
       (case IotaTime.Pattern.parse

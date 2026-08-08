@@ -4,4 +4,4 @@ module InvalidJulianDayCount
 import IotaTime
 
 invalid : CalendarDate Julian
-invalid = julianFromDays (-746632)
+invalid = IotaTime.Calendar.Julian.fromDays (-746632)

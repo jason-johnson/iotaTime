@@ -84,8 +84,8 @@ monthFromNumber 11 = PersianMonths.Bahman
 monthFromNumber _ = PersianMonths.Esfand
 
 public export
-persianWeekdayFromDays : Integer -> PersianDayOfWeek
-persianWeekdayFromDays value = case (value + 3) `mod` 7 of
+weekdayFromDays : Integer -> PersianDayOfWeek
+weekdayFromDays value = case (value + 3) `mod` 7 of
   0 => PersianWeekdays.Sunday
   1 => PersianWeekdays.Monday
   2 => PersianWeekdays.Tuesday
@@ -108,20 +108,20 @@ Ord PersianDate where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
 
 public export
-minimumPersianYear : Integer
-minimumPersianYear = 1
+minimumYear : Integer
+minimumYear = 1
 
 public export
-maximumPersianYear : Integer
-maximumPersianYear = 1500
+maximumYear : Integer
+maximumYear = 1500
 
 public export
-persianEpoch : Integer
-persianEpoch = -503284
+epoch : Integer
+epoch = -503284
 
 public export
-persianLeapYears : List Integer
-persianLeapYears =
+leapYears : List Integer
+leapYears =
   [ 5, 9, 13, 17, 21, 25, 29, 33, 38, 42, 46, 50, 54, 58, 62, 66
   , 71, 75, 79, 83, 87, 91, 95, 99, 104, 108, 112, 116, 120, 124, 128, 132
   , 137, 141, 145, 149, 153, 157, 161, 166, 170, 174, 178, 182, 186, 190, 194
@@ -153,8 +153,8 @@ persianLeapYears =
 
 ||| Whether a supported Persian year contains Esfand 30.
 public export
-isPersianLeapYear : Year -> Bool
-isPersianLeapYear value = elem (yearValue value) persianLeapYears
+isLeapYear : Year -> Bool
+isLeapYear value = elem (yearValue value) leapYears
 
 public export
 countLeapsBefore : Integer -> List Integer -> Integer
@@ -163,30 +163,30 @@ countLeapsBefore year (leapYear :: rest) =
   if leapYear < year then 1 + countLeapsBefore year rest else 0
 
 public export
-persianNewYearDay : Year -> Integer
-persianNewYearDay value =
-  persianEpoch + (yearValue value - 1) * 365 +
-    countLeapsBefore (yearValue value) persianLeapYears
+newYearDay : Year -> Integer
+newYearDay value =
+  epoch + (yearValue value - 1) * 365 +
+    countLeapsBefore (yearValue value) leapYears
 
 public export
-lastPersianDay : Integer
-lastPersianDay = persianNewYearDay 1501 - 1
+lastDay : Integer
+lastDay = newYearDay 1501 - 1
 
 public export
-maxPersianDaysInMonth : PersianMonth -> Year -> DayOfMonth
-maxPersianDaysInMonth PersianMonths.Esfand value =
-  if isPersianLeapYear value then 30 else 29
-maxPersianDaysInMonth valueMonth _ =
+maxDaysInMonth : PersianMonth -> Year -> DayOfMonth
+maxDaysInMonth PersianMonths.Esfand value =
+  if isLeapYear value then 30 else 29
+maxDaysInMonth valueMonth _ =
   if PersianMonths.monthNumber valueMonth <= 6 then 31 else 30
 
 public export
-isValidPersianDate : DayOfMonth -> PersianMonth -> Year -> Bool
-isValidPersianDate valueDay valueMonth valueYear =
+isValidDate : DayOfMonth -> PersianMonth -> Year -> Bool
+isValidDate valueDay valueMonth valueYear =
   let dayNumber = dayOfMonthValue valueDay
       yearNumber = yearValue valueYear
-      maxDay = dayOfMonthValue (maxPersianDaysInMonth valueMonth valueYear)
+      maxDay = dayOfMonthValue (maxDaysInMonth valueMonth valueYear)
    in dayNumber >= 1 && dayNumber <= maxDay &&
-      yearNumber >= minimumPersianYear && yearNumber <= maximumPersianYear
+      yearNumber >= minimumYear && yearNumber <= maximumYear
 
 public export
 monthOffset : PersianMonth -> Integer
@@ -196,27 +196,27 @@ monthOffset value =
       else 186 + (number - 7) * 30
 
 public export
-persianDaysFromCivil : Year -> PersianMonth -> DayOfMonth -> Integer
-persianDaysFromCivil valueYear valueMonth valueDay =
-  persianNewYearDay valueYear + monthOffset valueMonth +
+daysFromCivil : Year -> PersianMonth -> DayOfMonth -> Integer
+daysFromCivil valueYear valueMonth valueDay =
+  newYearDay valueYear + monthOffset valueMonth +
     dayOfMonthValue valueDay - 1
 
 findPersianYear : Nat -> Integer -> Integer -> Integer
 findPersianYear Z estimate days = estimate
 findPersianYear (S fuel) estimate days =
-  if days < persianNewYearDay (yearFromInteger estimate)
+  if days < newYearDay (yearFromInteger estimate)
     then findPersianYear fuel (estimate - 1) days
-    else if days >= persianNewYearDay (yearFromInteger (estimate + 1))
+    else if days >= newYearDay (yearFromInteger (estimate + 1))
       then findPersianYear fuel (estimate + 1) days
       else estimate
 
 persianCivilFromDays : Integer -> (Year, PersianMonth, DayOfMonth)
 persianCivilFromDays value =
-  let estimate = max minimumPersianYear (min maximumPersianYear
-        ((value - persianEpoch) `div` 365 + 1))
+  let estimate = max minimumYear (min maximumYear
+        ((value - epoch) `div` 365 + 1))
       yearNumber = findPersianYear 1500 estimate value
       valueYear = yearFromInteger yearNumber
-      dayOfYear = value - persianNewYearDay valueYear
+      dayOfYear = value - newYearDay valueYear
       monthNumber = if dayOfYear == 365 then 12
         else if dayOfYear < 186 then dayOfYear `div` 31 + 1
         else (dayOfYear - 186) `div` 30 + 7
@@ -227,18 +227,14 @@ persianCivilFromDays value =
        dayOfMonthFromInteger dayNumber)
 
 public export
-isValidPersianDays : Integer -> Bool
-isValidPersianDays value = value >= persianEpoch && value <= lastPersianDay
-
-public export
 HasCalendarDate PersianDate where
   calendarDays = daysSinceEpoch
-  acceptsCalendarDays = isValidPersianDays
+  acceptsCalendarDays value = value >= epoch && value <= lastDay
   calendarDateFromDays days = MkPersianDate days
   calendarDateName = "Persian"
 
 clampToPersian : Integer -> Integer
-clampToPersian = max persianEpoch . min lastPersianDay
+clampToPersian = max epoch . min lastDay
 
 shiftPersianDays : Integer -> PersianDate -> PersianDate
 shiftPersianDays amount date =
@@ -251,18 +247,18 @@ shiftPersianMonths amount date =
       monthOrdinal = PersianMonths.monthNumber valueMonth - 1 + amount
       targetYear = yearFromInteger (yearValue valueYear + monthOrdinal `div` 12)
       targetMonth = monthFromNumber (monthOrdinal `mod` 12 + 1)
-      targetDay = min valueDay (maxPersianDaysInMonth targetMonth targetYear)
+      targetDay = min valueDay (maxDaysInMonth targetMonth targetYear)
    in MkPersianDate (clampToPersian
-        (persianDaysFromCivil targetYear targetMonth targetDay))
+        (daysFromCivil targetYear targetMonth targetDay))
 
 shiftPersianYears : Integer -> PersianDate -> PersianDate
 shiftPersianYears amount date =
   let (valueYear, valueMonth, valueDay) =
         persianCivilFromDays date.daysSinceEpoch
       targetYear = yearFromInteger (yearValue valueYear + amount)
-      targetDay = min valueDay (maxPersianDaysInMonth valueMonth targetYear)
+      targetDay = min valueDay (maxDaysInMonth valueMonth targetYear)
    in MkPersianDate (clampToPersian
-        (persianDaysFromCivil targetYear valueMonth targetDay))
+        (daysFromCivil targetYear valueMonth targetDay))
 
 applyPersianPeriod : Period target -> PersianDate -> PersianDate
 applyPersianPeriod period =
@@ -272,7 +268,7 @@ applyPersianPeriod period =
   . shiftPersianYears (periodYears period)
 
 persianDayOfWeek : PersianDate -> PersianDayOfWeek
-persianDayOfWeek date = persianWeekdayFromDays date.daysSinceEpoch
+persianDayOfWeek date = weekdayFromDays date.daysSinceEpoch
 
 nextPersian : Integer -> PersianDayOfWeek -> PersianDate -> PersianDate
 nextPersian count target date =
@@ -296,7 +292,7 @@ Calendar Persian where
   MonthRep _ = PersianMonth
   WeekdayRep = PersianDayOfWeek
 
-  isValidDays = isValidPersianDays
+  isValidDays value = value >= epoch && value <= lastDay
   fromDays days = MkPersianDate days
   toDays date = date.daysSinceEpoch
   calendarName = "Persian"
@@ -319,7 +315,7 @@ public export
 Show PersianDate where
   show date = case persianCivilFromDays date.daysSinceEpoch of
     (valueYear, valueMonth, valueDay) =>
-      "persianDate " ++ show valueDay ++ " " ++
+      "calendarDate " ++ show valueDay ++ " " ++
       show valueMonth ++ " " ++ show valueYear
 
 public export
@@ -332,13 +328,13 @@ ApplyPeriod PersianDate where
 
 ||| Construct a statically validated Persian date in years 1-1500.
 public export
-persianDate : (valueDay : DayOfMonth) -> (valueMonth : PersianMonth) ->
+calendarDate : (valueDay : DayOfMonth) -> (valueMonth : PersianMonth) ->
               (valueYear : Year) ->
               {auto 0 valid : So
-                (isValidPersianDate valueDay valueMonth valueYear)} ->
+                (isValidDate valueDay valueMonth valueYear)} ->
               CalendarDate Persian
-persianDate valueDay valueMonth valueYear =
-  MkPersianDate (persianDaysFromCivil valueYear valueMonth valueDay)
+calendarDate valueDay valueMonth valueYear =
+  MkPersianDate (daysFromCivil valueYear valueMonth valueDay)
 
 ||| Failures produced while refining untrusted Persian date data.
 public export
@@ -350,106 +346,108 @@ data PersianDateError
 
 ||| Validate runtime day, month, and year components as a Persian date.
 public export
-refinePersianDate : DayOfMonth -> PersianMonth -> Year ->
+refineDate : DayOfMonth -> PersianMonth -> Year ->
                     Either PersianDateError (CalendarDate Persian)
-refinePersianDate valueDay valueMonth valueYear =
-  case choose (isValidPersianDate valueDay valueMonth valueYear) of
-    Left valid => Right (persianDate valueDay valueMonth valueYear @{valid})
+refineDate valueDay valueMonth valueYear =
+  case choose (isValidDate valueDay valueMonth valueYear) of
+    Left valid => Right (calendarDate valueDay valueMonth valueYear @{valid})
     Right _ => Left (InvalidPersianDate valueDay valueMonth valueYear)
 
 ||| Construct a Persian date from a statically valid calendar-relative day count.
 public export
-persianFromDays : (days : Integer) ->
-                  {auto 0 valid : So (isValidPersianDays days)} ->
+fromDays : (days : Integer) ->
+                  {auto 0 valid : So
+                    (IotaTime.Calendar.isValidDays {calendar = Persian} days)} ->
                   CalendarDate Persian
-persianFromDays days = MkPersianDate days
+fromDays days = MkPersianDate days
 
 ||| Validate a runtime Persian day count within the supported year range.
 public export
-refinePersianDays : Integer -> Either PersianDateError (CalendarDate Persian)
-refinePersianDays days = case choose (isValidPersianDays days) of
-  Left valid => Right (persianFromDays days @{valid})
+refineDays : Integer -> Either PersianDateError (CalendarDate Persian)
+refineDays days = case choose
+  (IotaTime.Calendar.isValidDays {calendar = Persian} days) of
+  Left valid => Right (fromDays days @{valid})
   Right _ => Left (InvalidPersianDayCount days)
 
 public export
-nthPersianDayOfMonth : DayNth -> PersianDayOfWeek -> PersianMonth -> Year ->
+nthDayOfMonth : DayNth -> PersianDayOfWeek -> PersianMonth -> Year ->
                        DayOfMonth
-nthPersianDayOfMonth nth target valueMonth valueYear =
-  let monthLength = maxPersianDaysInMonth valueMonth valueYear
+nthDayOfMonth nth target valueMonth valueYear =
+  let monthLength = maxDaysInMonth valueMonth valueYear
       firstOffset = (PersianWeekdays.weekdayNumber target -
-        PersianWeekdays.weekdayNumber (persianWeekdayFromDays
-          (persianDaysFromCivil valueYear valueMonth 1))) `mod` daysPerWeek
-      lastOffset = (PersianWeekdays.weekdayNumber (persianWeekdayFromDays
-        (persianDaysFromCivil valueYear valueMonth monthLength)) -
+        PersianWeekdays.weekdayNumber (weekdayFromDays
+          (daysFromCivil valueYear valueMonth 1))) `mod` daysPerWeek
+      lastOffset = (PersianWeekdays.weekdayNumber (weekdayFromDays
+        (daysFromCivil valueYear valueMonth monthLength)) -
         PersianWeekdays.weekdayNumber target) `mod` daysPerWeek
       dayNumber = nthWeekdayDayNumber nth (dayOfMonthValue monthLength)
         firstOffset lastOffset
    in dayOfMonthFromInteger dayNumber
 
 public export
-isValidPersianNthDay : DayNth -> PersianDayOfWeek -> PersianMonth -> Year -> Bool
-isValidPersianNthDay nth target valueMonth valueYear =
-  yearValue valueYear >= minimumPersianYear &&
-  yearValue valueYear <= maximumPersianYear && case nth of
-    Fifth => nthPersianDayOfMonth nth target valueMonth valueYear <=
-      maxPersianDaysInMonth valueMonth valueYear
+isValidNthDay : DayNth -> PersianDayOfWeek -> PersianMonth -> Year -> Bool
+isValidNthDay nth target valueMonth valueYear =
+  yearValue valueYear >= minimumYear &&
+  yearValue valueYear <= maximumYear && case nth of
+    Fifth => nthDayOfMonth nth target valueMonth valueYear <=
+      maxDaysInMonth valueMonth valueYear
     _ => True
 
 ||| Construct the nth requested weekday in a Persian month.
 public export
-persianFromNthDay : (nth : DayNth) -> (target : PersianDayOfWeek) ->
+fromNthDay : (nth : DayNth) -> (target : PersianDayOfWeek) ->
                     (valueMonth : PersianMonth) -> (valueYear : Year) ->
                     {auto 0 valid : So
-                      (isValidPersianNthDay nth target valueMonth valueYear)} ->
+                      (isValidNthDay nth target valueMonth valueYear)} ->
                     CalendarDate Persian
-persianFromNthDay nth target valueMonth valueYear =
-  MkPersianDate (persianDaysFromCivil valueYear valueMonth
-    (nthPersianDayOfMonth nth target valueMonth valueYear))
+fromNthDay nth target valueMonth valueYear =
+  MkPersianDate (daysFromCivil valueYear valueMonth
+    (nthDayOfMonth nth target valueMonth valueYear))
 
 ||| Validate an nth-weekday request for a Persian month.
 public export
-refinePersianNthDay : DayNth -> PersianDayOfWeek -> PersianMonth -> Year ->
+refineNthDay : DayNth -> PersianDayOfWeek -> PersianMonth -> Year ->
                       Either PersianDateError (CalendarDate Persian)
-refinePersianNthDay nth target valueMonth valueYear =
-  case choose (isValidPersianNthDay nth target valueMonth valueYear) of
+refineNthDay nth target valueMonth valueYear =
+  case choose (isValidNthDay nth target valueMonth valueYear) of
     Left valid => Right
-      (persianFromNthDay nth target valueMonth valueYear @{valid})
+      (fromNthDay nth target valueMonth valueYear @{valid})
     Right _ => Left (InvalidPersianNthDay nth target valueMonth valueYear)
 
 public export
-persianWeekDateDays : WeekNumber -> PersianDayOfWeek -> Year -> Integer
-persianWeekDateDays week target valueYear =
-  let firstDay = persianDaysFromCivil valueYear PersianMonths.Farvardin 1
+weekDateDays : WeekNumber -> PersianDayOfWeek -> Year -> Integer
+weekDateDays week target valueYear =
+  let firstDay = daysFromCivil valueYear PersianMonths.Farvardin 1
       firstWeekStart = firstDay -
-        ((PersianWeekdays.weekdayNumber (persianWeekdayFromDays firstDay) - 6)
+        ((PersianWeekdays.weekdayNumber (weekdayFromDays firstDay) - 6)
           `mod` 7)
       targetOffset = (PersianWeekdays.weekdayNumber target - 6) `mod` 7
    in firstWeekStart + 7 * (weekNumberValue week - 1) + targetOffset
 
 public export
-isValidPersianWeekDate : WeekNumber -> PersianDayOfWeek -> Year -> Bool
-isValidPersianWeekDate week target valueYear =
-  let days = persianWeekDateDays week target valueYear
-   in yearValue valueYear >= minimumPersianYear &&
-      yearValue valueYear <= maximumPersianYear && isValidPersianDays days
+isValidWeekDate : WeekNumber -> PersianDayOfWeek -> Year -> Bool
+isValidWeekDate week target valueYear =
+  let days = weekDateDays week target valueYear
+   in yearValue valueYear >= minimumYear &&
+      yearValue valueYear <= maximumYear &&
+      IotaTime.Calendar.isValidDays {calendar = Persian} days
 
 ||| Construct a Persian Saturday-based week date under static validity evidence.
 public export
-persianFromWeekDate : (week : WeekNumber) -> (target : PersianDayOfWeek) ->
-                      (valueYear : Year) ->
-                      {auto 0 valid : So
-                        (isValidPersianWeekDate week target valueYear)} ->
-                      CalendarDate Persian
-persianFromWeekDate week target valueYear =
-  MkPersianDate (persianWeekDateDays week target valueYear)
+fromWeekDate : (week : WeekNumber) -> (target : PersianDayOfWeek) ->
+               (valueYear : Year) ->
+               {auto 0 valid : So (isValidWeekDate week target valueYear)} ->
+               CalendarDate Persian
+fromWeekDate week target valueYear =
+  MkPersianDate (weekDateDays week target valueYear)
 
 ||| Validate a runtime Persian Saturday-based week date.
 public export
-refinePersianWeekDate : WeekNumber -> PersianDayOfWeek -> Year ->
-                        Either PersianDateError (CalendarDate Persian)
-refinePersianWeekDate week target valueYear =
-  case choose (isValidPersianWeekDate week target valueYear) of
-    Left valid => Right (persianFromWeekDate week target valueYear @{valid})
+refineWeekDate : WeekNumber -> PersianDayOfWeek -> Year ->
+                 Either PersianDateError (CalendarDate Persian)
+refineWeekDate week target valueYear =
+  case choose (isValidWeekDate week target valueYear) of
+    Left valid => Right (fromWeekDate week target valueYear @{valid})
     Right _ => Left (InvalidPersianWeekDate week target valueYear)
 
 ||| Exact arithmetic rules available for the Solar Hijri calendar.
@@ -473,11 +471,11 @@ PersianArithmetic = ArithmeticPersian Birashk
 
 public export
 interface KnownPersianArithmeticRule (rule : PersianArithmeticRule) where
-  arithmeticPersianName : String
-  arithmeticPersianConstructorName : String
-  arithmeticPersianEpoch : Integer
-  arithmeticPersianLeapYear : Integer -> Bool
-  arithmeticPersianNewYear : Integer -> Integer
+  ruleName : String
+  ruleConstructorName : String
+  ruleEpoch : Integer
+  ruleIsLeapYear : Integer -> Bool
+  ruleNewYearDay : Integer -> Integer
 
 simpleLeapPositions : List Integer
 simpleLeapPositions = [1, 5, 9, 13, 17, 22, 26, 30]
@@ -505,21 +503,21 @@ arithmeticNewYear year =
 
 public export
 KnownPersianArithmeticRule Simple where
-  arithmeticPersianName = "Persian Simple"
-  arithmeticPersianConstructorName = "simplePersianDate"
-  arithmeticPersianEpoch = -503285
-  arithmeticPersianLeapYear year = simpleNewYear (year + 1) - simpleNewYear year == 366
-  arithmeticPersianNewYear = simpleNewYear
+  ruleName = "Persian Simple"
+  ruleConstructorName = "simpleCalendarDate"
+  ruleEpoch = -503285
+  ruleIsLeapYear year = simpleNewYear (year + 1) - simpleNewYear year == 366
+  ruleNewYearDay = simpleNewYear
 
 public export
 KnownPersianArithmeticRule Birashk where
-  arithmeticPersianName = "Persian Arithmetic"
-  arithmeticPersianConstructorName = "arithmeticPersianDate"
-  arithmeticPersianEpoch = -503284
-  arithmeticPersianLeapYear year =
+  ruleName = "Persian Arithmetic"
+  ruleConstructorName = "arithmeticCalendarDate"
+  ruleEpoch = -503284
+  ruleIsLeapYear year =
     let cycleYear = (year - 474) `mod` 2820 + 474
      in ((cycleYear + 38) * 31) `mod` 128 < 31
-  arithmeticPersianNewYear = arithmeticNewYear
+  ruleNewYearDay = arithmeticNewYear
 
 export
 record ArithmeticPersianDate (rule : PersianArithmeticRule) where
@@ -535,76 +533,78 @@ Ord (ArithmeticPersianDate rule) where
   compare left right = compare left.arithmeticDaysSinceEpoch right.arithmeticDaysSinceEpoch
 
 public export
-minimumArithmeticPersianYear : Integer
-minimumArithmeticPersianYear = 1
+minimumArithmeticYear : Integer
+minimumArithmeticYear = 1
 
 public export
-maximumArithmeticPersianYear : Integer
-maximumArithmeticPersianYear = 9377
+maximumArithmeticYear : Integer
+maximumArithmeticYear = 9377
 
 public export
-isArithmeticPersianLeapYear : {rule : PersianArithmeticRule} ->
+isArithmeticLeapYear : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Year -> Bool
-isArithmeticPersianLeapYear {rule} value =
-  arithmeticPersianLeapYear {rule} (yearValue value)
+isArithmeticLeapYear {rule} value =
+  ruleIsLeapYear {rule} (yearValue value)
 
 public export
-arithmeticPersianNewYearDay : {rule : PersianArithmeticRule} ->
+arithmeticNewYearDay : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Year -> Integer
-arithmeticPersianNewYearDay {rule} value =
-  arithmeticPersianNewYear {rule} (yearValue value)
+arithmeticNewYearDay {rule} value =
+  ruleNewYearDay {rule} (yearValue value)
 
-arithmeticPersianLastDay : {rule : PersianArithmeticRule} ->
+||| The final supported day under the selected arithmetic Persian rule.
+public export
+arithmeticLastDay : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Integer
-arithmeticPersianLastDay {rule} =
-  arithmeticPersianNewYear {rule} (maximumArithmeticPersianYear + 1) - 1
+arithmeticLastDay {rule} =
+  ruleNewYearDay {rule} (maximumArithmeticYear + 1) - 1
 
 public export
-maxArithmeticPersianDaysInMonth : {rule : PersianArithmeticRule} ->
+maxArithmeticDaysInMonth : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => PersianMonth -> Year -> DayOfMonth
-maxArithmeticPersianDaysInMonth {rule} PersianMonths.Esfand value =
-  if isArithmeticPersianLeapYear {rule} value then 30 else 29
-maxArithmeticPersianDaysInMonth valueMonth _ =
+maxArithmeticDaysInMonth {rule} PersianMonths.Esfand value =
+  if isArithmeticLeapYear {rule} value then 30 else 29
+maxArithmeticDaysInMonth valueMonth _ =
   if PersianMonths.monthNumber valueMonth <= 6 then 31 else 30
 
 public export
-isValidArithmeticPersianDate : {rule : PersianArithmeticRule} ->
+isValidArithmeticDate : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => DayOfMonth -> PersianMonth -> Year -> Bool
-isValidArithmeticPersianDate {rule} valueDay valueMonth valueYear =
+isValidArithmeticDate {rule} valueDay valueMonth valueYear =
   let dayNumber = dayOfMonthValue valueDay
       yearNumber = yearValue valueYear
       maxDay = dayOfMonthValue
-        (maxArithmeticPersianDaysInMonth {rule} valueMonth valueYear)
+        (maxArithmeticDaysInMonth {rule} valueMonth valueYear)
    in dayNumber >= 1 && dayNumber <= maxDay &&
-      yearNumber >= minimumArithmeticPersianYear &&
-      yearNumber <= maximumArithmeticPersianYear
+      yearNumber >= minimumArithmeticYear &&
+      yearNumber <= maximumArithmeticYear
 
 public export
-arithmeticPersianDaysFromCivil : {rule : PersianArithmeticRule} ->
+arithmeticDaysFromCivil : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Year -> PersianMonth -> DayOfMonth -> Integer
-arithmeticPersianDaysFromCivil {rule} valueYear valueMonth valueDay =
-  arithmeticPersianNewYearDay {rule} valueYear + monthOffset valueMonth +
+arithmeticDaysFromCivil {rule} valueYear valueMonth valueDay =
+  arithmeticNewYearDay {rule} valueYear + monthOffset valueMonth +
     dayOfMonthValue valueDay - 1
 
 findArithmeticPersianYear : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Nat -> Integer -> Integer -> Integer
 findArithmeticPersianYear {rule} Z estimate _ = estimate
 findArithmeticPersianYear {rule} (S fuel) estimate days =
-  if days < arithmeticPersianNewYear {rule} estimate
+  if days < ruleNewYearDay {rule} estimate
     then findArithmeticPersianYear {rule} fuel (estimate - 1) days
-    else if days >= arithmeticPersianNewYear {rule} (estimate + 1)
+    else if days >= ruleNewYearDay {rule} (estimate + 1)
       then findArithmeticPersianYear {rule} fuel (estimate + 1) days
       else estimate
 
 arithmeticPersianCivilFromDays : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Integer -> (Year, PersianMonth, DayOfMonth)
 arithmeticPersianCivilFromDays {rule} value =
-  let epoch = arithmeticPersianEpoch {rule}
-      estimate = max minimumArithmeticPersianYear
-        (min maximumArithmeticPersianYear ((value - epoch) `div` 365 + 1))
+  let epoch = ruleEpoch {rule}
+      estimate = max minimumArithmeticYear
+        (min maximumArithmeticYear ((value - epoch) `div` 365 + 1))
       yearNumber = findArithmeticPersianYear {rule} 9377 estimate value
       valueYear = yearFromInteger yearNumber
-      dayOfYear = value - arithmeticPersianNewYearDay {rule} valueYear
+      dayOfYear = value - arithmeticNewYearDay {rule} valueYear
       monthNumber = if dayOfYear == 365 then 12
         else if dayOfYear < 186 then dayOfYear `div` 31 + 1
         else (dayOfYear - 186) `div` 30 + 7
@@ -614,24 +614,18 @@ arithmeticPersianCivilFromDays {rule} value =
        dayOfMonthFromInteger (dayOfYear - offset + 1))
 
 public export
-isValidArithmeticPersianDays : {rule : PersianArithmeticRule} ->
-  KnownPersianArithmeticRule rule => Integer -> Bool
-isValidArithmeticPersianDays {rule} value =
-  value >= arithmeticPersianEpoch {rule} &&
-  value <= arithmeticPersianLastDay {rule}
-
-public export
 {rule : PersianArithmeticRule} -> KnownPersianArithmeticRule rule =>
   HasCalendarDate (ArithmeticPersianDate rule) where
   calendarDays = arithmeticDaysSinceEpoch
-  acceptsCalendarDays = isValidArithmeticPersianDays {rule}
+  acceptsCalendarDays value = value >= ruleEpoch {rule} &&
+    value <= arithmeticLastDay {rule}
   calendarDateFromDays days = MkArithmeticPersianDate days
-  calendarDateName = arithmeticPersianName {rule}
+  calendarDateName = ruleName {rule}
 
 clampToArithmeticPersian : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Integer -> Integer
 clampToArithmeticPersian {rule} =
-  max (arithmeticPersianEpoch {rule}) . min (arithmeticPersianLastDay {rule})
+  max (ruleEpoch {rule}) . min (arithmeticLastDay {rule})
 
 shiftArithmeticPersianDays : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Integer -> ArithmeticPersianDate rule ->
@@ -649,9 +643,9 @@ shiftArithmeticPersianMonths {rule} amount date =
       targetYear = yearFromInteger (yearValue valueYear + monthOrdinal `div` 12)
       targetMonth = monthFromNumber (monthOrdinal `mod` 12 + 1)
       targetDay = min valueDay
-        (maxArithmeticPersianDaysInMonth {rule} targetMonth targetYear)
+        (maxArithmeticDaysInMonth {rule} targetMonth targetYear)
    in MkArithmeticPersianDate (clampToArithmeticPersian {rule}
-        (arithmeticPersianDaysFromCivil {rule} targetYear targetMonth targetDay))
+        (arithmeticDaysFromCivil {rule} targetYear targetMonth targetDay))
 
 shiftArithmeticPersianYears : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Integer -> ArithmeticPersianDate rule ->
@@ -661,9 +655,9 @@ shiftArithmeticPersianYears {rule} amount date =
         arithmeticPersianCivilFromDays {rule} date.arithmeticDaysSinceEpoch
       targetYear = yearFromInteger (yearValue valueYear + amount)
       targetDay = min valueDay
-        (maxArithmeticPersianDaysInMonth {rule} valueMonth targetYear)
+        (maxArithmeticDaysInMonth {rule} valueMonth targetYear)
    in MkArithmeticPersianDate (clampToArithmeticPersian {rule}
-        (arithmeticPersianDaysFromCivil {rule} targetYear valueMonth targetDay))
+        (arithmeticDaysFromCivil {rule} targetYear valueMonth targetDay))
 
 applyArithmeticPersianPeriod : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Period target -> ArithmeticPersianDate rule ->
@@ -676,7 +670,7 @@ applyArithmeticPersianPeriod {rule} period =
 
 arithmeticPersianDayOfWeek : ArithmeticPersianDate rule -> PersianDayOfWeek
 arithmeticPersianDayOfWeek date =
-  persianWeekdayFromDays date.arithmeticDaysSinceEpoch
+  weekdayFromDays date.arithmeticDaysSinceEpoch
 
 nextArithmeticPersian : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Integer -> PersianDayOfWeek ->
@@ -705,10 +699,11 @@ public export
   MonthRep _ = PersianMonth
   WeekdayRep = PersianDayOfWeek
 
-  isValidDays = isValidArithmeticPersianDays {rule}
+  isValidDays value = value >= ruleEpoch {rule} &&
+    value <= arithmeticLastDay {rule}
   fromDays days = MkArithmeticPersianDate days
   toDays date = date.arithmeticDaysSinceEpoch
-  calendarName = arithmeticPersianName {rule}
+  calendarName = ruleName {rule}
 
   year' date = let (value, _, _) = arithmeticPersianCivilFromDays {rule}
                     date.arithmeticDaysSinceEpoch in value
@@ -733,7 +728,7 @@ public export
   show date = case arithmeticPersianCivilFromDays {rule}
     date.arithmeticDaysSinceEpoch of
       (valueYear, valueMonth, valueDay) =>
-        arithmeticPersianConstructorName {rule} ++ " " ++ show valueDay ++
+        ruleConstructorName {rule} ++ " " ++ show valueDay ++
         " " ++ show valueMonth ++ " " ++ show valueYear
 
 public export
@@ -747,165 +742,168 @@ public export
 
 ||| Construct a statically validated Persian date under an arithmetic rule.
 public export
-arithmeticRulePersianDate : {rule : PersianArithmeticRule} ->
+arithmeticRuleCalendarDate : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule =>
   (valueDay : DayOfMonth) -> (valueMonth : PersianMonth) ->
   (valueYear : Year) ->
   {auto 0 valid : So
-    (isValidArithmeticPersianDate {rule} valueDay valueMonth valueYear)} ->
+    (isValidArithmeticDate {rule} valueDay valueMonth valueYear)} ->
   CalendarDate (ArithmeticPersian rule)
-arithmeticRulePersianDate {rule} valueDay valueMonth valueYear =
+arithmeticRuleCalendarDate {rule} valueDay valueMonth valueYear =
   MkArithmeticPersianDate
-    (arithmeticPersianDaysFromCivil {rule} valueYear valueMonth valueDay)
+    (arithmeticDaysFromCivil {rule} valueYear valueMonth valueDay)
 
 ||| Construct a date in the legacy 33-year Persian cycle.
 public export
-simplePersianDate : (valueDay : DayOfMonth) -> (valueMonth : PersianMonth) ->
+simpleCalendarDate : (valueDay : DayOfMonth) -> (valueMonth : PersianMonth) ->
   (valueYear : Year) ->
   {auto 0 valid : So
-    (isValidArithmeticPersianDate {rule = Simple}
+    (isValidArithmeticDate {rule = Simple}
       valueDay valueMonth valueYear)} -> CalendarDate PersianSimple
-simplePersianDate = arithmeticRulePersianDate {rule = Simple}
+simpleCalendarDate = arithmeticRuleCalendarDate {rule = Simple}
 
 ||| Construct a date in Birashk's 2820-year arithmetic Persian cycle.
 public export
-arithmeticPersianDate : (valueDay : DayOfMonth) ->
+arithmeticCalendarDate : (valueDay : DayOfMonth) ->
   (valueMonth : PersianMonth) -> (valueYear : Year) ->
   {auto 0 valid : So
-    (isValidArithmeticPersianDate {rule = Birashk}
+    (isValidArithmeticDate {rule = Birashk}
       valueDay valueMonth valueYear)} -> CalendarDate PersianArithmetic
-arithmeticPersianDate = arithmeticRulePersianDate {rule = Birashk}
+arithmeticCalendarDate = arithmeticRuleCalendarDate {rule = Birashk}
 
 ||| Validate runtime components under a selected arithmetic Persian rule.
 public export
-refineArithmeticRulePersianDate : {rule : PersianArithmeticRule} ->
+refineArithmeticRuleDate : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => DayOfMonth -> PersianMonth -> Year ->
   Either PersianDateError (CalendarDate (ArithmeticPersian rule))
-refineArithmeticRulePersianDate {rule} valueDay valueMonth valueYear =
-  case choose (isValidArithmeticPersianDate {rule}
+refineArithmeticRuleDate {rule} valueDay valueMonth valueYear =
+  case choose (isValidArithmeticDate {rule}
     valueDay valueMonth valueYear) of
-      Left valid => Right (arithmeticRulePersianDate {rule}
+      Left valid => Right (arithmeticRuleCalendarDate {rule}
         valueDay valueMonth valueYear {valid = valid})
       Right _ => Left (InvalidPersianDate valueDay valueMonth valueYear)
 
 public export
-refineSimplePersianDate : DayOfMonth -> PersianMonth -> Year ->
+refineSimpleDate : DayOfMonth -> PersianMonth -> Year ->
   Either PersianDateError (CalendarDate PersianSimple)
-refineSimplePersianDate = refineArithmeticRulePersianDate {rule = Simple}
+refineSimpleDate = refineArithmeticRuleDate {rule = Simple}
 
 public export
-refineArithmeticPersianDate : DayOfMonth -> PersianMonth -> Year ->
+refineArithmeticDate : DayOfMonth -> PersianMonth -> Year ->
   Either PersianDateError (CalendarDate PersianArithmetic)
-refineArithmeticPersianDate = refineArithmeticRulePersianDate {rule = Birashk}
+refineArithmeticDate = refineArithmeticRuleDate {rule = Birashk}
 
 ||| Validate a day count under a selected arithmetic Persian rule.
 public export
-refineArithmeticPersianDays : {rule : PersianArithmeticRule} ->
+refineArithmeticDays : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Integer ->
   Either PersianDateError (CalendarDate (ArithmeticPersian rule))
-refineArithmeticPersianDays {rule} days =
-  case choose (isValidArithmeticPersianDays {rule} days) of
+refineArithmeticDays {rule} days =
+  case choose
+    (IotaTime.Calendar.isValidDays
+      {calendar = ArithmeticPersian rule} days) of
     Left valid => Right (fromDays {calendar = ArithmeticPersian rule}
       days {valid = valid})
     Right _ => Left (InvalidPersianDayCount days)
 
-arithmeticPersianNthDayOfMonth : {rule : PersianArithmeticRule} ->
+arithmeticNthDayOfMonth : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => DayNth -> PersianDayOfWeek ->
   PersianMonth -> Year -> DayOfMonth
-arithmeticPersianNthDayOfMonth {rule} nth target valueMonth valueYear =
-  let monthLength = maxArithmeticPersianDaysInMonth {rule} valueMonth valueYear
+arithmeticNthDayOfMonth {rule} nth target valueMonth valueYear =
+  let monthLength = maxArithmeticDaysInMonth {rule} valueMonth valueYear
       firstOffset = (PersianWeekdays.weekdayNumber target -
-        PersianWeekdays.weekdayNumber (persianWeekdayFromDays
-          (arithmeticPersianDaysFromCivil {rule} valueYear valueMonth 1)))
+        PersianWeekdays.weekdayNumber (weekdayFromDays
+          (arithmeticDaysFromCivil {rule} valueYear valueMonth 1)))
             `mod` daysPerWeek
-      lastOffset = (PersianWeekdays.weekdayNumber (persianWeekdayFromDays
-        (arithmeticPersianDaysFromCivil {rule}
+      lastOffset = (PersianWeekdays.weekdayNumber (weekdayFromDays
+        (arithmeticDaysFromCivil {rule}
           valueYear valueMonth monthLength)) -
         PersianWeekdays.weekdayNumber target) `mod` daysPerWeek
       dayNumber = nthWeekdayDayNumber nth (dayOfMonthValue monthLength)
         firstOffset lastOffset
    in dayOfMonthFromInteger dayNumber
 
-isValidArithmeticPersianNthDay : {rule : PersianArithmeticRule} ->
+isValidArithmeticNthDay : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => DayNth -> PersianDayOfWeek ->
   PersianMonth -> Year -> Bool
-isValidArithmeticPersianNthDay {rule} nth target valueMonth valueYear =
-  yearValue valueYear >= minimumArithmeticPersianYear &&
-  yearValue valueYear <= maximumArithmeticPersianYear && case nth of
-    Fifth => arithmeticPersianNthDayOfMonth {rule}
+isValidArithmeticNthDay {rule} nth target valueMonth valueYear =
+  yearValue valueYear >= minimumArithmeticYear &&
+  yearValue valueYear <= maximumArithmeticYear && case nth of
+    Fifth => arithmeticNthDayOfMonth {rule}
       nth target valueMonth valueYear <=
-      maxArithmeticPersianDaysInMonth {rule} valueMonth valueYear
+      maxArithmeticDaysInMonth {rule} valueMonth valueYear
     _ => True
 
 ||| Construct an nth weekday under a selected arithmetic Persian rule.
 public export
-arithmeticPersianFromNthDay : {rule : PersianArithmeticRule} ->
+arithmeticFromNthDay : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule =>
   (nth : DayNth) -> (target : PersianDayOfWeek) ->
   (valueMonth : PersianMonth) -> (valueYear : Year) ->
   {auto 0 valid : So
-    (isValidArithmeticPersianNthDay {rule}
+    (isValidArithmeticNthDay {rule}
       nth target valueMonth valueYear)} ->
   CalendarDate (ArithmeticPersian rule)
-arithmeticPersianFromNthDay {rule} nth target valueMonth valueYear =
-  MkArithmeticPersianDate (arithmeticPersianDaysFromCivil {rule}
+arithmeticFromNthDay {rule} nth target valueMonth valueYear =
+  MkArithmeticPersianDate (arithmeticDaysFromCivil {rule}
     valueYear valueMonth
-    (arithmeticPersianNthDayOfMonth {rule} nth target valueMonth valueYear))
+    (arithmeticNthDayOfMonth {rule} nth target valueMonth valueYear))
 
 ||| Validate an nth-weekday request under an arithmetic Persian rule.
 public export
-refineArithmeticPersianNthDay : {rule : PersianArithmeticRule} ->
+refineArithmeticNthDay : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => DayNth -> PersianDayOfWeek ->
   PersianMonth -> Year ->
   Either PersianDateError (CalendarDate (ArithmeticPersian rule))
-refineArithmeticPersianNthDay {rule} nth target valueMonth valueYear =
-  case choose (isValidArithmeticPersianNthDay {rule}
+refineArithmeticNthDay {rule} nth target valueMonth valueYear =
+  case choose (isValidArithmeticNthDay {rule}
     nth target valueMonth valueYear) of
-      Left valid => Right (arithmeticPersianFromNthDay {rule}
+      Left valid => Right (arithmeticFromNthDay {rule}
         nth target valueMonth valueYear {valid = valid})
       Right _ => Left (InvalidPersianNthDay nth target valueMonth valueYear)
 
-arithmeticPersianWeekDateDays : {rule : PersianArithmeticRule} ->
+arithmeticWeekDateDays : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => WeekNumber -> PersianDayOfWeek ->
   Year -> Integer
-arithmeticPersianWeekDateDays {rule} week target valueYear =
-  let firstDay = arithmeticPersianDaysFromCivil {rule}
+arithmeticWeekDateDays {rule} week target valueYear =
+  let firstDay = arithmeticDaysFromCivil {rule}
         valueYear PersianMonths.Farvardin 1
       firstWeekStart = firstDay -
-        ((PersianWeekdays.weekdayNumber (persianWeekdayFromDays firstDay) - 6)
+        ((PersianWeekdays.weekdayNumber (weekdayFromDays firstDay) - 6)
           `mod` 7)
       targetOffset = (PersianWeekdays.weekdayNumber target - 6) `mod` 7
    in firstWeekStart + 7 * (weekNumberValue week - 1) + targetOffset
 
-isValidArithmeticPersianWeekDate : {rule : PersianArithmeticRule} ->
+isValidArithmeticWeekDate : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => WeekNumber -> PersianDayOfWeek ->
   Year -> Bool
-isValidArithmeticPersianWeekDate {rule} week target valueYear =
-  let days = arithmeticPersianWeekDateDays {rule} week target valueYear
-   in yearValue valueYear >= minimumArithmeticPersianYear &&
-      yearValue valueYear <= maximumArithmeticPersianYear &&
-      isValidArithmeticPersianDays {rule} days
+isValidArithmeticWeekDate {rule} week target valueYear =
+  let days = arithmeticWeekDateDays {rule} week target valueYear
+   in yearValue valueYear >= minimumArithmeticYear &&
+      yearValue valueYear <= maximumArithmeticYear &&
+      IotaTime.Calendar.isValidDays
+        {calendar = ArithmeticPersian rule} days
 
 ||| Construct a Saturday-based week date under an arithmetic Persian rule.
 public export
-arithmeticPersianFromWeekDate : {rule : PersianArithmeticRule} ->
+arithmeticFromWeekDate : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule =>
   (week : WeekNumber) -> (target : PersianDayOfWeek) -> (valueYear : Year) ->
   {auto 0 valid : So
-    (isValidArithmeticPersianWeekDate {rule} week target valueYear)} ->
+    (isValidArithmeticWeekDate {rule} week target valueYear)} ->
   CalendarDate (ArithmeticPersian rule)
-arithmeticPersianFromWeekDate {rule} week target valueYear =
+arithmeticFromWeekDate {rule} week target valueYear =
   MkArithmeticPersianDate
-    (arithmeticPersianWeekDateDays {rule} week target valueYear)
+    (arithmeticWeekDateDays {rule} week target valueYear)
 
 ||| Validate a Saturday-based week date under an arithmetic Persian rule.
 public export
-refineArithmeticPersianWeekDate : {rule : PersianArithmeticRule} ->
+refineArithmeticWeekDate : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => WeekNumber -> PersianDayOfWeek -> Year ->
   Either PersianDateError (CalendarDate (ArithmeticPersian rule))
-refineArithmeticPersianWeekDate {rule} week target valueYear =
-  case choose (isValidArithmeticPersianWeekDate {rule}
+refineArithmeticWeekDate {rule} week target valueYear =
+  case choose (isValidArithmeticWeekDate {rule}
     week target valueYear) of
-      Left valid => Right (arithmeticPersianFromWeekDate {rule}
+      Left valid => Right (arithmeticFromWeekDate {rule}
         week target valueYear {valid = valid})
       Right _ => Left (InvalidPersianWeekDate week target valueYear)

@@ -53,8 +53,8 @@ invalidDate name = Left (InvalidValue ("invalid " ++ name ++ " date"))
 
 refineTwelveMonthDate : String ->
   (Integer -> month) ->
-  (DayOfMonth -> month -> Year -> Either error date) ->
-  Integer -> Integer -> Integer -> Either PatternError date
+  (DayOfMonth -> month -> Year -> Either error result) ->
+  Integer -> Integer -> Integer -> Either PatternError result
 refineTwelveMonthDate calendarName toMonth refineDate year month day = do
   valueMonth <- refineMonth 12 month
   valueDay <- refineDay day
@@ -141,7 +141,8 @@ CalendarPattern Gregorian where
   refinePatternDate year month day = do
     valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
-    case refineGregorianDate valueDay (gregorianMonth valueMonth)
+    case IotaTime.Calendar.Gregorian.refineDate
+      valueDay (gregorianMonth valueMonth)
       (yearFromInteger year) of
       Left _ => invalidDate "Gregorian"
       Right date => Right date
@@ -173,7 +174,8 @@ CalendarPattern Julian where
   refinePatternDate year month day = do
     valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
-    case refineJulianDate valueDay (julianMonth valueMonth)
+    case IotaTime.Calendar.Julian.refineDate
+      valueDay (julianMonth valueMonth)
       (yearFromInteger year) of
       Left _ => invalidDate "Julian"
       Right date => Right date
@@ -212,7 +214,8 @@ CalendarPattern Coptic where
   refinePatternDate year month day = do
     valueMonth <- refineMonth 13 month
     valueDay <- refineDay day
-    case refineCopticDate valueDay (copticMonth valueMonth)
+    case IotaTime.Calendar.Coptic.refineDate
+      valueDay (copticMonth valueMonth)
       (yearFromInteger year) of
       Left _ => invalidDate "Coptic"
       Right date => Right date
@@ -255,7 +258,7 @@ public export
   patternWeekdayIndex date = weekdayIndex7 (IslamicWeekdays.weekdayNumber
     (dayOfWeek {calendar = Islamic pattern} date))
   refinePatternDate = refineTwelveMonthDate "Islamic" islamicMonth
-    (refineIslamicDate' {pattern})
+    (IotaTime.Calendar.Islamic.refineDate' {pattern})
 
 public export
 {pattern : IslamicLeapPattern} -> KnownIslamicLeapPattern pattern =>
@@ -268,7 +271,7 @@ public export
   patternWeekdayIndex date = weekdayIndex7 (IslamicWeekdays.weekdayNumber
     (dayOfWeek {calendar = CivilIslamic pattern} date))
   refinePatternDate = refineTwelveMonthDate "Civil Islamic" islamicMonth
-    (refineCivilIslamicDate' {pattern})
+    (refineCivilDate' {pattern})
 
 persianMonth : Integer -> PersianMonth
 persianMonth 1 = PersianMonths.Farvardin
@@ -306,7 +309,7 @@ CalendarPattern Persian where
   patternWeekdayIndex date = weekdayIndex7
     (PersianWeekdays.weekdayNumber (dayOfWeek {calendar = Persian} date))
   refinePatternDate = refineTwelveMonthDate "Persian" persianMonth
-    refinePersianDate
+    IotaTime.Calendar.Persian.refineDate
 
 public export
 {rule : PersianArithmeticRule} -> KnownPersianArithmeticRule rule =>
@@ -319,8 +322,8 @@ public export
   patternWeekdayIndex date = weekdayIndex7 (PersianWeekdays.weekdayNumber
     (dayOfWeek {calendar = ArithmeticPersian rule} date))
   refinePatternDate = refineTwelveMonthDate
-    (arithmeticPersianName {rule}) persianMonth
-    (refineArithmeticRulePersianDate {rule})
+    (ruleName {rule}) persianMonth
+    (refineArithmeticRuleDate {rule})
 
 hebrewMonthName : {numbering : HebrewNumbering} ->
                   KnownHebrewNumbering numbering => Integer -> HebrewMonthName
@@ -384,13 +387,14 @@ public export
     _ => [ "Nis", "Iya", "Siv", "Tam", "Av", "Elu", "Tis"
       , "Che", "Kis", "Tev", "She", "AdI", "Ada" ]
   patternMonthIndex date = case yearMonthDay {calendar = Hebrew numbering} date of
-    (_ ** (valueMonth, _)) => monthIndex13 (hebrewMonthNumber valueMonth)
+    (_ ** (valueMonth, _)) => monthIndex13
+      (IotaTime.Calendar.Hebrew.monthNumber valueMonth)
   patternWeekdayIndex date = weekdayIndex7 (HebrewWeekdays.weekdayNumber
     (dayOfWeek {calendar = Hebrew numbering} date))
   refinePatternDate year month day = do
     valueMonth <- refineMonth 13 month
     valueDay <- refineDay day
-    case refineHebrewDate' {numbering} valueDay
+    case IotaTime.Calendar.Hebrew.refineDate' {numbering} valueDay
       (hebrewMonthName {numbering} valueMonth) (yearFromInteger year) of
         Left _ => invalidDate "Hebrew"
         Right date => Right date

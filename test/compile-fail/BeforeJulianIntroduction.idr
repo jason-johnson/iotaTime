@@ -4,4 +4,4 @@ module BeforeJulianIntroduction
 import IotaTime
 
 invalid : CalendarDate Julian
-invalid = julianDate 31 JulianMonths.December (-45)
+invalid = IotaTime.Calendar.Julian.calendarDate 31 JulianMonths.December (-45)

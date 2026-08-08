@@ -3,7 +3,7 @@ module GuidedMeeting
 import IotaTime
 
 meetingDate : CalendarDate Gregorian
-meetingDate = calendarDate 23 April 2024
+meetingDate = IotaTime.Calendar.Gregorian.calendarDate 23 April 2024
 
 meetingTime : LocalTime
 meetingTime = localTime 9 0 0 0

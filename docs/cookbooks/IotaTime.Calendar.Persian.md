@@ -6,11 +6,12 @@
 
 ```idris
 astronomicalNowruz1404 : CalendarDate Persian
-astronomicalNowruz1404 = persianDate 1 PersianMonths.Farvardin 1404
+astronomicalNowruz1404 =
+  IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1404
 
 arithmeticNowruz1404 : CalendarDate PersianArithmetic
 arithmeticNowruz1404 =
-  arithmeticPersianDate 1 PersianMonths.Farvardin 1404
+  IotaTime.Calendar.Persian.arithmeticCalendarDate 1 PersianMonths.Farvardin 1404
 ```
 
 The astronomical date is Gregorian 21 March 2025; the arithmetic date is 20 March 2025.
@@ -22,7 +23,7 @@ The astronomical date is Gregorian 21 March 2025; the arithmetic date is 20 Marc
 ```idris
 simplePersianRuntime : Either PersianDateError (CalendarDate PersianSimple)
 simplePersianRuntime =
-  refineSimplePersianDate 30 PersianMonths.Esfand 1404
+  IotaTime.Calendar.Persian.refineSimpleDate 30 PersianMonths.Esfand 1404
 ```
 
 These declarations are compiled from `examples/GuideExamples.idr`.

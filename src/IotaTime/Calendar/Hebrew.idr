@@ -427,7 +427,7 @@ epochDay = -2103607
 public export
 {numbering : HebrewNumbering} -> HasCalendarDate (HebrewDate numbering) where
   calendarDays = daysSinceEpoch
-  acceptsCalendarDays value = value >= epochDay
+  acceptsCalendarDays = (>= epochDay)
   calendarDateFromDays days = makeHebrewDate days
   calendarDateName = "Hebrew"
 
@@ -542,7 +542,7 @@ public export
   MonthRep valueYear = HebrewMonth numbering valueYear
   WeekdayRep = HebrewDayOfWeek numbering
 
-  isValidDays value = value >= epochDay
+  isValidDays = (>= epochDay)
   fromDays days = makeHebrewDate days
   toDays date = date.daysSinceEpoch
   calendarName = "Hebrew"

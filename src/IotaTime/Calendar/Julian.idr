@@ -214,7 +214,7 @@ Calendar Julian where
   MonthRep _ = JulianMonth
   WeekdayRep = JulianDayOfWeek
 
-  isValidDays value = value >= epochDay
+  isValidDays = (>= epochDay)
   fromDays days = MkJulianDate days
   toDays date = date.daysSinceEpoch
   calendarName = "Julian"

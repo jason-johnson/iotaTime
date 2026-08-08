@@ -291,7 +291,7 @@ public export
   KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
   HasCalendarDate (IslamicDate epoch pattern) where
   calendarDays = daysSinceEpoch
-  acceptsCalendarDays value = value >= epochDay {epoch}
+  acceptsCalendarDays = (>= epochDay {epoch})
   calendarDateFromDays days = MkIslamicDate days
   calendarDateName = "Islamic"
 
@@ -386,7 +386,7 @@ public export
   MonthRep _ = IslamicMonth
   WeekdayRep = IslamicDayOfWeek
 
-  isValidDays value = value >= epochDay {epoch}
+  isValidDays = (>= epochDay {epoch})
   fromDays days = makeIslamicDate {epoch} {pattern} days
   toDays date = date.daysSinceEpoch
   calendarName = "Islamic"

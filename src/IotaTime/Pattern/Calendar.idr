@@ -52,8 +52,8 @@ invalidDate : String -> Either PatternError value
 invalidDate name = Left (InvalidValue ("invalid " ++ name ++ " date"))
 
 refineTwelveMonthDate : String ->
-  (Integer -> month) ->
-  (DayOfMonth -> month -> Year -> Either error result) ->
+  (Integer -> monthType) ->
+  (DayOfMonth -> monthType -> Year -> Either error result) ->
   Integer -> Integer -> Integer -> Either PatternError result
 refineTwelveMonthDate calendarName toMonth refineDate year month day = do
   valueMonth <- refineMonth 12 month

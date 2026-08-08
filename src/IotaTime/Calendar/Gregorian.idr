@@ -176,12 +176,12 @@ epochDay = -152444
 public export
 HasCalendarDate GregorianDate where
   calendarDays = daysSinceEpoch
-  acceptsCalendarDays value = value >= epochDay
+  acceptsCalendarDays = (>= epochDay)
   calendarDateFromDays days = MkGregorianDate days
   calendarDateName = "Gregorian"
 
 clampToGregorian : Integer -> Integer
-clampToGregorian value = max epochDay value
+clampToGregorian = max epochDay
 
 makeDate : Year -> Month -> DayOfMonth -> GregorianDate
 makeDate valueYear valueMonth valueDay =
@@ -258,7 +258,7 @@ Calendar Gregorian where
   MonthRep _ = Month
   WeekdayRep = DayOfWeek
 
-  isValidDays value = value >= epochDay
+  isValidDays = (>= epochDay)
   fromDays days = MkGregorianDate days
   toDays date = date.daysSinceEpoch
   calendarName = "Gregorian"

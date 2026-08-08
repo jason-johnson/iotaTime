@@ -167,7 +167,7 @@ copticCivilFromDays value =
 public export
 HasCalendarDate CopticDate where
   calendarDays = daysSinceEpoch
-  acceptsCalendarDays value = value >= epochDay
+  acceptsCalendarDays = (>= epochDay)
   calendarDateFromDays days = MkCopticDate days
   calendarDateName = "Coptic"
 
@@ -231,7 +231,7 @@ Calendar Coptic where
   MonthRep _ = CopticMonth
   WeekdayRep = CopticDayOfWeek
 
-  isValidDays value = value >= epochDay
+  isValidDays = (>= epochDay)
   fromDays days = MkCopticDate days
   toDays date = date.daysSinceEpoch
   calendarName = "Coptic"

@@ -15,6 +15,8 @@ record IntervalRep where
   constructor MkInterval
   storedStart : Instant
   storedEnd : Instant
+  0 valid : So
+    (toNanosecondsSinceEpoch storedStart <= toNanosecondsSinceEpoch storedEnd)
 
 public export
 Interval : Type
@@ -34,10 +36,12 @@ interval : (startNanoseconds, endNanoseconds : Integer) ->
 interval startNanoseconds endNanoseconds = MkInterval
   (fromNanosecondsSinceEpoch startNanoseconds)
   (fromNanosecondsSinceEpoch endNanoseconds)
+  (rewrite instantNanosecondsRoundTrip startNanoseconds in
+   rewrite instantNanosecondsRoundTrip endNanoseconds in valid)
 
 checkedInterval : (start, end : Instant) ->
                   {auto 0 valid : So (isValidInterval start end)} -> Interval
-checkedInterval start end = MkInterval start end
+checkedInterval start end = MkInterval start end valid
 
 public export
 data IntervalError = ReversedInterval Instant Instant
@@ -52,11 +56,17 @@ refineInterval start end =
 
 public export
 start : Interval -> Instant
-start (MkInterval value _) = value
+start (MkInterval value _ _) = value
 
 public export
 end : Interval -> Instant
-end (MkInterval _ value) = value
+end (MkInterval _ value _) = value
+
+||| Every interval carries erased evidence that its endpoints are ordered.
+public export
+0 intervalIsValid : (value : Interval) ->
+  So (isValidInterval (start value) (end value))
+intervalIsValid (MkInterval _ _ valid) = valid
 
 ||| Test membership in the half-open interval `[start, end)`.
 public export
@@ -85,9 +95,11 @@ intersection : Interval -> Interval -> Maybe Interval
 intersection left right =
   let overlapStart = max (start left) (start right)
       overlapEnd = min (end left) (end right)
-   in if overlapStart < overlapEnd
-        then Just (MkInterval overlapStart overlapEnd)
-        else Nothing
+   in case choose (isValidInterval overlapStart overlapEnd) of
+        Left valid => if overlapStart < overlapEnd
+          then Just (MkInterval overlapStart overlapEnd valid)
+          else Nothing
+        Right _ => Nothing
 
 ||| Return the smallest interval containing both inputs when their union is
 ||| connected. Empty intervals are absorbed by the other input.
@@ -99,9 +111,11 @@ union left right =
     else if isEmpty right
       then Just left
       else if overlaps left right || isAdjacent left right
-        then Just (MkInterval
-          (min (start left) (start right))
-          (max (end left) (end right)))
+        then let unionStart = min (start left) (start right)
+                 unionEnd = max (end left) (end right)
+              in case choose (isValidInterval unionStart unionEnd) of
+                   Left valid => Just (MkInterval unionStart unionEnd valid)
+                   Right _ => Nothing
         else Nothing
 
 ||| Return the nonnegative fixed duration between the endpoints.
@@ -179,7 +193,9 @@ toUnboundedInterval value = MkUnboundedInterval (Just (start value))
 public export
 toBoundedInterval : UnboundedInterval -> Maybe Interval
 toBoundedInterval (MkUnboundedInterval (Just start) (Just end)) =
-  Just (MkInterval start end)
+  case choose (isValidInterval start end) of
+    Left valid => Just (MkInterval start end valid)
+    Right _ => Nothing
 toBoundedInterval _ = Nothing
 
 ||| Test membership using half-open endpoint semantics at every finite bound.

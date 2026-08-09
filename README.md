@@ -254,6 +254,9 @@ window = interval 0 1000000000
 
 For arbitrary `Instant` endpoints learned at runtime, `refineInterval` returns `Either IntervalError Interval`. Empty intervals are valid, contain no instants, and have zero duration. `contains` includes the start and excludes the end; `duration` returns the fixed nonnegative `Duration` between the endpoints.
 
+Each `Interval` stores its endpoint-order evidence erased at runtime.
+`intervalIsValid` exposes that evidence to proof-level callers.
+
 Static construction accepts scalar endpoints because `Instant` is intentionally opaque: Idris cannot reduce two arbitrary `Instant` values to synthesize their ordering proof outside the implementation module. Runtime refinement preserves that opacity without casts or unchecked constructors.
 
 `isEmpty`, `overlaps`, and `isAdjacent` expose half-open range relationships. `intersection` returns only a non-empty shared range, so adjacent intervals have no intersection. `union` returns the smallest connected interval for overlapping or adjacent inputs, absorbs empty intervals, and returns `Nothing` for separated ranges.

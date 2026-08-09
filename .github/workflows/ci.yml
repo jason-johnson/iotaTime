@@ -19,9 +19,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { os: ubuntu-latest, suite: full }
-          - { os: windows-latest, suite: windows-registry }
+        include: ${{ fromJSON(
+          (github.event_name == 'pull_request' || github.ref_type == 'tag') &&
+          '[{"os":"ubuntu-latest","suite":"full"},{"os":"windows-latest","suite":"windows-registry"}]' ||
+          '[{"os":"ubuntu-latest","suite":"full"}]'
+          ) }}
     steps:
       - name: Configure Windows Git
         if: runner.os == 'Windows'

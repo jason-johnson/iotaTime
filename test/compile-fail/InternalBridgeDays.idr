@@ -1,7 +1,7 @@
-module InternalCalendarDays
+module InternalBridgeDays
 
 import IotaTime
 
 invalid : Integer
-invalid = calendarDays
+invalid = toBridgeDays
   (IotaTime.Calendar.Gregorian.calendarDate 1 January 2024)

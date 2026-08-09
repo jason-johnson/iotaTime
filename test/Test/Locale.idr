@@ -2,6 +2,7 @@ module Test.Locale
 
 import Data.Vect
 import IotaTime
+import IotaTime.Calendar
 import System.Info
 import Test.Support
 
@@ -9,7 +10,7 @@ parsesAs : Pattern DateFields (CalendarDate Gregorian) -> String ->
            CalendarDate Gregorian -> Bool
 parsesAs pattern source expected = case IotaTime.Pattern.parse pattern source of
   Left _ => False
-  Right actual => calendarDays actual == calendarDays expected
+  Right actual => toBridgeDays actual == toBridgeDays expected
 
 germanDate : Pattern DateFields (CalendarDate Gregorian)
 germanDate = ((pdd {calendar = Gregorian} <% char ' ') <+>
@@ -50,7 +51,7 @@ localeTimeParsesAs locale source expected = case localeTimePattern locale of
 sameDateTime : CalendarDateTime Gregorian ->
                CalendarDateTime Gregorian -> Bool
 sameDateTime left right =
-  calendarDays (datePart left) == calendarDays (datePart right) &&
+  toBridgeDays (datePart left) == toBridgeDays (datePart right) &&
   localTimeOfDay left == localTimeOfDay right
 
 sameOffsetDateTime : OffsetDateTime Gregorian ->
@@ -62,7 +63,7 @@ sameOffsetDateTime left right =
 sameJulianDateTime : CalendarDateTime Julian ->
                      CalendarDateTime Julian -> Bool
 sameJulianDateTime left right =
-  calendarDays (datePart left) == calendarDays (datePart right) &&
+  toBridgeDays (datePart left) == toBridgeDays (datePart right) &&
   localTimeOfDay left == localTimeOfDay right
 
 sameJulianOffsetDateTime : OffsetDateTime Julian ->

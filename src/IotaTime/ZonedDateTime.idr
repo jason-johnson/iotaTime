@@ -27,7 +27,7 @@ public export
 ||| fails only when the resulting local day is outside the calendar's range.
 export
 inZone : {calendar : Type} -> {auto cal : Calendar calendar} ->
-         {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+         {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
          DateTimeZone -> Instant ->
          Either CalendarConversionError (ZonedDateTime calendar @{cal})
 inZone valueZone valueInstant =
@@ -39,7 +39,7 @@ inZone valueZone valueInstant =
 ||| HodaTime-compatible instant-first constructor.
 public export
 fromInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
-              {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+              {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
               Instant -> TimeZone ->
               Either CalendarConversionError (ZonedDateTime calendar @{cal})
 fromInstant valueInstant valueZone = inZone valueZone valueInstant
@@ -115,19 +115,19 @@ zonedOffset = offsetOf . zonedValue
 
 export
 zonedInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
-               {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+               {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                ZonedDateTime calendar @{cal} -> Instant
 zonedInstant = IotaTime.OffsetDateTime.toInstant . zonedValue
 
 public export
 toInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
-            {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+            {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
             ZonedDateTime calendar @{cal} -> Instant
 toInstant = zonedInstant
 
 public export
 {calendar : Type} -> {cal : Calendar calendar} ->
-  HasCalendarDate (CalendarDate calendar @{cal}) =>
+  HasCalendarBridge (CalendarDate calendar @{cal}) =>
   Eq (CalendarDate calendar @{cal}) =>
   Ord (ZonedDateTimeRep calendar cal) where
   compare left right = case compare
@@ -139,7 +139,7 @@ public export
 
 public export
 {calendar : Type} -> {cal : Calendar calendar} ->
-  HasCalendarDate (CalendarDate calendar @{cal}) =>
+  HasCalendarBridge (CalendarDate calendar @{cal}) =>
   Show (ZonedDateTimeRep calendar cal) where
   show value = "fromInstant (" ++
     show (zonedInstant value) ++ ") (" ++
@@ -157,14 +157,14 @@ zoneId = IotaTime.DateTimeZone.zoneId . zonedZone
 
 public export
 inDst : {calendar : Type} -> {auto cal : Calendar calendar} ->
-        {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+        {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
         ZonedDateTime calendar @{cal} -> Bool
 inDst value = isDaylightSavingTime
   (activeTransitionAt value.zonedZone (zonedInstant value))
 
 public export
 zoneAbbreviation : {calendar : Type} -> {auto cal : Calendar calendar} ->
-                   {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                   {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                    ZonedDateTime calendar @{cal} -> String
 zoneAbbreviation value = abbreviation
   (activeTransitionAt value.zonedZone (zonedInstant value))
@@ -196,7 +196,7 @@ attachAll valueZone (value :: rest) =
 ||| ambiguous mappings.
 public export
 resolveLocal : {calendar : Type} -> {auto cal : Calendar calendar} ->
-               {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+               {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                DateTimeZone -> CalendarDateTime calendar @{cal} ->
                ZonedMapping calendar cal
 resolveLocal valueZone local = case mapLocal valueZone local of
@@ -210,7 +210,7 @@ resolveLocal valueZone local = case mapLocal valueZone local of
 ||| Return every valid mapping of a local calendar date-time, in instant order.
 public export
 fromCalendarDateTimeAll : {calendar : Type} -> {auto cal : Calendar calendar} ->
-                          {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                          {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                           CalendarDateTime calendar @{cal} -> TimeZone ->
                           List (ZonedDateTime calendar @{cal})
 fromCalendarDateTimeAll local valueZone = case resolveLocal valueZone local of
@@ -230,7 +230,7 @@ data ZonedDateTimeError
 public export
 fromCalendarDateTimeStrictly : {calendar : Type} ->
                                {auto cal : Calendar calendar} ->
-                               {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                               {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                                CalendarDateTime calendar @{cal} -> TimeZone ->
                                Either ZonedDateTimeError
                                  (ZonedDateTime calendar @{cal})
@@ -245,7 +245,7 @@ fromCalendarDateTimeStrictly local valueZone =
 public export
 fromCalendarDateTimeLeniently : {calendar : Type} ->
                                 {auto cal : Calendar calendar} ->
-                                {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                                {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                                 CalendarDateTime calendar @{cal} -> TimeZone ->
                                 Either ZonedDateTimeError
                                   (ZonedDateTime calendar @{cal})
@@ -258,7 +258,7 @@ fromCalendarDateTimeLeniently local valueZone =
 ||| Change zones while preserving the represented instant.
 public export
 withZone : {calendar : Type} -> {auto cal : Calendar calendar} ->
-           {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+           {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
            DateTimeZone -> ZonedDateTime calendar @{cal} ->
            Either CalendarConversionError (ZonedDateTime calendar @{cal})
 withZone valueZone value = inZone valueZone (zonedInstant value)
@@ -268,8 +268,8 @@ public export
 withCalendar : {source : Type} -> {target : Type} ->
                {auto sourceCal : Calendar source} ->
                {auto targetCal : Calendar target} ->
-               {auto sourceRep : HasCalendarDate (CalendarDate source @{sourceCal})} ->
-               {auto targetRep : HasCalendarDate (CalendarDate target @{targetCal})} ->
+               {auto sourceRep : HasCalendarBridge (CalendarDate source @{sourceCal})} ->
+               {auto targetRep : HasCalendarBridge (CalendarDate target @{targetCal})} ->
                ZonedDateTime source @{sourceCal} ->
                Either CalendarConversionError (ZonedDateTime target @{targetCal})
 withCalendar {target} @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value =
@@ -279,7 +279,7 @@ withCalendar {target} @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value 
 ||| Add elapsed time on the global timeline, then re-evaluate the zone offset.
 export
 addZonedDuration : {calendar : Type} -> {auto cal : Calendar calendar} ->
-                   {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                   {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                    Duration -> ZonedDateTime calendar @{cal} ->
                    Either CalendarConversionError (ZonedDateTime calendar @{cal})
 addZonedDuration amount value =
@@ -288,7 +288,7 @@ addZonedDuration amount value =
 ||| Add fixed elapsed time, following HodaTime's value-first argument order.
 public export
 add : {calendar : Type} -> {auto cal : Calendar calendar} ->
-  {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+  {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
   ZonedDateTime calendar @{cal} -> Duration ->
   Either CalendarConversionError (ZonedDateTime calendar @{cal})
 add value amount = addZonedDuration amount value
@@ -296,7 +296,7 @@ add value amount = addZonedDuration amount value
 ||| Subtract elapsed time on the global timeline, then re-evaluate the zone offset.
 export
 subtractZonedDuration : {calendar : Type} -> {auto cal : Calendar calendar} ->
-                        {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                        {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                         Duration -> ZonedDateTime calendar @{cal} ->
                         Either CalendarConversionError (ZonedDateTime calendar @{cal})
 subtractZonedDuration amount value =
@@ -305,7 +305,7 @@ subtractZonedDuration amount value =
 ||| Subtract fixed elapsed time, following HodaTime's value-first argument order.
 public export
 minus : {calendar : Type} -> {auto cal : Calendar calendar} ->
-        {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+        {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
         ZonedDateTime calendar @{cal} -> Duration ->
         Either CalendarConversionError (ZonedDateTime calendar @{cal})
 minus value amount = subtractZonedDuration amount value

@@ -54,7 +54,7 @@ nthWeekdayDayNumber Fifth _ firstOffset _ =
   1 + 4 * daysPerWeek + firstOffset
 
 ||| A calendar conversion failed because the target calendar cannot represent
-||| the source date's absolute day count.
+||| the source date's bridge day.
 public export
 data CalendarConversionError = TargetCalendarOutOfRange String Integer
 
@@ -114,21 +114,22 @@ public export
 CalendarDate : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 CalendarDate calendar @{cal} = DateRep @{cal}
 
-||| Internal normalization used for cross-calendar and instant conversion.
-||| Calendar-local APIs use `Calendar.toDaysFor` instead.
+||| Internal normalization implemented by iotaTime's built-in calendars for
+||| cross-calendar and instant conversion. Calendar-local APIs use
+||| `Calendar.toDaysFor` instead.
 export
-interface HasCalendarDate date where
-  calendarDays : date -> Integer
-  acceptsCalendarDays : Integer -> Bool
-  calendarDateFromDays : (days : Integer) ->
-                         {auto 0 valid : So (acceptsCalendarDays days)} -> date
-  calendarDateName : String
+interface HasCalendarBridge date where
+  toBridgeDays : date -> Integer
+  acceptsBridgeDays : Integer -> Bool
+  fromBridgeDays : (days : Integer) ->
+                         {auto 0 valid : So (acceptsBridgeDays days)} -> date
+  bridgeCalendarName : String
 
 ||| Calendar operations determined by a concrete date representation.
 ||| This lets value-oriented APIs infer the calendar from their first date
 ||| argument instead of requiring a repeated `{calendar = ...}` annotation.
 public export
-interface HasCalendarDate date => CalendarValue date where
+interface HasCalendarBridge date => CalendarValue date where
   CalendarMonth : Year -> Type
   CalendarWeekday : Type
   calendarValueToDays : date -> Integer
@@ -359,17 +360,17 @@ previous : Integer -> weekday -> (value : date) ->
 previous count weekday value @{navigation} =
   calendarValuePrevious @{navigation} count weekday value
 
-||| Convert a date to another calendar while preserving its absolute day.
+||| Convert a date to another calendar through their shared bridge day.
 ||| Returns `TargetCalendarOutOfRange` when the target cannot represent it.
 public export
 withCalendar : {sourceDate : Type} -> {targetDate : Type} ->
-               {auto sourceRep : HasCalendarDate sourceDate} ->
-               {auto targetRep : HasCalendarDate targetDate} ->
+               {auto sourceRep : HasCalendarBridge sourceDate} ->
+               {auto targetRep : HasCalendarBridge targetDate} ->
                sourceDate ->
                Either CalendarConversionError targetDate
 withCalendar @{sourceRep} @{targetRep} date =
-  let valueDays = calendarDays @{sourceRep} date
-   in case choose (acceptsCalendarDays @{targetRep} valueDays) of
-        Left valid => Right (calendarDateFromDays @{targetRep} valueDays @{valid})
+  let valueDays = toBridgeDays @{sourceRep} date
+   in case choose (acceptsBridgeDays @{targetRep} valueDays) of
+        Left valid => Right (fromBridgeDays @{targetRep} valueDays @{valid})
         Right _ => Left
-          (TargetCalendarOutOfRange (calendarDateName @{targetRep}) valueDays)
+          (TargetCalendarOutOfRange (bridgeCalendarName @{targetRep}) valueDays)

@@ -307,14 +307,14 @@ fromIslamicDays : {epoch : IslamicEpoch} ->
                   IslamicDate epoch pattern
 fromIslamicDays days @{valid} = checkedIslamicDate days valid
 
-public export
+export
 {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
   KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
-  HasCalendarDate (IslamicDate epoch pattern) where
-  calendarDays = daysSinceEpoch
-  acceptsCalendarDays = (>= islamicEpochDay epoch)
-  calendarDateFromDays = fromIslamicDays {epoch} {pattern}
-  calendarDateName = "Islamic"
+  HasCalendarBridge (IslamicDate epoch pattern) where
+  toBridgeDays = daysSinceEpoch
+  acceptsBridgeDays = (>= islamicEpochDay epoch)
+  fromBridgeDays = fromIslamicDays {epoch} {pattern}
+  bridgeCalendarName = "Islamic"
 
 makeIslamicDate : {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
                   KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>

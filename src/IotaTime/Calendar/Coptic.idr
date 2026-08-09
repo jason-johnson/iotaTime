@@ -169,12 +169,12 @@ copticCivilFromDays value =
    in (yearFromInteger yearNumber, monthFromNumber monthNumber,
        dayOfMonthFromInteger dayNumber)
 
-public export
-HasCalendarDate CopticDate where
-  calendarDays = daysSinceEpoch
-  acceptsCalendarDays = (>= epochDay)
-  calendarDateFromDays days @{valid} = checkedCopticDate days valid
-  calendarDateName = "Coptic"
+export
+HasCalendarBridge CopticDate where
+  toBridgeDays = daysSinceEpoch
+  acceptsBridgeDays = (>= epochDay)
+  fromBridgeDays days @{valid} = checkedCopticDate days valid
+  bridgeCalendarName = "Coptic"
 
 clampToCoptic : Integer -> Integer
 clampToCoptic = max epochDay

@@ -576,7 +576,7 @@ zoneOffsets valueZone =
       go (addEraOffsets [utcOffset valueZone.initialTransition] eras) transitions
 
 insertByInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
-                  {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                  {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                   OffsetDateTime calendar @{cal} ->
                   List (OffsetDateTime calendar @{cal}) ->
                   List (OffsetDateTime calendar @{cal})
@@ -587,7 +587,7 @@ insertByInstant value (current :: rest) =
     else current :: insertByInstant value rest
 
 mappingCandidates : {calendar : Type} -> {auto cal : Calendar calendar} ->
-                    {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                    {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                     DateTimeZone -> CalendarDateTime calendar @{cal} ->
                     List (OffsetDateTime calendar @{cal})
 mappingCandidates valueZone local = go (zoneOffsets valueZone)
@@ -605,7 +605,7 @@ nanosecondsPerSecond : Integer
 nanosecondsPerSecond = 1000000000
 
 findLenientGapMapping : {calendar : Type} -> {auto cal : Calendar calendar} ->
-                        {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                        {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                         CalendarDateTime calendar @{cal} -> TransitionInfo ->
                         List ZoneTransition ->
                         Either CalendarConversionError
@@ -632,7 +632,7 @@ findLenientGapMapping local current (transition :: rest) =
       (utcOffset transition.transitionInfo) (toInstant (atOffset local (utcOffset current)))
 
 findLenientGapByOffsets : {calendar : Type} -> {auto cal : Calendar calendar} ->
-                          {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                          {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                           TimeZone -> CalendarDateTime calendar @{cal} -> List Offset ->
                           Either CalendarConversionError
                             (Maybe (OffsetDateTime calendar @{cal}))
@@ -647,7 +647,7 @@ findLenientGapByOffsets valueZone local (before :: rest) =
 
 export
 lenientLocalMapping : {calendar : Type} -> {auto cal : Calendar calendar} ->
-                      {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                      {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                       TimeZone -> CalendarDateTime calendar @{cal} ->
                       Either CalendarConversionError
                         (Maybe (OffsetDateTime calendar @{cal}))
@@ -675,7 +675,7 @@ data LocalMapping : (calendar : Type) ->
 
 export
 mapLocal : {calendar : Type} -> {auto cal : Calendar calendar} ->
-           {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+           {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
            DateTimeZone -> CalendarDateTime calendar @{cal} ->
            LocalMapping calendar cal
 mapLocal valueZone local = case mappingCandidates valueZone local of

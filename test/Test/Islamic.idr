@@ -1,6 +1,7 @@
 module Test.Islamic
 
 import IotaTime
+import IotaTime.Calendar
 import IotaTime.Calendar.Islamic
 import Test.Support
 
@@ -79,14 +80,14 @@ islamicCases =
   , MkRuntimeCase "Islamic conversion round-trips two 30-year cycles"
       (islamicRoundTrips (-503166) (-481904))
   , MkRuntimeCase "Islamic epoch matches Julian July 15 622"
-      (calendarDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Muharram 1) ==
-       calendarDays (IotaTime.Calendar.Julian.calendarDate 15 JulianMonths.July 622))
+      (toBridgeDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Muharram 1) ==
+       toBridgeDays (IotaTime.Calendar.Julian.calendarDate 15 JulianMonths.July 622))
   , MkRuntimeCase "1 Muharram 1443 is Gregorian August 9 2021"
-      (calendarDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Muharram 1443) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 9 August 2021))
+      (toBridgeDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Muharram 1443) ==
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 9 August 2021))
   , MkRuntimeCase "1 Ramadan 1443 is Gregorian April 2 2022"
-      (calendarDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Ramadan 1443) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 2 April 2022))
+      (toBridgeDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Ramadan 1443) ==
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 2 April 2022))
   , MkRuntimeCase "generic conversion reaches 1 Muharram 1443"
       (case modernAnchor of
         Left _ => False
@@ -156,14 +157,14 @@ islamicCases =
       (ciymd (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1) ==
         (1, IslamicMonths.Muharram, 1))
   , MkRuntimeCase "civil Islamic epoch matches Julian July 16 622"
-      (calendarDays (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1) ==
-        calendarDays (IotaTime.Calendar.Julian.calendarDate 16 JulianMonths.July 622))
+      (toBridgeDays (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1) ==
+        toBridgeDays (IotaTime.Calendar.Julian.calendarDate 16 JulianMonths.July 622))
   , MkRuntimeCase "civil dates are one timeline day after astronomical dates"
-      (calendarDays (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1443) ==
-        calendarDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Muharram 1443) + 1)
+      (toBridgeDays (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1443) ==
+        toBridgeDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Muharram 1443) + 1)
   , MkRuntimeCase "civil 1 Muharram 1443 is Gregorian August 10 2021"
-      (calendarDays (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1443) ==
-        calendarDays (IotaTime.Calendar.Gregorian.calendarDate 10 August 2021))
+      (toBridgeDays (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1443) ==
+        toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 10 August 2021))
   , MkRuntimeCase "civil Islamic conversion round-trips two 30-year cycles"
       (civilIslamicRoundTrips (-503165) (-481903))
   , MkRuntimeCase "generic conversion reaches civil 1 Muharram 1443"

@@ -236,12 +236,12 @@ persianCivilFromDays value =
    in (valueYear, monthFromNumber monthNumber,
        dayOfMonthFromInteger dayNumber)
 
-public export
-HasCalendarDate PersianDate where
-  calendarDays = daysSinceEpoch
-  acceptsCalendarDays value = value >= epoch && value <= lastDay
-  calendarDateFromDays days @{valid} = checkedPersianDate days valid
-  calendarDateName = "Persian"
+export
+HasCalendarBridge PersianDate where
+  toBridgeDays = daysSinceEpoch
+  acceptsBridgeDays value = value >= epoch && value <= lastDay
+  fromBridgeDays days @{valid} = checkedPersianDate days valid
+  bridgeCalendarName = "Persian"
 
 clampToPersian : Integer -> Integer
 clampToPersian = max epoch . min lastDay
@@ -674,14 +674,14 @@ arithmeticPersianCivilFromDays {rule} value =
    in (valueYear, monthFromNumber monthNumber,
        dayOfMonthFromInteger (dayOfYear - offset + 1))
 
-public export
+export
 {rule : PersianArithmeticRule} -> KnownPersianArithmeticRule rule =>
-  HasCalendarDate (ArithmeticPersianDate rule) where
-  calendarDays = arithmeticDaysSinceEpoch
-  acceptsCalendarDays value = value >= arithmeticRuleEpoch rule &&
+  HasCalendarBridge (ArithmeticPersianDate rule) where
+  toBridgeDays = arithmeticDaysSinceEpoch
+  acceptsBridgeDays value = value >= arithmeticRuleEpoch rule &&
     value <= arithmeticRuleLastDay rule
-  calendarDateFromDays = fromArithmeticPersianDays {rule}
-  calendarDateName = ruleName {rule}
+  fromBridgeDays = fromArithmeticPersianDays {rule}
+  bridgeCalendarName = ruleName {rule}
 
 clampToArithmeticPersian : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Integer -> Integer

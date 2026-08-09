@@ -1,6 +1,7 @@
 module Test.Coptic
 
 import IotaTime
+import IotaTime.Calendar
 import IotaTime.Calendar.Coptic
 import Test.Support
 
@@ -51,13 +52,13 @@ copticCases =
       (copticRoundTrips (-626575) (-623653))
   , MkRuntimeCase "Coptic epoch matches Julian August 29 284"
       (toDays (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1) ==
-       calendarDays (IotaTime.Calendar.Julian.calendarDate 29 JulianMonths.August 284))
+       toBridgeDays (IotaTime.Calendar.Julian.calendarDate 29 JulianMonths.August 284))
   , MkRuntimeCase "Nayrouz 1738 is Gregorian September 11 2021"
-      (calendarDays (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1738) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 11 September 2021))
+      (toBridgeDays (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1738) ==
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 11 September 2021))
   , MkRuntimeCase "Nayrouz 1716 is Gregorian September 12 1999"
-      (calendarDays (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1716) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 12 September 1999))
+      (toBridgeDays (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1716) ==
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 12 September 1999))
   , MkRuntimeCase "Gregorian anchor converts through the generic calendar API"
       (case gregorianAnchorAsCoptic of
         Left _ => False

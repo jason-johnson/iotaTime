@@ -2,6 +2,7 @@ module Test.PatternCalendar
 
 import Data.Vect
 import IotaTime
+import IotaTime.Calendar
 import Test.Support
 
 roundTrips : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
@@ -131,7 +132,7 @@ patternCalendarCases =
         IotaTime.Pattern.format customCopticPattern expected == "1731-M13-06" &&
         case IotaTime.Pattern.parse customCopticPattern "1731-M13-06" of
           Left _ => False
-          Right actual => calendarDays actual == calendarDays expected)
+          Right actual => toBridgeDays actual == toBridgeDays expected)
   , MkRuntimeCase "Julian date-time patterns round-trip"
       (dateTimeRoundTrips {calendar = Julian}
         (on (localTime 23 59 58 0)

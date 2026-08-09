@@ -153,12 +153,12 @@ checkedJulianDate : (days : Integer) ->
                     (0 valid : So (days >= -746631)) -> JulianDate
 checkedJulianDate days valid = MkJulianDate days valid
 
-public export
-HasCalendarDate JulianDate where
-  calendarDays date = date.daysSinceEpoch + 13
-  acceptsCalendarDays days = days - 13 >= epochDay
-  calendarDateFromDays days @{valid} = checkedJulianDate (days - 13) valid
-  calendarDateName = "Julian"
+export
+HasCalendarBridge JulianDate where
+  toBridgeDays date = date.daysSinceEpoch + 13
+  acceptsBridgeDays days = days - 13 >= epochDay
+  fromBridgeDays days @{valid} = checkedJulianDate (days - 13) valid
+  bridgeCalendarName = "Julian"
 
 public export
 isValidDate : DayOfMonth -> JulianMonth -> Year -> Bool

@@ -97,14 +97,14 @@ calendarDateTimeRoundTrip :
   at @{cal} (datePart @{cal} value) (localTimeOfDay @{cal} value) = value
 calendarDateTimeRoundTrip (MkCalendarDateTime _ _) = Refl
 
-||| Convert the date component to another calendar while preserving the local
-||| time of day and absolute day.
+||| Convert the date component to another calendar through their shared bridge
+||| day while preserving the local time of day.
 public export
 withCalendar : {source : Type} -> {target : Type} ->
                {auto sourceCal : Calendar source} ->
                {auto targetCal : Calendar target} ->
-               {auto sourceRep : HasCalendarDate (CalendarDate source @{sourceCal})} ->
-               {auto targetRep : HasCalendarDate (CalendarDate target @{targetCal})} ->
+               {auto sourceRep : HasCalendarBridge (CalendarDate source @{sourceCal})} ->
+               {auto targetRep : HasCalendarBridge (CalendarDate target @{targetCal})} ->
                CalendarDateTime source @{sourceCal} ->
                Either CalendarConversionError (CalendarDateTime target @{targetCal})
 withCalendar @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value =

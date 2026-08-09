@@ -382,14 +382,13 @@ dictionary can use the explicit `toDaysFor`, `yearFor`, `monthFor`, `dayFor`,
 `dayOfWeekFor`, `nextFor`, `previousFor`, and `yearMonthDayFor` variants with
 `{calendar}`.
 
-Custom concrete date representations implement `HasCalendarDate` before
-`CalendarValue`. A `CalendarValue` instance supplies one year and one
-year-indexed `(month, day)` decomposition, so the individual accessors cannot
-disagree. `calendarComponentsCoherent` exposes this relationship as an equality
-proof. Calendar-relative `toDays` remains distinct from the absolute
-`HasCalendarDate.calendarDays` conversion used by `withCalendar`.
-`CalendarNavigation` additionally requires the date representation to implement
-`CalendarValue`.
+Custom concrete date representations implement `CalendarValue`. An instance
+supplies one year and one year-indexed `(month, day)` decomposition, so the
+individual accessors cannot disagree. `calendarComponentsCoherent` exposes this
+relationship as an equality proof. Cross-calendar and instant conversion use a
+separate bridge capability internal to those operations; calendar-local
+`toDays` does not need to align across calendars. `CalendarNavigation`
+additionally requires the date representation to implement `CalendarValue`.
 
 ### Date components
 
@@ -660,9 +659,9 @@ For cross-machine formats, applications can explicitly choose lossless Pattern
 building blocks and agree on them at both ends. `pInstantNanoseconds` represents
 the full arbitrary-precision instant timeline, `pOffsetFull` preserves every
 supported whole-second offset, and `pCalendarDays {calendar = ...}` represents
-an absolute day in the statically selected calendar while validating that
-calendar's range. `pSignedInteger` is available for other arbitrary-precision
-protocol fields.
+a calendar-local day count in the statically selected calendar while validating
+that calendar's range. `pSignedInteger` is available for other
+arbitrary-precision protocol fields.
 
 ```idris
 instantWire : Pattern Integer Instant
@@ -745,7 +744,9 @@ Operating-system locale date layouts remain Gregorian because `Locale` intention
 
 ## Calendar conversion
 
-`withCalendar` preserves the underlying absolute day and reinterprets it through the target calendar. The expected result type selects the target representation:
+`withCalendar` maps the source date to a shared bridge day and reconstructs the
+corresponding target date. The expected result type selects the target
+representation:
 
 ```idris
 christmasJulian : Either CalendarConversionError (CalendarDate Julian)
@@ -757,4 +758,7 @@ newYearHebrew =
 	IotaTime.Calendar.withCalendar (IotaTime.Calendar.Gregorian.calendarDate 16 September 2023)
 ```
 
-The result is an `Either` because each calendar has a different supported range; `TargetCalendarOutOfRange` reports the target name and absolute day. `IotaTime.CalendarDateTime.withCalendar` applies the same date conversion while preserving the `LocalTime` unchanged.
+The result is an `Either` because each calendar has a different supported range;
+`TargetCalendarOutOfRange` reports the target name and bridge day.
+`IotaTime.CalendarDateTime.withCalendar` applies the same date conversion while
+preserving the `LocalTime` unchanged.

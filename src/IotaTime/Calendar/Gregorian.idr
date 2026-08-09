@@ -189,12 +189,12 @@ makeGregorianDate days =
         Left valid => checkedGregorianDate clamped valid
         Right _ => checkedGregorianDate epochDay Oh
 
-public export
-HasCalendarDate GregorianDate where
-  calendarDays = daysSinceEpoch
-  acceptsCalendarDays = (>= epochDay)
-  calendarDateFromDays days @{valid} = checkedGregorianDate days valid
-  calendarDateName = "Gregorian"
+export
+HasCalendarBridge GregorianDate where
+  toBridgeDays = daysSinceEpoch
+  acceptsBridgeDays = (>= epochDay)
+  fromBridgeDays days @{valid} = checkedGregorianDate days valid
+  bridgeCalendarName = "Gregorian"
 
 clampToGregorian : Integer -> Integer
 clampToGregorian = max epochDay

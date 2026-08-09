@@ -425,9 +425,10 @@ Show (HebrewDate numbering) where
 
 checkedHebrewDate : {numbering : HebrewNumbering} -> (days : Integer) ->
                     (0 valid : So (days >= -2103607)) -> HebrewDate numbering
-checkedHebrewDate days valid = case hebrewCivilFromDays {numbering} days of
-  (valueYear ** (valueMonth, valueDay)) =>
-    MkHebrewDate days valueYear valueMonth valueDay valid Refl
+checkedHebrewDate {numbering} days valid with
+    (hebrewCivilFromDays {numbering} days) proof canonical
+  checkedHebrewDate days valid | (valueYear ** (valueMonth, valueDay)) =
+    MkHebrewDate days valueYear valueMonth valueDay valid canonical
 
 fromHebrewDays : {numbering : HebrewNumbering} -> (days : Integer) ->
                  {auto 0 valid : So (days >= -2103607)} -> HebrewDate numbering
@@ -440,12 +441,12 @@ makeHebrewDate days =
         Left valid => checkedHebrewDate clamped valid
         Right _ => checkedHebrewDate epochDay Oh
 
-public export
-{numbering : HebrewNumbering} -> HasCalendarDate (HebrewDate numbering) where
-  calendarDays = daysSinceEpoch
-  acceptsCalendarDays = (>= epochDay)
-  calendarDateFromDays = fromHebrewDays {numbering}
-  calendarDateName = "Hebrew"
+export
+{numbering : HebrewNumbering} -> HasCalendarBridge (HebrewDate numbering) where
+  toBridgeDays = daysSinceEpoch
+  acceptsBridgeDays = (>= epochDay)
+  fromBridgeDays = fromHebrewDays {numbering}
+  bridgeCalendarName = "Hebrew"
 
 public export
 total

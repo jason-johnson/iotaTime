@@ -14,21 +14,23 @@ nanosecondsPerSecond = 1000000000
 nanosecondsPerDay : Integer
 nanosecondsPerDay = 86400 * nanosecondsPerSecond
 
-daysOf : {dateType : Type} -> {auto rep : HasCalendarDate dateType} ->
-         dateType -> Integer
-daysOf @{rep} = calendarDays @{rep}
+bridgeDaysOf : {dateType : Type} -> {auto rep : HasCalendarBridge dateType} ->
+               dateType -> Integer
+bridgeDaysOf @{rep} = toBridgeDays @{rep}
 
-acceptsDays : {dateType : Type} -> {auto rep : HasCalendarDate dateType} ->
-              Integer -> Bool
-acceptsDays @{rep} = acceptsCalendarDays @{rep}
+acceptsBridgeDay : {dateType : Type} -> {auto rep : HasCalendarBridge dateType} ->
+                   Integer -> Bool
+acceptsBridgeDay @{rep} = acceptsBridgeDays @{rep}
 
-dateFromDays : {dateType : Type} -> {auto rep : HasCalendarDate dateType} ->
-               (days : Integer) -> {auto 0 valid : So (acceptsDays @{rep} days)} ->
-               dateType
-dateFromDays @{rep} days @{valid} = calendarDateFromDays @{rep} days @{valid}
+dateFromBridgeDays : {dateType : Type} -> {auto rep : HasCalendarBridge dateType} ->
+                     (days : Integer) ->
+                     {auto 0 valid : So (acceptsBridgeDay @{rep} days)} ->
+                     dateType
+dateFromBridgeDays @{rep} days @{valid} = fromBridgeDays @{rep} days @{valid}
 
-dateTypeName : {dateType : Type} -> {auto rep : HasCalendarDate dateType} -> String
-dateTypeName @{rep} = calendarDateName @{rep}
+bridgeDateTypeName : {dateType : Type} ->
+                     {auto rep : HasCalendarBridge dateType} -> String
+bridgeDateTypeName @{rep} = bridgeCalendarName @{rep}
 
 export
 record OffsetDateTimeRep (calendar : Type) (cal : Calendar calendar) where
@@ -129,16 +131,16 @@ localTimeFromNanoseconds value = localTime
 ||| Resolve an offset date-time to its unique point on the global timeline.
 public export
 toInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
-            {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+            {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
             OffsetDateTime calendar @{cal} -> Instant
 toInstant @{cal} @{rep} value = fromNanosecondsSinceEpoch
-  (daysOf @{rep} (datePart value.localValue) * nanosecondsPerDay +
+  (bridgeDaysOf @{rep} (datePart value.localValue) * nanosecondsPerDay +
    localNanoseconds (localTimeOfDay value.localValue) -
    totalOffsetSeconds value.offsetValue * nanosecondsPerSecond)
 
 public export
 {calendar : Type} -> {cal : Calendar calendar} ->
-  HasCalendarDate (CalendarDate calendar @{cal}) =>
+  HasCalendarBridge (CalendarDate calendar @{cal}) =>
   Eq (CalendarDate calendar @{cal}) =>
   Ord (OffsetDateTimeRep calendar cal) where
   compare left right = case compare
@@ -148,7 +150,7 @@ public export
 
 public export
 {calendar : Type} -> {cal : Calendar calendar} ->
-  HasCalendarDate (CalendarDate calendar @{cal}) =>
+  HasCalendarBridge (CalendarDate calendar @{cal}) =>
   Show (OffsetDateTimeRep calendar cal) where
   show value = "fromInstantWithOffset (" ++
     show (toInstant value) ++ ") (" ++
@@ -158,7 +160,7 @@ public export
 ||| when the resulting local day lies outside the calendar's supported range.
 export
 fromInstant : {calendar : Type} -> {auto cal : Calendar calendar} ->
-              {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+              {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
               Offset -> Instant ->
               Either CalendarConversionError (OffsetDateTime calendar @{cal})
 fromInstant @{cal} @{rep} valueOffset valueInstant =
@@ -166,18 +168,18 @@ fromInstant @{cal} @{rep} valueOffset valueInstant =
         totalOffsetSeconds valueOffset * nanosecondsPerSecond
       valueDays = localNanos `div` nanosecondsPerDay
       nanosWithinDay = localNanos `mod` nanosecondsPerDay
-   in case choose (acceptsDays @{rep} valueDays) of
+   in case choose (acceptsBridgeDay @{rep} valueDays) of
         Left valid => Right (MkOffsetDateTime
           (on (localTimeFromNanoseconds nanosWithinDay)
-            (dateFromDays @{rep} valueDays @{valid}))
+            (dateFromBridgeDays @{rep} valueDays @{valid}))
           valueOffset)
         Right _ => Left
-          (TargetCalendarOutOfRange (dateTypeName @{rep}) valueDays)
+          (TargetCalendarOutOfRange (bridgeDateTypeName @{rep}) valueDays)
 
 ||| HodaTime-compatible constructor with instant-first argument order.
 public export
 fromInstantWithOffset : {calendar : Type} -> {auto cal : Calendar calendar} ->
-                        {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+                        {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                         Instant -> Offset ->
                         Either CalendarConversionError
                           (OffsetDateTime calendar @{cal})
@@ -187,7 +189,7 @@ fromInstantWithOffset valueInstant valueOffset =
 ||| Change the displayed offset while preserving the represented instant.
 public export
 withOffset : {calendar : Type} -> {auto cal : Calendar calendar} ->
-             {auto rep : HasCalendarDate (CalendarDate calendar @{cal})} ->
+             {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
              Offset -> OffsetDateTime calendar @{cal} ->
              Either CalendarConversionError (OffsetDateTime calendar @{cal})
 withOffset valueOffset value = fromInstant valueOffset (toInstant value)
@@ -197,8 +199,8 @@ public export
 withCalendar : {source : Type} -> {target : Type} ->
                {auto sourceCal : Calendar source} ->
                {auto targetCal : Calendar target} ->
-               {auto sourceRep : HasCalendarDate (CalendarDate source @{sourceCal})} ->
-               {auto targetRep : HasCalendarDate (CalendarDate target @{targetCal})} ->
+               {auto sourceRep : HasCalendarBridge (CalendarDate source @{sourceCal})} ->
+               {auto targetRep : HasCalendarBridge (CalendarDate target @{targetCal})} ->
                OffsetDateTime source @{sourceCal} ->
                Either CalendarConversionError (OffsetDateTime target @{targetCal})
 withCalendar @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value =

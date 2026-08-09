@@ -56,6 +56,10 @@ KnownIslamicEpoch Civil where
   epochDay = -503165
   dateConstructorName = "civilCalendarDate'"
 
+islamicEpochDay : IslamicEpoch -> Integer
+islamicEpochDay Astronomical = -503166
+islamicEpochDay Civil = -503165
+
 ||| A tabular Islamic calendar indexed by its epoch and leap-cycle pattern.
 public export
 data IslamicByEpoch : IslamicEpoch -> IslamicLeapPattern -> Type where
@@ -196,6 +200,7 @@ export
 record IslamicDate (epoch : IslamicEpoch) (pattern : IslamicLeapPattern) where
   constructor MkIslamicDate
   daysSinceEpoch : Integer
+  0 validDays : So (daysSinceEpoch >= islamicEpochDay epoch)
 
 public export
 Eq (IslamicDate epoch pattern) where
@@ -288,23 +293,43 @@ islamicCivilFromDays value =
    in (yearFromInteger yearNumber, monthFromNumber monthNumber,
        dayOfMonthFromInteger dayNumber)
 
+checkedIslamicDate : {epoch : IslamicEpoch} ->
+                     {pattern : IslamicLeapPattern} ->
+                     (days : Integer) ->
+                     (0 valid : So (days >= islamicEpochDay epoch)) ->
+                     IslamicDate epoch pattern
+checkedIslamicDate days valid = MkIslamicDate days valid
+
+fromIslamicDays : {epoch : IslamicEpoch} ->
+                  {pattern : IslamicLeapPattern} ->
+                  (days : Integer) ->
+                  {auto 0 valid : So (days >= islamicEpochDay epoch)} ->
+                  IslamicDate epoch pattern
+fromIslamicDays days @{valid} = checkedIslamicDate days valid
+
 public export
 {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
   KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
   HasCalendarDate (IslamicDate epoch pattern) where
   calendarDays = daysSinceEpoch
-  acceptsCalendarDays = (>= epochDay {epoch})
-  calendarDateFromDays days = MkIslamicDate days
+  acceptsCalendarDays = (>= islamicEpochDay epoch)
+  calendarDateFromDays = fromIslamicDays {epoch} {pattern}
   calendarDateName = "Islamic"
 
 makeIslamicDate : {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
                   KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
                   Integer -> IslamicDate epoch pattern
-makeIslamicDate = MkIslamicDate
+makeIslamicDate {epoch} days =
+  let clamped = max (islamicEpochDay epoch) days
+   in case choose (clamped >= islamicEpochDay epoch) of
+        Left valid => checkedIslamicDate clamped valid
+        Right _ => case epoch of
+          Astronomical => checkedIslamicDate (-503166) Oh
+          Civil => checkedIslamicDate (-503165) Oh
 
 clampToIslamic : {epoch : IslamicEpoch} -> KnownIslamicEpoch epoch =>
                  Integer -> Integer
-clampToIslamic = max (epochDay {epoch})
+clampToIslamic {epoch} = max (islamicEpochDay epoch)
 
 shiftIslamicDays : {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
                    KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
@@ -388,9 +413,12 @@ public export
   MonthRep _ = IslamicMonth
   WeekdayRep = IslamicDayOfWeek
 
-  isValidDays = (>= epochDay {epoch})
-  fromDays days = makeIslamicDate {epoch} {pattern} days
+  isValidDays = (>= islamicEpochDay epoch)
+  fromDays = fromIslamicDays {epoch} {pattern}
   toDaysFor date = date.daysSinceEpoch
+  toDaysValid (MkIslamicDate _ valid) = valid
+  toFromDays _ _ = Refl
+  fromToDays (MkIslamicDate _ _) = Refl
   calendarName = "Islamic"
 
   year' date = let (value, _, _) =
@@ -516,7 +544,7 @@ fromDays' : {pattern : IslamicLeapPattern} ->
                      (IotaTime.Calendar.isValidDays
                        {calendar = Islamic pattern} days)} ->
                    CalendarDate (Islamic pattern)
-fromDays' days = makeIslamicDate {pattern} days
+fromDays' {pattern} = fromIslamicDays {epoch = Astronomical} {pattern}
 
 public export
 fromDays : (days : Integer) ->
@@ -598,7 +626,7 @@ civilFromDays' : {pattern : IslamicLeapPattern} ->
                           (IotaTime.Calendar.isValidDays
                             {calendar = CivilIslamic pattern} days)} ->
                         CalendarDate (CivilIslamic pattern)
-civilFromDays' days = makeIslamicDate {epoch = Civil} {pattern} days
+civilFromDays' {pattern} = fromIslamicDays {epoch = Civil} {pattern}
 
 public export
 civilFromDays : (days : Integer) ->

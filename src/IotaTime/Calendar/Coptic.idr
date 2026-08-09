@@ -99,6 +99,7 @@ export
 record CopticDate where
   constructor MkCopticDate
   daysSinceEpoch : Integer
+  0 validDays : So (daysSinceEpoch >= -626575)
 
 public export
 Eq CopticDate where
@@ -112,6 +113,10 @@ Ord CopticDate where
 public export
 epochDay : Integer
 epochDay = -626575
+
+checkedCopticDate : (days : Integer) ->
+                    (0 valid : So (days >= -626575)) -> CopticDate
+checkedCopticDate days valid = MkCopticDate days valid
 
 ||| Whether a Coptic year has a sixth epagomenal day.
 public export
@@ -168,15 +173,22 @@ public export
 HasCalendarDate CopticDate where
   calendarDays = daysSinceEpoch
   acceptsCalendarDays = (>= epochDay)
-  calendarDateFromDays days = MkCopticDate days
+  calendarDateFromDays days @{valid} = checkedCopticDate days valid
   calendarDateName = "Coptic"
 
 clampToCoptic : Integer -> Integer
 clampToCoptic = max epochDay
 
+makeCopticDate : Integer -> CopticDate
+makeCopticDate days =
+  let clamped = clampToCoptic days
+   in case choose (clamped >= -626575) of
+        Left valid => checkedCopticDate clamped valid
+        Right _ => checkedCopticDate epochDay Oh
+
 shiftCopticDays : Integer -> CopticDate -> CopticDate
 shiftCopticDays amount date =
-  MkCopticDate (clampToCoptic (date.daysSinceEpoch + amount))
+  makeCopticDate (date.daysSinceEpoch + amount)
 
 shiftCopticMonths : Integer -> CopticDate -> CopticDate
 shiftCopticMonths amount date =
@@ -185,16 +197,14 @@ shiftCopticMonths amount date =
       targetYear = yearFromInteger (yearValue valueYear + monthOrdinal `div` 13)
       targetMonth = monthFromNumber (monthOrdinal `mod` 13 + 1)
       targetDay = min valueDay (maxDaysInMonth targetMonth targetYear)
-   in MkCopticDate (clampToCoptic
-        (copticDaysFromCivil targetYear targetMonth targetDay))
+  in makeCopticDate (copticDaysFromCivil targetYear targetMonth targetDay)
 
 shiftCopticYears : Integer -> CopticDate -> CopticDate
 shiftCopticYears amount date =
   let (valueYear, valueMonth, valueDay) = copticCivilFromDays date.daysSinceEpoch
       targetYear = yearFromInteger (yearValue valueYear + amount)
       targetDay = min valueDay (maxDaysInMonth valueMonth targetYear)
-   in MkCopticDate (clampToCoptic
-        (copticDaysFromCivil targetYear valueMonth targetDay))
+  in makeCopticDate (copticDaysFromCivil targetYear valueMonth targetDay)
 
 applyCopticPeriod : Period target -> CopticDate -> CopticDate
 applyCopticPeriod period =
@@ -214,16 +224,16 @@ nextCoptic count target date =
   let current = CopticWeekdays.weekdayNumber (copticDayOfWeek date)
       wanted = CopticWeekdays.weekdayNumber target
       weeks = if wanted > current then count - 1 else count
-   in MkCopticDate
-        (clampToCoptic (date.daysSinceEpoch + 7 * weeks + wanted - current))
+     in makeCopticDate
+       (date.daysSinceEpoch + 7 * weeks + wanted - current)
 
 previousCoptic : Integer -> CopticDayOfWeek -> CopticDate -> CopticDate
 previousCoptic count target date =
   let current = CopticWeekdays.weekdayNumber (copticDayOfWeek date)
       wanted = CopticWeekdays.weekdayNumber target
       weeks = if wanted < current then count - 1 else count
-   in MkCopticDate (clampToCoptic
-        (date.daysSinceEpoch - (7 * weeks + current - wanted)))
+     in makeCopticDate
+       (date.daysSinceEpoch - (7 * weeks + current - wanted))
 
 public export
 Calendar Coptic where
@@ -232,8 +242,11 @@ Calendar Coptic where
   WeekdayRep = CopticDayOfWeek
 
   isValidDays = (>= epochDay)
-  fromDays days = MkCopticDate days
+  fromDays days @{valid} = checkedCopticDate days valid
   toDaysFor date = date.daysSinceEpoch
+  toDaysValid (MkCopticDate _ valid) = valid
+  toFromDays _ _ = Refl
+  fromToDays (MkCopticDate _ _) = Refl
   calendarName = "Coptic"
 
   year' date = let (value, _, _) = copticCivilFromDays date.daysSinceEpoch in value
@@ -287,7 +300,7 @@ calendarDate : (valueDay : DayOfMonth) -> (valueMonth : CopticMonth) ->
              {auto 0 valid : So (isValidDate valueDay valueMonth valueYear)} ->
              CalendarDate Coptic
 calendarDate valueDay valueMonth valueYear =
-  MkCopticDate (copticDaysFromCivil valueYear valueMonth valueDay)
+  makeCopticDate (copticDaysFromCivil valueYear valueMonth valueDay)
 
 ||| Failures produced while refining untrusted Coptic date data.
 public export
@@ -312,7 +325,7 @@ fromDays : (days : Integer) ->
                  {auto 0 valid : So
                    (IotaTime.Calendar.isValidDays {calendar = Coptic} days)} ->
                  CalendarDate Coptic
-fromDays days = MkCopticDate days
+fromDays days @{valid} = checkedCopticDate days valid
 
 ||| Validate a runtime Coptic day count.
 public export
@@ -366,7 +379,7 @@ fromNthDay : (nth : DayNth) -> (target : CopticDayOfWeek) ->
                      (isValidNthDay nth target valueMonth valueYear)} ->
                    CalendarDate Coptic
 fromNthDay nth target valueMonth valueYear =
-  MkCopticDate (copticDaysFromCivil valueYear valueMonth
+  makeCopticDate (copticDaysFromCivil valueYear valueMonth
     (nthDayOfMonth nth target valueMonth valueYear))
 
 ||| Validate an nth-weekday request for a Coptic month.
@@ -402,7 +415,7 @@ fromWeekDate : (week : WeekNumber) -> (target : CopticDayOfWeek) ->
                {auto 0 valid : So (isValidWeekDate week target valueYear)} ->
                CalendarDate Coptic
 fromWeekDate week target valueYear =
-  MkCopticDate (weekDateDays week target valueYear)
+  makeCopticDate (weekDateDays week target valueYear)
 
 ||| Validate a runtime Coptic Sunday-based week date.
 public export

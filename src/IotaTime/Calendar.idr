@@ -90,6 +90,11 @@ interface Calendar calendar where
   isValidDays : Integer -> Bool
   fromDays : (days : Integer) -> {auto 0 valid : So (isValidDays days)} -> DateRep
   toDaysFor : DateRep -> Integer
+  0 toDaysValid : (date : DateRep) -> So (isValidDays (toDaysFor date))
+  0 toFromDays : (days : Integer) -> (0 valid : So (isValidDays days)) ->
+                 toDaysFor (fromDays days {valid}) = days
+  0 fromToDays : (date : DateRep) ->
+                 fromDays (toDaysFor date) {valid = toDaysValid date} = date
   calendarName : String
 
   year' : DateRep -> Year
@@ -109,8 +114,9 @@ public export
 CalendarDate : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 CalendarDate calendar @{cal} = DateRep @{cal}
 
-||| A date-like value that can participate in absolute-day calendar conversion.
-public export
+||| Internal normalization used for cross-calendar and instant conversion.
+||| Calendar-local APIs use `Calendar.toDaysFor` instead.
+export
 interface HasCalendarDate date where
   calendarDays : date -> Integer
   acceptsCalendarDays : Integer -> Bool

@@ -392,6 +392,11 @@ hebrewCivilFromDays days =
         (days - firstDayOfYear valueYear)
   in (valueYear ** (monthFromCalendarIndex {numbering} valueYear monthIndex, valueDay))
 
+||| The Hebrew calendar epoch day, representing 1 Tishri 1.
+public export
+epochDay : Integer
+epochDay = -2103607
+
 export
 record HebrewDate (numbering : HebrewNumbering) where
   constructor MkHebrewDate
@@ -399,6 +404,10 @@ record HebrewDate (numbering : HebrewNumbering) where
   dateYear : Year
   dateMonth : HebrewMonth numbering dateYear
   dateDay : DayOfMonth
+  0 validDays : So (daysSinceEpoch >= -2103607)
+  0 canonicalDate :
+    hebrewCivilFromDays {numbering} daysSinceEpoch =
+      (dateYear ** (dateMonth, dateDay))
 
 public export
 Eq (HebrewDate numbering) where
@@ -410,25 +419,32 @@ Ord (HebrewDate numbering) where
 
 public export
 Show (HebrewDate numbering) where
-  show (MkHebrewDate _ valueYear valueMonth valueDay) =
+  show (MkHebrewDate _ valueYear valueMonth valueDay _ _) =
     "calendarDate' " ++ show valueDay ++ " " ++
     show valueYear ++ " " ++ HebrewMonths.showMonth valueMonth
 
-makeHebrewDate : {numbering : HebrewNumbering} -> Integer -> HebrewDate numbering
-makeHebrewDate days = case hebrewCivilFromDays {numbering} days of
+checkedHebrewDate : {numbering : HebrewNumbering} -> (days : Integer) ->
+                    (0 valid : So (days >= -2103607)) -> HebrewDate numbering
+checkedHebrewDate days valid = case hebrewCivilFromDays {numbering} days of
   (valueYear ** (valueMonth, valueDay)) =>
-    MkHebrewDate days valueYear valueMonth valueDay
+    MkHebrewDate days valueYear valueMonth valueDay valid Refl
 
-||| The Hebrew calendar epoch day, representing 1 Tishri 1.
-public export
-epochDay : Integer
-epochDay = -2103607
+fromHebrewDays : {numbering : HebrewNumbering} -> (days : Integer) ->
+                 {auto 0 valid : So (days >= -2103607)} -> HebrewDate numbering
+fromHebrewDays days @{valid} = checkedHebrewDate days valid
+
+makeHebrewDate : {numbering : HebrewNumbering} -> Integer -> HebrewDate numbering
+makeHebrewDate days =
+  let clamped = max epochDay days
+   in case choose (clamped >= -2103607) of
+        Left valid => checkedHebrewDate clamped valid
+        Right _ => checkedHebrewDate epochDay Oh
 
 public export
 {numbering : HebrewNumbering} -> HasCalendarDate (HebrewDate numbering) where
   calendarDays = daysSinceEpoch
   acceptsCalendarDays = (>= epochDay)
-  calendarDateFromDays days = makeHebrewDate days
+  calendarDateFromDays = fromHebrewDays {numbering}
   calendarDateName = "Hebrew"
 
 public export
@@ -543,8 +559,11 @@ public export
   WeekdayRep = HebrewDayOfWeek numbering
 
   isValidDays = (>= epochDay)
-  fromDays days = makeHebrewDate days
+  fromDays = fromHebrewDays {numbering}
   toDaysFor date = date.daysSinceEpoch
+  toDaysValid (MkHebrewDate _ _ _ _ valid _) = valid
+  toFromDays _ _ = Refl
+  fromToDays (MkHebrewDate _ _ _ _ _ Refl) = Refl
   calendarName = "Hebrew"
 
   year' = dateYear
@@ -663,7 +682,7 @@ fromDays' : {numbering : HebrewNumbering} ->
                     (IotaTime.Calendar.isValidDays
                       {calendar = Hebrew numbering} days)} ->
                   CalendarDate (Hebrew numbering)
-fromDays' days = makeHebrewDate days
+fromDays' {numbering} = fromHebrewDays {numbering}
 
 public export
 fromDays : (days : Integer) -> {auto 0 valid : So

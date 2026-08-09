@@ -382,13 +382,16 @@ dictionary can use the explicit `toDaysFor`, `yearFor`, `monthFor`, `dayFor`,
 `dayOfWeekFor`, `nextFor`, `previousFor`, and `yearMonthDayFor` variants with
 `{calendar}`.
 
-Custom concrete date representations implement `CalendarValue`. An instance
-supplies one year and one year-indexed `(month, day)` decomposition, so the
-individual accessors cannot disagree. `calendarComponentsCoherent` exposes this
-relationship as an equality proof. Cross-calendar and instant conversion use a
-separate bridge capability internal to those operations; calendar-local
-`toDays` does not need to align across calendars. `CalendarNavigation`
-additionally requires the date representation to implement `CalendarValue`.
+Each built-in concrete date representation implements the internal calendar
+bridge before `CalendarValue`, so every calendar value can participate in
+`withCalendar`. A `CalendarValue` instance supplies one year and one
+year-indexed `(month, day)` decomposition, so the individual accessors cannot
+disagree. `calendarComponentsCoherent` exposes this relationship as an equality
+proof. Calendar-local `toDays` does not need to align across calendars;
+conversion uses each representation's hidden bridge mapping. Custom calendar
+implementations are not a supported public extension point.
+`CalendarNavigation` additionally requires the date representation to implement
+`CalendarValue`.
 
 ### Date components
 

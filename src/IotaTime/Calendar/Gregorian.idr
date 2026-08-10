@@ -53,29 +53,6 @@ Ord Month where
 
 %runElab derive `{Month} [Show]
 
-public export
-data DayOfWeek = Sunday | Monday | Tuesday | Wednesday | Thursday | Friday | Saturday
-
-public export
-weekdayNumber : DayOfWeek -> Integer
-weekdayNumber Sunday = 0
-weekdayNumber Monday = 1
-weekdayNumber Tuesday = 2
-weekdayNumber Wednesday = 3
-weekdayNumber Thursday = 4
-weekdayNumber Friday = 5
-weekdayNumber Saturday = 6
-
-public export
-Eq DayOfWeek where
-  left == right = weekdayNumber left == weekdayNumber right
-
-public export
-Ord DayOfWeek where
-  compare left right = compare (weekdayNumber left) (weekdayNumber right)
-
-%runElab derive `{DayOfWeek} [Show]
-
 export
 record GregorianDate where
   constructor MkGregorianDate
@@ -103,16 +80,6 @@ monthFromNumber 9 = September
 monthFromNumber 10 = October
 monthFromNumber 11 = November
 monthFromNumber _ = December
-
-weekdayFromNumber : Integer -> DayOfWeek
-weekdayFromNumber value = case value `mod` 7 of
-  0 => Sunday
-  1 => Monday
-  2 => Tuesday
-  3 => Wednesday
-  4 => Thursday
-  5 => Friday
-  _ => Saturday
 
 ||| Whether a Gregorian year contains February 29.
 public export
@@ -270,7 +237,6 @@ public export
 Calendar Gregorian where
   DateRep = GregorianDate
   MonthRep _ = Month
-  WeekdayRep = DayOfWeek
 
   isValidDays = (>= epochDay)
   fromDays days @{valid} = checkedGregorianDate days valid
@@ -296,7 +262,6 @@ Calendar Gregorian where
 public export
 CalendarValue GregorianDate where
   CalendarMonth _ = Month
-  CalendarWeekday = DayOfWeek
   calendarValueToDays = toDaysFor {calendar = Gregorian}
   calendarValueYear = yearFor {calendar = Gregorian}
   calendarValueMonthDay = toYmd {calendar = Gregorian}
@@ -304,7 +269,7 @@ CalendarValue GregorianDate where
   calendarValueBetweenWith = betweenWithFor {calendar = Gregorian}
 
 public export
-CalendarNavigation DayOfWeek GregorianDate where
+CalendarNavigation GregorianDate where
   calendarValueNext = nextFor {calendar = Gregorian}
   calendarValuePrevious = previousFor {calendar = Gregorian}
 

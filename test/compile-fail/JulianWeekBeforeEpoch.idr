@@ -5,4 +5,4 @@ import IotaTime
 
 invalid : CalendarDate Julian
 invalid = IotaTime.Calendar.Julian.fromWeekDate
-  (-1000000) JulianWeekdays.Sunday 2000
+  (-1000000) Sunday 2000

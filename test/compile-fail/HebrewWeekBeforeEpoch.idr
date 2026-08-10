@@ -5,4 +5,4 @@ import IotaTime
 
 invalid : CalendarDate HebrewCivil
 invalid = IotaTime.Calendar.Hebrew.fromWeekDate
-  (-1000000) HebrewWeekdays.Sunday 5784
+  (-1000000) Sunday 5784

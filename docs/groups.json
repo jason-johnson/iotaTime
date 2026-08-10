@@ -55,18 +55,18 @@
   ],
   "IotaTime.Calendar": [
     { "title": "Calendar capability", "names": ["Calendar", "CalendarDate", "HasCalendarDate"] },
-    { "title": "Date components", "names": ["year", "month", "day", "yearMonthDay"] },
+    { "title": "Date components", "names": ["DayOfWeek", "weekdayNumber", "weekdayFromNumber", "year", "month", "day", "dayOfWeek", "yearMonthDay"] },
     { "title": "Difference policy", "names": ["DateDifferenceUnits", "MonthArithmeticPolicy", "DateDifferencePolicy", "nodaTimePolicy"] },
     { "title": "Conversion and arithmetic", "names": ["withCalendar", "between", "betweenWith", "betweenDays"] }
   ],
   "IotaTime.Calendar.Gregorian": [
-    { "title": "Calendar and components", "names": ["Gregorian", "Month", "monthNumber", "DayOfWeek", "weekdayNumber"] },
+    { "title": "Calendar and components", "names": ["Gregorian", "Month", "monthNumber"] },
     { "title": "Calendar rules", "names": ["isLeapYear", "maxDaysInMonth", "isValidGregorianDate", "isValidGregorianDays", "isValidGregorianNthDay", "isValidGregorianWeekDate"] },
     { "title": "Static construction", "names": ["calendarDate", "gregorianFromDays", "fromNthDay", "fromWeekDate"] },
     { "title": "Runtime refinement", "names": ["GregorianDateError", "refineGregorianDate", "refineGregorianDays", "refineGregorianNthDay", "refineGregorianWeekDate"] }
   ],
   "IotaTime.Calendar.Persian": [
-    { "title": "Calendar rules and components", "names": ["Persian", "PersianSimple", "PersianArithmetic", "PersianArithmeticRule", "ArithmeticPersian", "PersianMonth", "PersianDayOfWeek"] },
+    { "title": "Calendar rules and components", "names": ["Persian", "PersianSimple", "PersianArithmetic", "PersianArithmeticRule", "ArithmeticPersian", "PersianMonth"] },
     { "title": "Astronomical construction", "names": ["persianDate", "persianFromDays", "persianFromNthDay", "persianFromWeekDate"] },
     { "title": "Astronomical runtime refinement", "names": ["PersianDateError", "refinePersianDate", "refinePersianDays", "refinePersianNthDay", "refinePersianWeekDate"] },
     { "title": "Arithmetic construction", "names": ["simplePersianDate", "arithmeticPersianDate", "arithmeticRulePersianDate", "arithmeticPersianFromNthDay", "arithmeticPersianFromWeekDate"] },

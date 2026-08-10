@@ -170,7 +170,7 @@ CalendarPattern Julian where
   patternMonthIndex date = monthIndex12
     (JulianMonths.monthNumber (month date))
   patternWeekdayIndex date = weekdayIndex7
-    (JulianWeekdays.weekdayNumber (dayOfWeek date))
+    (weekdayNumber (dayOfWeek date))
   refinePatternDate year month day = do
     valueMonth <- refineMonth 12 month
     valueDay <- refineDay day
@@ -210,7 +210,7 @@ CalendarPattern Coptic where
   patternMonthIndex date = monthIndex13
     (CopticMonths.monthNumber (month date))
   patternWeekdayIndex date = weekdayIndex7
-    (CopticWeekdays.weekdayNumber (dayOfWeek date))
+    (weekdayNumber (dayOfWeek date))
   refinePatternDate year month day = do
     valueMonth <- refineMonth 13 month
     valueDay <- refineDay day
@@ -255,7 +255,7 @@ public export
   patternMonthAbbreviations = islamicMonthAbbreviations
   patternMonthIndex date = monthIndex12 (IslamicMonths.monthNumber
     (month date))
-  patternWeekdayIndex date = weekdayIndex7 (IslamicWeekdays.weekdayNumber
+  patternWeekdayIndex date = weekdayIndex7 (weekdayNumber
     (dayOfWeek date))
   refinePatternDate = refineTwelveMonthDate "Islamic" islamicMonth
     (IotaTime.Calendar.Islamic.refineDate' {pattern})
@@ -268,7 +268,7 @@ public export
   patternMonthAbbreviations = islamicMonthAbbreviations
   patternMonthIndex date = monthIndex12 (IslamicMonths.monthNumber
     (month date))
-  patternWeekdayIndex date = weekdayIndex7 (IslamicWeekdays.weekdayNumber
+  patternWeekdayIndex date = weekdayIndex7 (weekdayNumber
     (dayOfWeek date))
   refinePatternDate = refineTwelveMonthDate "Civil Islamic" islamicMonth
     (refineCivilDate' {pattern})
@@ -307,7 +307,7 @@ CalendarPattern Persian where
   patternMonthIndex date = monthIndex12
     (PersianMonths.monthNumber (month date))
   patternWeekdayIndex date = weekdayIndex7
-    (PersianWeekdays.weekdayNumber (dayOfWeek date))
+    (weekdayNumber (dayOfWeek date))
   refinePatternDate = refineTwelveMonthDate "Persian" persianMonth
     IotaTime.Calendar.Persian.refineDate
 
@@ -319,7 +319,7 @@ public export
   patternMonthAbbreviations = persianMonthAbbreviations
   patternMonthIndex date = monthIndex12 (PersianMonths.monthNumber
     (month date))
-  patternWeekdayIndex date = weekdayIndex7 (PersianWeekdays.weekdayNumber
+  patternWeekdayIndex date = weekdayIndex7 (weekdayNumber
     (dayOfWeek date))
   refinePatternDate = refineTwelveMonthDate
     (ruleName {rule}) persianMonth
@@ -389,7 +389,7 @@ public export
   patternMonthIndex date = case yearMonthDayFor {calendar = Hebrew numbering} date of
     (_ ** (valueMonth, _)) => monthIndex13
       (IotaTime.Calendar.Hebrew.monthNumber valueMonth)
-  patternWeekdayIndex date = weekdayIndex7 (HebrewWeekdays.weekdayNumber
+  patternWeekdayIndex date = weekdayIndex7 (weekdayNumber
     (dayOfWeek date))
   refinePatternDate year month day = do
     valueMonth <- refineMonth 13 month

@@ -8,6 +8,46 @@ import Derive.Prelude
 
 %default total
 
+||| A weekday in the standard seven-day civil week shared by all iotaTime
+||| calendars.
+public export
+data DayOfWeek
+  = Sunday | Monday | Tuesday | Wednesday | Thursday | Friday | Saturday
+
+||| Zero-based weekday position from Sunday through Saturday.
+public export
+weekdayNumber : DayOfWeek -> Integer
+weekdayNumber Sunday = 0
+weekdayNumber Monday = 1
+weekdayNumber Tuesday = 2
+weekdayNumber Wednesday = 3
+weekdayNumber Thursday = 4
+weekdayNumber Friday = 5
+weekdayNumber Saturday = 6
+
+||| Convert an integer weekday position to the corresponding weekday,
+||| wrapping values outside the standard zero-through-six range.
+public export
+weekdayFromNumber : Integer -> DayOfWeek
+weekdayFromNumber value = case value `mod` 7 of
+  0 => Sunday
+  1 => Monday
+  2 => Tuesday
+  3 => Wednesday
+  4 => Thursday
+  5 => Friday
+  _ => Saturday
+
+public export
+Eq DayOfWeek where
+  left == right = weekdayNumber left == weekdayNumber right
+
+public export
+Ord DayOfWeek where
+  compare left right = compare (weekdayNumber left) (weekdayNumber right)
+
+%runElab derive `{DayOfWeek} [Show]
+
 ||| Selects an occurrence of a weekday within a month.
 public export
 data DayNth
@@ -85,7 +125,6 @@ public export
 interface Calendar calendar where
   DateRep : Type
   MonthRep : Year -> Type
-  WeekdayRep : Type
 
   isValidDays : Integer -> Bool
   fromDays : (days : Integer) -> {auto 0 valid : So (isValidDays days)} -> DateRep
@@ -105,9 +144,9 @@ interface Calendar calendar where
   applyCalendarPeriod' : Period target -> DateRep -> DateRep
   shiftCalendarDays' : Integer -> DateRep -> DateRep
 
-  dayOfWeekFor : DateRep -> WeekdayRep
-  nextFor : Integer -> WeekdayRep -> DateRep -> DateRep
-  previousFor : Integer -> WeekdayRep -> DateRep -> DateRep
+  dayOfWeekFor : DateRep -> DayOfWeek
+  nextFor : Integer -> DayOfWeek -> DateRep -> DateRep
+  previousFor : Integer -> DayOfWeek -> DateRep -> DateRep
 
 ||| The opaque date representation selected by a calendar implementation.
 public export
@@ -131,22 +170,19 @@ interface HasCalendarBridge date where
 public export
 interface HasCalendarBridge date => CalendarValue date where
   CalendarMonth : Year -> Type
-  CalendarWeekday : Type
   calendarValueToDays : date -> Integer
   calendarValueYear : date -> Year
   calendarValueMonthDay : (value : date) ->
     (CalendarMonth (calendarValueYear value), DayOfMonth)
-  calendarValueDayOfWeek : date -> CalendarWeekday
+  calendarValueDayOfWeek : date -> DayOfWeek
   calendarValueBetweenWith :
     DateDifferencePolicy -> date -> date -> Period date
 
-||| Weekday navigation determined by concrete weekday and date representations.
-||| Both ordinary arguments are available before Idris resolves this interface,
-||| so callers do not need to select the calendar explicitly.
+||| Weekday navigation selected by the concrete date representation.
 public export
-interface CalendarValue date => CalendarNavigation weekday date where
-  calendarValueNext : Integer -> weekday -> date -> date
-  calendarValuePrevious : Integer -> weekday -> date -> date
+interface CalendarValue date => CalendarNavigation date where
+  calendarValueNext : Integer -> DayOfWeek -> date -> date
+  calendarValuePrevious : Integer -> DayOfWeek -> date -> date
 
 ||| Extract the calendar year from a date.
 public export
@@ -340,23 +376,22 @@ calendarComponentsCoherent value @{rep} with
   (calendarValueMonthDay @{rep} value)
   _ | (_, _) = Refl
 
-||| Extract the calendar-specific weekday from a concrete date value.
+||| Extract the weekday from a concrete date value.
 public export
-dayOfWeek : (value : date) -> {auto rep : CalendarValue date} ->
-            CalendarWeekday @{rep}
+dayOfWeek : (value : date) -> {auto rep : CalendarValue date} -> DayOfWeek
 dayOfWeek value @{rep} = calendarValueDayOfWeek @{rep} value
 
 ||| Find a matching weekday relative to a concrete date value.
 public export
-next : Integer -> weekday -> (value : date) ->
-       {auto navigation : CalendarNavigation weekday date} -> date
+next : {auto navigation : CalendarNavigation date} ->
+  Integer -> DayOfWeek -> (value : date) -> date
 next count weekday value @{navigation} =
   calendarValueNext @{navigation} count weekday value
 
 ||| Find a preceding matching weekday relative to a concrete date value.
 public export
-previous : Integer -> weekday -> (value : date) ->
-           {auto navigation : CalendarNavigation weekday date} -> date
+previous : {auto navigation : CalendarNavigation date} ->
+           Integer -> DayOfWeek -> (value : date) -> date
 previous count weekday value @{navigation} =
   calendarValuePrevious @{navigation} count weekday value
 

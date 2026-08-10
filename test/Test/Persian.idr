@@ -176,16 +176,16 @@ persianCases =
   , MkRuntimeCase "Persian epoch weekday is Friday"
       (dayOfWeek
         (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1) ==
-        PersianWeekdays.Friday)
+        Friday)
   , MkRuntimeCase "first Monday of Farvardin 1400"
       (dayOfWeek
-        (IotaTime.Calendar.Persian.fromNthDay First PersianWeekdays.Monday
-          PersianMonths.Farvardin 1400) == PersianWeekdays.Monday)
+        (IotaTime.Calendar.Persian.fromNthDay First Monday
+          PersianMonths.Farvardin 1400) == Monday)
   , MkRuntimeCase "Persian week one starts on Saturday"
       (dayOfWeek
         (IotaTime.Calendar.Persian.fromWeekDate
-          1 PersianWeekdays.Saturday 1400) ==
-        PersianWeekdays.Saturday)
+          1 Saturday 1400) ==
+        Saturday)
   , MkRuntimeCase "Persian CalendarDateTime accepts mixed periods"
       (pymd (datePart mixedPersianResult) ==
         (1400, PersianMonths.Aban, 1) &&

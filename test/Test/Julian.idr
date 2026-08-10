@@ -66,20 +66,20 @@ julianCases =
       (jymd (applyPeriod (years 1) (IotaTime.Calendar.Julian.calendarDate 29 JulianMonths.February 1900)) ==
         (1901, JulianMonths.February, 28))
   , MkRuntimeCase "Julian epoch begins on Tuesday"
-      (dayOfWeek (IotaTime.Calendar.Julian.fromDays 0) == JulianWeekdays.Tuesday)
+      (dayOfWeek (IotaTime.Calendar.Julian.fromDays 0) == Tuesday)
   , MkRuntimeCase "third Julian Monday of January 2000"
-      (jymd (IotaTime.Calendar.Julian.fromNthDay Third JulianWeekdays.Monday JulianMonths.January 2000) ==
+      (jymd (IotaTime.Calendar.Julian.fromNthDay Third Monday JulianMonths.January 2000) ==
         (2000, JulianMonths.January, 18))
   , MkRuntimeCase "dynamic absent fifth Julian weekday is rejected"
-      (isLeft (IotaTime.Calendar.Julian.refineNthDay Fifth JulianWeekdays.Monday
+      (isLeft (IotaTime.Calendar.Julian.refineNthDay Fifth Monday
         JulianMonths.February 2001))
   , MkRuntimeCase "Julian week one starts on Sunday"
       (jymd (IotaTime.Calendar.Julian.fromWeekDate
-        1 JulianWeekdays.Sunday 2000) ==
+        1 Sunday 2000) ==
         (1999, JulianMonths.December, 27))
   , MkRuntimeCase "Julian week dates reject days before the supported range"
       (isLeft (IotaTime.Calendar.Julian.refineWeekDate
-        (-1000000) JulianWeekdays.Sunday 2000))
+        (-1000000) Sunday 2000))
   , MkRuntimeCase "Julian CalendarDateTime accepts mixed periods"
      (jymd (datePart mixedJulianResult) == (1900, JulianMonths.March, 1) &&
       timeComponents (localTimeOfDay mixedJulianResult) == (1, 30, 0, 0))

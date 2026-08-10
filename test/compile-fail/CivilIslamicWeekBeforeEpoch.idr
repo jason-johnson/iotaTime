@@ -5,4 +5,4 @@ import IotaTime
 
 invalid : CalendarDate CivilIslamicBcl
 invalid = IotaTime.Calendar.Islamic.civilFromWeekDate
-  (-1000000) IslamicWeekdays.Saturday 1443
+  (-1000000) Saturday 1443

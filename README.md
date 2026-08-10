@@ -488,7 +488,7 @@ isoNewYear = IotaTime.Calendar.Iso.fromWeekDate 1 Monday 2020
 
 `CalendarDate Julian` uses the proleptic every-fourth-year leap rule from the Julian calendar's introduction on January 1, astronomical year -44 (45 BC). Earlier dates and flat days before `-746631` are rejected. Its calendar-local flat day zero is March 1, 2000 Julian.
 
-Julian components are nominally distinct from Gregorian components. Use `JulianMonth` and `JulianDayOfWeek` as their types, with constructors qualified through `JulianMonths` and `JulianWeekdays`:
+Julian months are nominally distinct from Gregorian months, while every calendar uses the shared `DayOfWeek` type. Qualify Julian month constructors through `JulianMonths` and use the shared weekday constructors directly:
 
 ```idris
 leapDay : CalendarDate Julian
@@ -497,7 +497,7 @@ leapDay = IotaTime.Calendar.Julian.calendarDate
 
 thirdMonday : CalendarDate Julian
 thirdMonday = IotaTime.Calendar.Julian.fromNthDay
-	Third JulianWeekdays.Monday JulianMonths.January 2000
+	Third Monday JulianMonths.January 2000
 ```
 
 The public Julian operations mirror the proof-carrying Gregorian boundary:

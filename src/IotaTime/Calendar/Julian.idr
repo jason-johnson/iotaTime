@@ -44,30 +44,6 @@ namespace JulianMonths
 
   %runElab derive `{JulianMonth} [Show]
 
-namespace JulianWeekdays
-  public export
-  data JulianDayOfWeek = Sunday | Monday | Tuesday | Wednesday | Thursday | Friday | Saturday
-
-  public export
-  weekdayNumber : JulianDayOfWeek -> Integer
-  weekdayNumber Sunday = 0
-  weekdayNumber Monday = 1
-  weekdayNumber Tuesday = 2
-  weekdayNumber Wednesday = 3
-  weekdayNumber Thursday = 4
-  weekdayNumber Friday = 5
-  weekdayNumber Saturday = 6
-
-  public export
-  Eq JulianDayOfWeek where
-    left == right = weekdayNumber left == weekdayNumber right
-
-  public export
-  Ord JulianDayOfWeek where
-    compare left right = compare (weekdayNumber left) (weekdayNumber right)
-
-  %runElab derive `{JulianDayOfWeek} [Show]
-
 monthFromNumber : Integer -> JulianMonth
 monthFromNumber 1 = JulianMonths.January
 monthFromNumber 2 = JulianMonths.February
@@ -81,16 +57,6 @@ monthFromNumber 9 = JulianMonths.September
 monthFromNumber 10 = JulianMonths.October
 monthFromNumber 11 = JulianMonths.November
 monthFromNumber _ = JulianMonths.December
-
-weekdayFromNumber : Integer -> JulianDayOfWeek
-weekdayFromNumber value = case value `mod` 7 of
-  0 => JulianWeekdays.Sunday
-  1 => JulianWeekdays.Monday
-  2 => JulianWeekdays.Tuesday
-  3 => JulianWeekdays.Wednesday
-  4 => JulianWeekdays.Thursday
-  5 => JulianWeekdays.Friday
-  _ => JulianWeekdays.Saturday
 
 export
 record JulianDate where
@@ -202,29 +168,28 @@ applyJulianPeriod period =
   . shiftJulianMonths (periodMonths period)
   . shiftJulianYears (periodYears period)
 
-julianDayOfWeek : JulianDate -> JulianDayOfWeek
+julianDayOfWeek : JulianDate -> DayOfWeek
 julianDayOfWeek date = weekdayFromNumber (date.daysSinceEpoch + 2)
 
-nextJulian : Integer -> JulianDayOfWeek -> JulianDate -> JulianDate
+nextJulian : Integer -> DayOfWeek -> JulianDate -> JulianDate
 nextJulian count target date =
-  let current = JulianWeekdays.weekdayNumber (julianDayOfWeek date)
-      wanted = JulianWeekdays.weekdayNumber target
+  let current = weekdayNumber (julianDayOfWeek date)
+      wanted = weekdayNumber target
       weeks = if wanted > current then count - 1 else count
   in makeJulianDate (date.daysSinceEpoch + 7 * weeks + wanted - current)
 
-previousJulian : Integer -> JulianDayOfWeek -> JulianDate -> JulianDate
+previousJulian : Integer -> DayOfWeek -> JulianDate -> JulianDate
 previousJulian count target date =
-  let current = JulianWeekdays.weekdayNumber (julianDayOfWeek date)
-      wanted = JulianWeekdays.weekdayNumber target
+  let current = weekdayNumber (julianDayOfWeek date)
+      wanted = weekdayNumber target
       weeks = if wanted < current then count - 1 else count
-     in makeJulianDate
-       (date.daysSinceEpoch - (7 * weeks + current - wanted))
+  in makeJulianDate
+    (date.daysSinceEpoch - (7 * weeks + current - wanted))
 
 public export
 Calendar Julian where
   DateRep = JulianDate
   MonthRep _ = JulianMonth
-  WeekdayRep = JulianDayOfWeek
 
   isValidDays = (>= epochDay)
   fromDays days @{valid} = checkedJulianDate days valid
@@ -265,7 +230,6 @@ ApplyPeriod JulianDate where
 public export
 CalendarValue JulianDate where
   CalendarMonth _ = JulianMonth
-  CalendarWeekday = JulianDayOfWeek
   calendarValueToDays = toDaysFor {calendar = Julian}
   calendarValueYear = yearFor {calendar = Julian}
   calendarValueMonthDay = toYmd {calendar = Julian}
@@ -273,7 +237,7 @@ CalendarValue JulianDate where
   calendarValueBetweenWith = betweenWithFor {calendar = Julian}
 
 public export
-CalendarNavigation JulianDayOfWeek JulianDate where
+CalendarNavigation JulianDate where
   calendarValueNext = nextFor {calendar = Julian}
   calendarValuePrevious = previousFor {calendar = Julian}
 
@@ -291,8 +255,8 @@ public export
 data JulianDateError
   = InvalidJulianDate DayOfMonth JulianMonth Year
   | InvalidJulianDayCount Integer
-  | InvalidJulianNthDay DayNth JulianDayOfWeek JulianMonth Year
-  | InvalidJulianWeekDate WeekNumber JulianDayOfWeek Year
+  | InvalidJulianNthDay DayNth DayOfWeek JulianMonth Year
+  | InvalidJulianWeekDate WeekNumber DayOfWeek Year
 
 ||| Validate runtime day, month, and year components as a Julian date.
 public export
@@ -318,24 +282,23 @@ refineDays days = case choose
   Left valid => Right (fromDays days @{valid})
   Right _ => Left (InvalidJulianDayCount days)
 
-nthJulianDayOfMonth : DayNth -> JulianDayOfWeek -> JulianMonth -> Year -> DayOfMonth
+nthJulianDayOfMonth : DayNth -> DayOfWeek -> JulianMonth -> Year -> DayOfMonth
 nthJulianDayOfMonth nth target valueMonth valueYear =
   let monthLength = maxDaysInMonth valueMonth valueYear
       firstDate = makeJulianDate (daysFromJulianCivil valueYear valueMonth 1)
       firstOffset =
-        (JulianWeekdays.weekdayNumber target -
-         JulianWeekdays.weekdayNumber (julianDayOfWeek firstDate))
+        (weekdayNumber target - weekdayNumber (julianDayOfWeek firstDate))
            `mod` daysPerWeek
       lastDate = makeJulianDate (daysFromJulianCivil valueYear valueMonth monthLength)
       lastOffset =
-        (JulianWeekdays.weekdayNumber (julianDayOfWeek lastDate) -
-         JulianWeekdays.weekdayNumber target) `mod` daysPerWeek
+        (weekdayNumber (julianDayOfWeek lastDate) - weekdayNumber target)
+          `mod` daysPerWeek
       dayNumber = nthWeekdayDayNumber nth (dayOfMonthValue monthLength)
         firstOffset lastOffset
    in dayOfMonthFromInteger dayNumber
 
 public export
-isValidNthDay : DayNth -> JulianDayOfWeek -> JulianMonth -> Year -> Bool
+isValidNthDay : DayNth -> DayOfWeek -> JulianMonth -> Year -> Bool
 isValidNthDay nth target valueMonth valueYear =
   if yearValue valueYear > -44
     then case nth of
@@ -347,7 +310,7 @@ isValidNthDay nth target valueMonth valueYear =
 
 ||| Construct the nth requested weekday in a Julian month.
 public export
-fromNthDay : (nth : DayNth) -> (target : JulianDayOfWeek) ->
+fromNthDay : (nth : DayNth) -> (target : DayOfWeek) ->
                    (valueMonth : JulianMonth) -> (valueYear : Year) ->
                    {auto 0 valid : So
                      (isValidNthDay nth target valueMonth valueYear)} ->
@@ -359,23 +322,23 @@ fromNthDay nth target valueMonth valueYear =
 
 ||| Validate an nth-weekday request for a Julian month.
 public export
-refineNthDay : DayNth -> JulianDayOfWeek -> JulianMonth -> Year ->
+refineNthDay : DayNth -> DayOfWeek -> JulianMonth -> Year ->
                      Either JulianDateError (CalendarDate Julian)
 refineNthDay nth target valueMonth valueYear =
   case choose (isValidNthDay nth target valueMonth valueYear) of
     Left valid => Right (fromNthDay nth target valueMonth valueYear @{valid})
     Right _ => Left (InvalidJulianNthDay nth target valueMonth valueYear)
 
-weekDateDays : WeekNumber -> JulianDayOfWeek -> Year -> Integer
+weekDateDays : WeekNumber -> DayOfWeek -> Year -> Integer
 weekDateDays week target valueYear =
   let firstDay = daysFromJulianCivil valueYear JulianMonths.January 1
       firstWeekStart = firstDay -
-        JulianWeekdays.weekdayNumber (julianDayOfWeek (makeJulianDate firstDay))
+        weekdayNumber (julianDayOfWeek (makeJulianDate firstDay))
    in firstWeekStart + 7 * (weekNumberValue week - 1) +
-      JulianWeekdays.weekdayNumber target
+      weekdayNumber target
 
 public export
-isValidWeekDate : WeekNumber -> JulianDayOfWeek -> Year -> Bool
+isValidWeekDate : WeekNumber -> DayOfWeek -> Year -> Bool
 isValidWeekDate week target valueYear =
   (yearValue valueYear > -44 && weekNumberValue week >= 0) ||
     IotaTime.Calendar.isValidDays {calendar = Julian}
@@ -383,7 +346,7 @@ isValidWeekDate week target valueYear =
 
 ||| Construct a Julian Sunday-based week date under static validity evidence.
 public export
-fromWeekDate : (week : WeekNumber) -> (target : JulianDayOfWeek) ->
+fromWeekDate : (week : WeekNumber) -> (target : DayOfWeek) ->
                (valueYear : Year) ->
                {auto 0 valid : So (isValidWeekDate week target valueYear)} ->
                CalendarDate Julian
@@ -392,7 +355,7 @@ fromWeekDate week target valueYear =
 
 ||| Validate a runtime Julian Sunday-based week date.
 public export
-refineWeekDate : WeekNumber -> JulianDayOfWeek -> Year ->
+refineWeekDate : WeekNumber -> DayOfWeek -> Year ->
                  Either JulianDateError (CalendarDate Julian)
 refineWeekDate week target valueYear =
   case choose (isValidWeekDate week target valueYear) of

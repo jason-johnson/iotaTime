@@ -100,24 +100,24 @@ hebrewCases =
       (toDays civilNisan == toDays scripturalNisan)
   , MkRuntimeCase "1 Tishri 5784 is Saturday"
       (dayOfWeek
-        (IotaTime.Calendar.Hebrew.calendarDate 1 5784 HebrewMonths.Tishri) == HebrewWeekdays.Saturday)
+        (IotaTime.Calendar.Hebrew.calendarDate 1 5784 HebrewMonths.Tishri) == Saturday)
   , MkRuntimeCase "third Monday of Tishri 5784 is day 17"
-      (hymd (IotaTime.Calendar.Hebrew.fromNthDay Third HebrewWeekdays.Monday 5784 HebrewMonths.Tishri) ==
+      (hymd (IotaTime.Calendar.Hebrew.fromNthDay Third Monday 5784 HebrewMonths.Tishri) ==
         (5784, TishriName, 17))
   , MkRuntimeCase "dynamic absent fifth Hebrew weekday is rejected"
-      (isLeft (IotaTime.Calendar.Hebrew.refineNthDay Fifth HebrewWeekdays.Monday 5784 TishriName))
+      (isLeft (IotaTime.Calendar.Hebrew.refineNthDay Fifth Monday 5784 TishriName))
   , MkRuntimeCase "Hebrew week one begins on the preceding Sunday"
       (hymd (IotaTime.Calendar.Hebrew.fromWeekDate
-        1 HebrewWeekdays.Sunday 5784) ==
+        1 Sunday 5784) ==
         (5783, ElulName, 24))
   , MkRuntimeCase "dynamic Hebrew week date is accepted"
       (case IotaTime.Calendar.Hebrew.refineWeekDate
-        1 HebrewWeekdays.Sunday 5784 of
+        1 Sunday 5784 of
         Left _ => False
         Right date => hymd date == (5783, ElulName, 24))
   , MkRuntimeCase "Hebrew week dates reject days before the epoch"
       (isLeft (IotaTime.Calendar.Hebrew.refineWeekDate
-        (-1000000) HebrewWeekdays.Sunday 5784))
+        (-1000000) Sunday 5784))
   , MkRuntimeCase "Hebrew CalendarDateTime accepts mixed periods"
       (hymd (datePart mixedHebrewResult) == (5786, NisanName, 1) &&
        timeComponents (localTimeOfDay mixedHebrewResult) == (1, 30, 0, 0))

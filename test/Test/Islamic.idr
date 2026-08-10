@@ -136,19 +136,19 @@ islamicCases =
   , MkRuntimeCase "Islamic epoch weekday is Thursday"
       (dayOfWeek
         (IotaTime.Calendar.Islamic.calendarDate' {pattern = Base16}
-          1 IslamicMonths.Muharram 1) == IslamicWeekdays.Thursday)
+          1 IslamicMonths.Muharram 1) == Thursday)
   , MkRuntimeCase "first Monday of Muharram 1443"
       (dayOfWeek
-        (IotaTime.Calendar.Islamic.fromNthDay First IslamicWeekdays.Monday
-          IslamicMonths.Muharram 1443) == IslamicWeekdays.Monday)
+        (IotaTime.Calendar.Islamic.fromNthDay First Monday
+          IslamicMonths.Muharram 1443) == Monday)
   , MkRuntimeCase "Islamic week one starts on Saturday"
       (dayOfWeek
         (IotaTime.Calendar.Islamic.fromWeekDate
-          1 IslamicWeekdays.Saturday 1443) ==
-        IslamicWeekdays.Saturday)
+          1 Saturday 1443) ==
+        Saturday)
   , MkRuntimeCase "Islamic week dates reject days before the epoch"
       (isLeft (IotaTime.Calendar.Islamic.refineWeekDate
-        (-1000000) IslamicWeekdays.Saturday 1443))
+        (-1000000) Saturday 1443))
   , MkRuntimeCase "Islamic CalendarDateTime accepts mixed periods"
       (iymd (datePart mixedIslamicResult) ==
         (1443, IslamicMonths.Muharram, 1) &&
@@ -175,7 +175,7 @@ islamicCases =
   , MkRuntimeCase "civil epoch weekday is Friday"
       (dayOfWeek
         (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1) ==
-          IslamicWeekdays.Friday)
+          Friday)
   , MkRuntimeCase "civil date show names its constructor"
       (show (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1) ==
         "civilCalendarDate' 1 Muharram 1")
@@ -191,15 +191,15 @@ islamicCases =
           (1, IslamicMonths.Muharram, 1))
   , MkRuntimeCase "civil nth-weekday construction uses civil weekdays"
       (dayOfWeek
-        (IotaTime.Calendar.Islamic.civilFromNthDay First IslamicWeekdays.Monday
-          IslamicMonths.Muharram 1443) == IslamicWeekdays.Monday)
+        (IotaTime.Calendar.Islamic.civilFromNthDay First Monday
+          IslamicMonths.Muharram 1443) == Monday)
   , MkRuntimeCase "civil week one starts on Saturday"
       (dayOfWeek
-        (civilFromWeekDate 1 IslamicWeekdays.Saturday 1443) ==
-          IslamicWeekdays.Saturday)
+        (civilFromWeekDate 1 Saturday 1443) ==
+          Saturday)
   , MkRuntimeCase "civil Islamic week dates reject days before the epoch"
       (isLeft (refineCivilWeekDate
-        (-1000000) IslamicWeekdays.Saturday 1443))
+        (-1000000) Saturday 1443))
   , MkRuntimeCase "civil day-count refinement rejects astronomical epoch"
       (case IotaTime.Calendar.Islamic.refineCivilDays (-503166) of
         Left (InvalidIslamicDayCount (-503166)) => True

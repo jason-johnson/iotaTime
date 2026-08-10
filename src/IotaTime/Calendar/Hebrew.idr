@@ -430,6 +430,13 @@ checkedHebrewDate {numbering} days valid with
   checkedHebrewDate days valid | (valueYear ** (valueMonth, valueDay)) =
     MkHebrewDate days valueYear valueMonth valueDay valid canonical
 
+checkedHebrewDateDays : {numbering : HebrewNumbering} -> (days : Integer) ->
+                        (0 valid : So (days >= -2103607)) ->
+                        (checkedHebrewDate {numbering} days valid).daysSinceEpoch = days
+checkedHebrewDateDays {numbering} days valid with
+    (hebrewCivilFromDays {numbering} days)
+  checkedHebrewDateDays days valid | (_ ** (_, _)) = Refl
+
 fromHebrewDays : {numbering : HebrewNumbering} -> (days : Integer) ->
                  {auto 0 valid : So (days >= -2103607)} -> HebrewDate numbering
 fromHebrewDays days @{valid} = checkedHebrewDate days valid
@@ -563,7 +570,7 @@ public export
   fromDays = fromHebrewDays {numbering}
   toDaysFor date = date.daysSinceEpoch
   toDaysValid (MkHebrewDate _ _ _ _ valid _) = valid
-  toFromDays _ _ = Refl
+  toFromDays = checkedHebrewDateDays {numbering}
   fromToDays (MkHebrewDate _ _ _ _ _ Refl) = Refl
   calendarName = "Hebrew"
 

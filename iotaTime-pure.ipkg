@@ -15,6 +15,7 @@ depends = contrib, elab-util
 sourcedir = "src"
 
 modules = IotaTime.Duration,
+		  IotaTime.Internal.Normalization,
 		  IotaTime.Instant,
 		  IotaTime.Interval,
 		  IotaTime.Offset,

@@ -1,6 +1,7 @@
 module IotaTime.Calendar.Hebrew
 
 import IotaTime.Calendar
+import IotaTime.Internal.Normalization
 import IotaTime.Period
 import Data.So
 
@@ -401,13 +402,12 @@ export
 record HebrewDate (numbering : HebrewNumbering) where
   constructor MkHebrewDate
   daysSinceEpoch : Integer
-  dateYear : Year
-  dateMonth : HebrewMonth numbering dateYear
-  dateDay : DayOfMonth
   0 validDays : So (daysSinceEpoch >= -2103607)
-  0 canonicalDate :
-    hebrewCivilFromDays {numbering} daysSinceEpoch =
-      (dateYear ** (dateMonth, dateDay))
+
+hebrewDateParts : {numbering : HebrewNumbering} -> HebrewDate numbering ->
+  (valueYear : Year ** (HebrewMonth numbering valueYear, DayOfMonth))
+hebrewDateParts {numbering} date =
+  normalizationBarrier (hebrewCivilFromDays {numbering}) date.daysSinceEpoch
 
 public export
 Eq (HebrewDate numbering) where
@@ -418,24 +418,15 @@ Ord (HebrewDate numbering) where
   compare left right = compare left.daysSinceEpoch right.daysSinceEpoch
 
 public export
-Show (HebrewDate numbering) where
-  show (MkHebrewDate _ valueYear valueMonth valueDay _ _) =
-    "calendarDate' " ++ show valueDay ++ " " ++
-    show valueYear ++ " " ++ HebrewMonths.showMonth valueMonth
+{numbering : HebrewNumbering} -> Show (HebrewDate numbering) where
+  show date = case hebrewDateParts date of
+    (valueYear ** (valueMonth, valueDay)) =>
+      "calendarDate' " ++ show valueDay ++ " " ++
+      show valueYear ++ " " ++ HebrewMonths.showMonth valueMonth
 
 checkedHebrewDate : {numbering : HebrewNumbering} -> (days : Integer) ->
                     (0 valid : So (days >= -2103607)) -> HebrewDate numbering
-checkedHebrewDate {numbering} days valid with
-    (hebrewCivilFromDays {numbering} days) proof canonical
-  checkedHebrewDate days valid | (valueYear ** (valueMonth, valueDay)) =
-    MkHebrewDate days valueYear valueMonth valueDay valid canonical
-
-checkedHebrewDateDays : {numbering : HebrewNumbering} -> (days : Integer) ->
-                        (0 valid : So (days >= -2103607)) ->
-                        (checkedHebrewDate {numbering} days valid).daysSinceEpoch = days
-checkedHebrewDateDays {numbering} days valid with
-    (hebrewCivilFromDays {numbering} days)
-  checkedHebrewDateDays days valid | (_ ** (_, _)) = Refl
+checkedHebrewDate days valid = MkHebrewDate days valid
 
 fromHebrewDays : {numbering : HebrewNumbering} -> (days : Integer) ->
                  {auto 0 valid : So (days >= -2103607)} -> HebrewDate numbering
@@ -511,22 +502,24 @@ addHebrewMonths valueYear index amount =
 
 shiftHebrewMonths : {numbering : HebrewNumbering} ->
                     Integer -> HebrewDate numbering -> HebrewDate numbering
-shiftHebrewMonths amount date =
-  let (targetYear, targetIndex) = addHebrewMonths date.dateYear
-        (HebrewMonths.calendarIndex date.dateMonth) amount
-      targetMonth = monthFromCalendarIndex {numbering} targetYear targetIndex
-      targetDay = min date.dateDay (maxDaysInMonth targetMonth)
-   in makeHebrewDate (hebrewYearMonthDayToDays targetYear targetMonth targetDay)
+shiftHebrewMonths amount date = case hebrewDateParts date of
+  (valueYear ** (valueMonth, valueDay)) =>
+    let (targetYear, targetIndex) = addHebrewMonths valueYear
+          (HebrewMonths.calendarIndex valueMonth) amount
+        targetMonth = monthFromCalendarIndex {numbering} targetYear targetIndex
+        targetDay = min valueDay (maxDaysInMonth targetMonth)
+     in makeHebrewDate (hebrewYearMonthDayToDays targetYear targetMonth targetDay)
 
 shiftHebrewYears : {numbering : HebrewNumbering} ->
                    Integer -> HebrewDate numbering -> HebrewDate numbering
-shiftHebrewYears amount date =
-  let targetYear = yearFromInteger (max 1 (yearValue date.dateYear + amount))
-      sourceIndex = HebrewMonths.calendarIndex date.dateMonth
-      targetIndex = if sourceIndex == 5 && not (isLeapYear targetYear) then 6 else sourceIndex
-      targetMonth = monthFromCalendarIndex {numbering} targetYear targetIndex
-      targetDay = min date.dateDay (maxDaysInMonth targetMonth)
-   in makeHebrewDate (hebrewYearMonthDayToDays targetYear targetMonth targetDay)
+shiftHebrewYears amount date = case hebrewDateParts date of
+  (valueYear ** (valueMonth, valueDay)) =>
+    let targetYear = yearFromInteger (max 1 (yearValue valueYear + amount))
+        sourceIndex = HebrewMonths.calendarIndex valueMonth
+        targetIndex = if sourceIndex == 5 && not (isLeapYear targetYear) then 6 else sourceIndex
+        targetMonth = monthFromCalendarIndex {numbering} targetYear targetIndex
+        targetDay = min valueDay (maxDaysInMonth targetMonth)
+     in makeHebrewDate (hebrewYearMonthDayToDays targetYear targetMonth targetDay)
 
 applyHebrewPeriod : {numbering : HebrewNumbering} ->
                     Period target -> HebrewDate numbering -> HebrewDate numbering
@@ -569,15 +562,15 @@ public export
   isValidDays = (>= epochDay)
   fromDays = fromHebrewDays {numbering}
   toDaysFor date = date.daysSinceEpoch
-  toDaysValid (MkHebrewDate _ _ _ _ valid _) = valid
-  toFromDays = checkedHebrewDateDays {numbering}
-  fromToDays (MkHebrewDate _ _ _ _ _ Refl) = Refl
+  toDaysValid (MkHebrewDate _ valid) = valid
+  toFromDays _ _ = Refl
+  fromToDays (MkHebrewDate _ _) = Refl
   calendarName = "Hebrew"
 
-  year' = dateYear
-  toYmd date = (date.dateMonth, date.dateDay)
-  day' = dateDay
-  month' = dateMonth
+  year' date = fst (hebrewDateParts date)
+  toYmd date = snd (hebrewDateParts date)
+  day' date = snd (snd (hebrewDateParts date))
+  month' date = fst (snd (hebrewDateParts date))
 
   applyCalendarPeriod' = applyHebrewPeriod
   shiftCalendarDays' = shiftHebrewDays

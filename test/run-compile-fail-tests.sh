@@ -12,7 +12,8 @@ for fixture in "$fixture_dir"/*.idr; do
     exit 1
   fi
 
-  output="$(cd "$fixture_dir" && idris2 --package iotaTime --check "$(basename "$fixture")" 2>&1)" && succeeded=true || succeeded=false
+  output="$(cd "$fixture_dir" && idris2 --package contrib --package elab-util \
+    --package iotaTime --check "$(basename "$fixture")" 2>&1)" && succeeded=true || succeeded=false
   if [ "$succeeded" = true ]; then
     echo "Expected compilation to fail: $fixture" >&2
     exit 1

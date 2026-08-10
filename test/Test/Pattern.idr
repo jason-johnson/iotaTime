@@ -33,9 +33,10 @@ isTrailingInputAt _ _ = False
 
 parsesAs : Pattern DateFields (CalendarDate Gregorian) -> String ->
            CalendarDate Gregorian -> Bool
-parsesAs pattern source expected = case IotaTime.Pattern.parse pattern source of
-  Left _ => False
+parsesAs pattern source expected = case IotaTime.Pattern.parse pattern source of {
+    Left _ => False;
     Right actual => toBridgeDays actual == toBridgeDays expected
+}
 
 unpadded : Pattern DateFields (CalendarDate Gregorian)
 unpadded = ((pyear {calendar = Gregorian} 1 <% char '-') <+>

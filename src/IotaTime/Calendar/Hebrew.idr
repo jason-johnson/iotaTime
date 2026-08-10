@@ -571,7 +571,7 @@ public export
   toDaysFor date = date.daysSinceEpoch
   toDaysValid (MkHebrewDate _ _ _ _ valid _) = valid
   toFromDays = checkedHebrewDateDays {numbering}
-  fromToDays (MkHebrewDate _ _ _ _ _ Refl) = Refl
+  fromToDays (MkHebrewDate _ _ _ _ _ canonical) = case canonical of Refl => Refl
   calendarName = "Hebrew"
 
   year' = dateYear

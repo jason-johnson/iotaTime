@@ -221,17 +221,13 @@ gregorianDayOfWeek date = weekdayFromNumber (date.daysSinceEpoch + 3)
 
 nextGregorian : Integer -> DayOfWeek -> GregorianDate -> GregorianDate
 nextGregorian count target date =
-  let current = weekdayNumber (gregorianDayOfWeek date)
-      wanted = weekdayNumber target
-      weeks = if wanted > current then count - 1 else count
-  in makeGregorianDate (date.daysSinceEpoch + 7 * weeks + wanted - current)
+  makeGregorianDate (date.daysSinceEpoch +
+    nextWeekdayOffset count (gregorianDayOfWeek date) target)
 
 previousGregorian : Integer -> DayOfWeek -> GregorianDate -> GregorianDate
 previousGregorian count target date =
-  let current = weekdayNumber (gregorianDayOfWeek date)
-      wanted = weekdayNumber target
-      weeks = if wanted < current then count - 1 else count
-  in makeGregorianDate (date.daysSinceEpoch - (7 * weeks + current - wanted))
+  makeGregorianDate (date.daysSinceEpoch +
+    previousWeekdayOffset count (gregorianDayOfWeek date) target)
 
 public export
 Calendar Gregorian where

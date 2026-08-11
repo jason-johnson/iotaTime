@@ -354,24 +354,18 @@ nextIslamic : {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
               Integer -> DayOfWeek -> IslamicDate epoch pattern ->
               IslamicDate epoch pattern
 nextIslamic count target date =
-  let current = weekdayNumber (islamicDayOfWeek date)
-      wanted = weekdayNumber target
-      weeks = if wanted > current then count - 1 else count
-     in makeIslamicDate {epoch} {pattern}
-       (clampToIslamic {epoch}
-      (date.daysSinceEpoch + 7 * weeks + wanted - current))
+  makeIslamicDate {epoch} {pattern} (clampToIslamic {epoch}
+    (date.daysSinceEpoch +
+      nextWeekdayOffset count (islamicDayOfWeek date) target))
 
 previousIslamic : {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
                   KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
                   Integer -> DayOfWeek -> IslamicDate epoch pattern ->
                   IslamicDate epoch pattern
 previousIslamic count target date =
-  let current = weekdayNumber (islamicDayOfWeek date)
-      wanted = weekdayNumber target
-      weeks = if wanted < current then count - 1 else count
-     in makeIslamicDate {epoch} {pattern}
-       (clampToIslamic {epoch}
-      (date.daysSinceEpoch - (7 * weeks + current - wanted)))
+  makeIslamicDate {epoch} {pattern} (clampToIslamic {epoch}
+    (date.daysSinceEpoch +
+      previousWeekdayOffset count (islamicDayOfWeek date) target))
 
 public export
 {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->

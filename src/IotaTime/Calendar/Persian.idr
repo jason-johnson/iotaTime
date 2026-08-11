@@ -255,19 +255,13 @@ persianDayOfWeek date = weekdayFromDays date.daysSinceEpoch
 
 nextPersian : Integer -> DayOfWeek -> PersianDate -> PersianDate
 nextPersian count target date =
-  let current = weekdayNumber (persianDayOfWeek date)
-      wanted = weekdayNumber target
-      weeks = if wanted > current then count - 1 else count
-     in makePersianDate
-       (date.daysSinceEpoch + 7 * weeks + wanted - current)
+  makePersianDate (date.daysSinceEpoch +
+    nextWeekdayOffset count (persianDayOfWeek date) target)
 
 previousPersian : Integer -> DayOfWeek -> PersianDate -> PersianDate
 previousPersian count target date =
-  let current = weekdayNumber (persianDayOfWeek date)
-      wanted = weekdayNumber target
-      weeks = if wanted < current then count - 1 else count
-     in makePersianDate
-       (date.daysSinceEpoch - (7 * weeks + current - wanted))
+  makePersianDate (date.daysSinceEpoch +
+    previousWeekdayOffset count (persianDayOfWeek date) target)
 
 public export
 Calendar Persian where
@@ -715,21 +709,16 @@ nextArithmeticPersian : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Integer -> DayOfWeek ->
   ArithmeticPersianDate rule -> ArithmeticPersianDate rule
 nextArithmeticPersian {rule} count target date =
-  let current = weekdayNumber (arithmeticPersianDayOfWeek date)
-      wanted = weekdayNumber target
-      weeks = if wanted > current then count - 1 else count
-     in makeArithmeticPersianDate {rule}
-       (date.arithmeticDaysSinceEpoch + 7 * weeks + wanted - current)
+  makeArithmeticPersianDate {rule} (date.arithmeticDaysSinceEpoch +
+    nextWeekdayOffset count (arithmeticPersianDayOfWeek date) target)
 
 previousArithmeticPersian : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Integer -> DayOfWeek ->
   ArithmeticPersianDate rule -> ArithmeticPersianDate rule
 previousArithmeticPersian {rule} count target date =
-  let current = weekdayNumber (arithmeticPersianDayOfWeek date)
-      wanted = weekdayNumber target
-      weeks = if wanted < current then count - 1 else count
-     in makeArithmeticPersianDate {rule}
-       (date.arithmeticDaysSinceEpoch - (7 * weeks + current - wanted))
+  makeArithmeticPersianDate {rule} (date.arithmeticDaysSinceEpoch +
+    previousWeekdayOffset count
+      (arithmeticPersianDayOfWeek date) target)
 
 public export
 {rule : PersianArithmeticRule} -> KnownPersianArithmeticRule rule =>

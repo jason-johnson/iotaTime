@@ -25,6 +25,11 @@ weekdayNumber Thursday = 4
 weekdayNumber Friday = 5
 weekdayNumber Saturday = 6
 
+||| Number of days in the standard civil week modeled by iotaTime calendars.
+public export
+daysPerWeek : Integer
+daysPerWeek = 7
+
 ||| Convert an integer weekday position to the corresponding weekday,
 ||| wrapping values outside the standard zero-through-six range.
 public export
@@ -37,6 +42,24 @@ weekdayFromNumber value = case value `mod` 7 of
   4 => Thursday
   5 => Friday
   _ => Saturday
+
+||| Signed day offset to the requested following weekday occurrence.
+export
+nextWeekdayOffset : Integer -> DayOfWeek -> DayOfWeek -> Integer
+nextWeekdayOffset count current target =
+  let currentNumber = weekdayNumber current
+      targetNumber = weekdayNumber target
+      weeks = if targetNumber > currentNumber then count - 1 else count
+   in daysPerWeek * weeks + targetNumber - currentNumber
+
+||| Signed day offset to the requested preceding weekday occurrence.
+export
+previousWeekdayOffset : Integer -> DayOfWeek -> DayOfWeek -> Integer
+previousWeekdayOffset count current target =
+  let currentNumber = weekdayNumber current
+      targetNumber = weekdayNumber target
+      weeks = if targetNumber < currentNumber then count - 1 else count
+   in -(daysPerWeek * weeks + currentNumber - targetNumber)
 
 public export
 Eq DayOfWeek where
@@ -62,11 +85,6 @@ data DayNth
   | Fifth
 
 %runElab derive `{DayNth} [Eq, Show]
-
-||| Number of days in the standard civil week modeled by iotaTime calendars.
-public export
-daysPerWeek : Integer
-daysPerWeek = 7
 
 ||| Compute the raw day-of-month candidate for a weekday occurrence.
 ||| Calendar implementations remain responsible for validating the candidate

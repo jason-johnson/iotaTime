@@ -78,6 +78,15 @@ gregorianCases =
          weekdayFromNumber (weekdayNumber Saturday) == Saturday &&
          weekdayFromNumber 7 == Sunday &&
          weekdayFromNumber (-1) == Saturday)
+    , MkRuntimeCase "shared weekday navigation offsets preserve occurrence semantics"
+        (nextWeekdayOffset 1 Monday Monday == 7 &&
+         nextWeekdayOffset 1 Monday Tuesday == 1 &&
+         nextWeekdayOffset 0 Wednesday Monday == -2 &&
+         nextWeekdayOffset (-1) Wednesday Monday == -9 &&
+         previousWeekdayOffset 1 Monday Monday == -7 &&
+         previousWeekdayOffset 1 Wednesday Monday == -2 &&
+         previousWeekdayOffset 0 Monday Wednesday == 2 &&
+         previousWeekdayOffset (-1) Monday Wednesday == 9)
     , MkRuntimeCase "shared nth-weekday arithmetic covers every selector"
         (nthWeekdayDayNumber FourthToLast 31 2 3 == 7 &&
          nthWeekdayDayNumber ThirdToLast 31 2 3 == 14 &&

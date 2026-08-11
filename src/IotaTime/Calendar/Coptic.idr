@@ -186,19 +186,13 @@ copticDayOfWeek date = copticWeekdayFromDays date.daysSinceEpoch
 
 nextCoptic : Integer -> DayOfWeek -> CopticDate -> CopticDate
 nextCoptic count target date =
-  let current = weekdayNumber (copticDayOfWeek date)
-      wanted = weekdayNumber target
-      weeks = if wanted > current then count - 1 else count
-  in makeCopticDate
-    (date.daysSinceEpoch + 7 * weeks + wanted - current)
+  makeCopticDate (date.daysSinceEpoch +
+    nextWeekdayOffset count (copticDayOfWeek date) target)
 
 previousCoptic : Integer -> DayOfWeek -> CopticDate -> CopticDate
 previousCoptic count target date =
-  let current = weekdayNumber (copticDayOfWeek date)
-      wanted = weekdayNumber target
-      weeks = if wanted < current then count - 1 else count
-  in makeCopticDate
-    (date.daysSinceEpoch - (7 * weeks + current - wanted))
+  makeCopticDate (date.daysSinceEpoch +
+    previousWeekdayOffset count (copticDayOfWeek date) target)
 
 public export
 Calendar Coptic where

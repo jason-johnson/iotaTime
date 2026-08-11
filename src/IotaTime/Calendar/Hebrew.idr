@@ -487,21 +487,15 @@ nextHebrew : {numbering : HebrewNumbering} ->
              Integer -> DayOfWeek ->
              HebrewDate numbering -> HebrewDate numbering
 nextHebrew count target date =
-  let current = weekdayNumber (hebrewDayOfWeek date)
-      wanted = weekdayNumber target
-      weeks = if wanted > current then count - 1 else count
-   in makeHebrewDate
-        (clampToHebrew (date.daysSinceEpoch + 7 * weeks + wanted - current))
+  makeHebrewDate (clampToHebrew (date.daysSinceEpoch +
+    nextWeekdayOffset count (hebrewDayOfWeek date) target))
 
 previousHebrew : {numbering : HebrewNumbering} ->
                  Integer -> DayOfWeek ->
                  HebrewDate numbering -> HebrewDate numbering
 previousHebrew count target date =
-  let current = weekdayNumber (hebrewDayOfWeek date)
-      wanted = weekdayNumber target
-      weeks = if wanted < current then count - 1 else count
-   in makeHebrewDate
-        (clampToHebrew (date.daysSinceEpoch - (7 * weeks + current - wanted)))
+  makeHebrewDate (clampToHebrew (date.daysSinceEpoch +
+    previousWeekdayOffset count (hebrewDayOfWeek date) target))
 
 public export
 {numbering : HebrewNumbering} -> KnownHebrewNumbering numbering =>

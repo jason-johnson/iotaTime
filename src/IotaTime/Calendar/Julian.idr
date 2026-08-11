@@ -173,18 +173,13 @@ julianDayOfWeek date = weekdayFromNumber (date.daysSinceEpoch + 2)
 
 nextJulian : Integer -> DayOfWeek -> JulianDate -> JulianDate
 nextJulian count target date =
-  let current = weekdayNumber (julianDayOfWeek date)
-      wanted = weekdayNumber target
-      weeks = if wanted > current then count - 1 else count
-  in makeJulianDate (date.daysSinceEpoch + 7 * weeks + wanted - current)
+  makeJulianDate (date.daysSinceEpoch +
+    nextWeekdayOffset count (julianDayOfWeek date) target)
 
 previousJulian : Integer -> DayOfWeek -> JulianDate -> JulianDate
 previousJulian count target date =
-  let current = weekdayNumber (julianDayOfWeek date)
-      wanted = weekdayNumber target
-      weeks = if wanted < current then count - 1 else count
-  in makeJulianDate
-    (date.daysSinceEpoch - (7 * weeks + current - wanted))
+  makeJulianDate (date.daysSinceEpoch +
+    previousWeekdayOffset count (julianDayOfWeek date) target)
 
 public export
 Calendar Julian where

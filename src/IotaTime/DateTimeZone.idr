@@ -291,17 +291,8 @@ isGregorianLeapYear year =
 
 gregorianYearFromDays : Integer -> Integer
 gregorianYearFromDays days =
-  let shifted = days + 730485
-   in let era = shifted `div` 146097
-     in let dayOfEra = shifted - era * 146097
-       in let yearOfEra = (dayOfEra - dayOfEra `div` 1460 +
-            dayOfEra `div` 36524 - dayOfEra `div` 146096) `div` 365
-         in let partialYear = yearOfEra + era * 400
-           in let dayOfYear = dayOfEra - (365 * yearOfEra +
-                yearOfEra `div` 4 - yearOfEra `div` 100)
-             in let shiftedMonth = (5 * dayOfYear + 2) `div` 153
-               in let month = shiftedMonth + if shiftedMonth < 10 then 3 else -9
-                 in partialYear + if month <= 2 then 1 else 0
+  let (year, _, _) = gregorianCivilFromDays days
+   in year
 
 daysInGregorianMonth : Integer -> Integer -> Integer
 daysInGregorianMonth year 2 = if isGregorianLeapYear year then 29 else 28

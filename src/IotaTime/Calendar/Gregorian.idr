@@ -119,19 +119,10 @@ daysFromCivil valueYear valueMonth valueDay =
 
 civilFromDays : Integer -> (Year, Month, DayOfMonth)
 civilFromDays value =
-  let shifted = value + 730485
-      era = shifted `div` 146097
-      dayOfEra = shifted - era * 146097
-      yearOfEra =
-        (dayOfEra - dayOfEra `div` 1460 + dayOfEra `div` 36524 - dayOfEra `div` 146096)
-          `div` 365
-      partialYear = yearOfEra + era * 400
-      dayOfYear = dayOfEra - (365 * yearOfEra + yearOfEra `div` 4 - yearOfEra `div` 100)
-      shiftedMonth = (5 * dayOfYear + 2) `div` 153
-      valueDay = dayOfYear - (153 * shiftedMonth + 2) `div` 5 + 1
-      monthValue = shiftedMonth + if shiftedMonth < 10 then 3 else -9
-      valueYear = partialYear + if monthValue <= 2 then 1 else 0
-  in (yearFromInteger valueYear, monthFromNumber monthValue, dayOfMonthFromInteger valueDay)
+  let (valueYear, valueMonth, valueDay) = gregorianCivilFromDays value
+   in (yearFromInteger valueYear,
+       monthFromNumber valueMonth,
+       dayOfMonthFromInteger valueDay)
 
 ||| The Gregorian calendar epoch day relative to March 1, 2000.
 public export

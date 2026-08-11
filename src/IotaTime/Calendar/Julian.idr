@@ -162,11 +162,8 @@ shiftJulianYears amount date =
   in makeJulianDate (daysFromJulianCivil targetYear valueMonth targetDay)
 
 applyJulianPeriod : Period target -> JulianDate -> JulianDate
-applyJulianPeriod period =
-    shiftJulianDays (periodDays period)
-  . shiftJulianDays (7 * periodWeeks period)
-  . shiftJulianMonths (periodMonths period)
-  . shiftJulianYears (periodYears period)
+applyJulianPeriod = applyDatePeriodWith
+  shiftJulianYears shiftJulianMonths shiftJulianDays
 
 julianDayOfWeek : JulianDate -> DayOfWeek
 julianDayOfWeek date = weekdayFromNumber (date.daysSinceEpoch + 2)

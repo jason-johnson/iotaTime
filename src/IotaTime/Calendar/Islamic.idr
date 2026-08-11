@@ -340,11 +340,10 @@ shiftIslamicYears amount date =
 applyIslamicPeriod : {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
                      KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
                      Period target -> IslamicDate epoch pattern -> IslamicDate epoch pattern
-applyIslamicPeriod period =
-    shiftIslamicDays {epoch} {pattern} (periodDays period)
-  . shiftIslamicDays {epoch} {pattern} (7 * periodWeeks period)
-  . shiftIslamicMonths {epoch} {pattern} (periodMonths period)
-  . shiftIslamicYears {epoch} {pattern} (periodYears period)
+applyIslamicPeriod {epoch} {pattern} = applyDatePeriodWith
+  (shiftIslamicYears {epoch} {pattern})
+  (shiftIslamicMonths {epoch} {pattern})
+  (shiftIslamicDays {epoch} {pattern})
 
 islamicDayOfWeek : IslamicDate epoch pattern -> DayOfWeek
 islamicDayOfWeek date = islamicWeekdayFromDays date.daysSinceEpoch

@@ -10,6 +10,26 @@ ymd date = case yearMonthDay date of
 weekday : CalendarDate Gregorian -> DayOfWeek
 weekday date = dayOfWeek date
 
+record PeriodOrderProbe where
+    constructor MkPeriodOrderProbe
+    trace : String
+
+HasCalendar PeriodOrderProbe where
+    calendarCapability = ()
+
+shiftProbe : String -> Integer -> PeriodOrderProbe -> PeriodOrderProbe
+shiftProbe label amount probe =
+    { trace := probe.trace ++ label ++ show amount } probe
+
+probePeriod : Period PeriodOrderProbe
+probePeriod = years 1 <+> months 2 <+> weeks 3 <+> days 4
+
+periodOrderProbe : PeriodOrderProbe
+periodOrderProbe = applyDatePeriodWith
+    (shiftProbe "Y") (shiftProbe "M") (shiftProbe "D")
+    probePeriod
+    (MkPeriodOrderProbe "")
+
 secondTuesday : {date : Type} -> CalendarNavigation date => date -> date
 secondTuesday = next 2 Tuesday
 
@@ -87,6 +107,8 @@ gregorianCases =
          previousWeekdayOffset 1 Wednesday Monday == -2 &&
          previousWeekdayOffset 0 Monday Wednesday == 2 &&
          previousWeekdayOffset (-1) Monday Wednesday == 9)
+    , MkRuntimeCase "shared date-period application preserves component order"
+        (periodOrderProbe.trace == "Y1M2D21D4")
     , MkRuntimeCase "shared nth-weekday arithmetic covers every selector"
         (nthWeekdayDayNumber FourthToLast 31 2 3 == 7 &&
          nthWeekdayDayNumber ThirdToLast 31 2 3 == 14 &&

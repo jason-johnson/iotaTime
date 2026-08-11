@@ -244,11 +244,8 @@ shiftPersianYears amount date =
   in makePersianDate (daysFromCivil targetYear valueMonth targetDay)
 
 applyPersianPeriod : Period target -> PersianDate -> PersianDate
-applyPersianPeriod period =
-    shiftPersianDays (periodDays period)
-  . shiftPersianDays (7 * periodWeeks period)
-  . shiftPersianMonths (periodMonths period)
-  . shiftPersianYears (periodYears period)
+applyPersianPeriod = applyDatePeriodWith
+  shiftPersianYears shiftPersianMonths shiftPersianDays
 
 persianDayOfWeek : PersianDate -> DayOfWeek
 persianDayOfWeek date = weekdayFromDays date.daysSinceEpoch
@@ -695,11 +692,10 @@ shiftArithmeticPersianYears {rule} amount date =
 applyArithmeticPersianPeriod : {rule : PersianArithmeticRule} ->
   KnownPersianArithmeticRule rule => Period target -> ArithmeticPersianDate rule ->
   ArithmeticPersianDate rule
-applyArithmeticPersianPeriod {rule} period =
-    shiftArithmeticPersianDays {rule} (periodDays period)
-  . shiftArithmeticPersianDays {rule} (7 * periodWeeks period)
-  . shiftArithmeticPersianMonths {rule} (periodMonths period)
-  . shiftArithmeticPersianYears {rule} (periodYears period)
+applyArithmeticPersianPeriod {rule} = applyDatePeriodWith
+  (shiftArithmeticPersianYears {rule})
+  (shiftArithmeticPersianMonths {rule})
+  (shiftArithmeticPersianDays {rule})
 
 arithmeticPersianDayOfWeek : ArithmeticPersianDate rule -> DayOfWeek
 arithmeticPersianDayOfWeek date =

@@ -201,12 +201,11 @@ modifyGregorianYear transform date =
    in makeDate targetYear valueMonth targetDay
 
 applyGregorianPeriod : Period target -> GregorianDate -> GregorianDate
-applyGregorianPeriod period =
-    shiftGregorianDays (periodDays period)
-  . shiftGregorianDays (7 * periodWeeks period)
-  . shiftGregorianMonths (periodMonths period)
-  . modifyGregorianYear
-      (\valueYear => yearFromInteger (yearValue valueYear + periodYears period))
+applyGregorianPeriod = applyDatePeriodWith
+  (\amount => modifyGregorianYear
+    (\valueYear => yearFromInteger (yearValue valueYear + amount)))
+  shiftGregorianMonths
+  shiftGregorianDays
 
 public export
 HasCalendar GregorianDate where

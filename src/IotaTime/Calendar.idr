@@ -61,6 +61,20 @@ previousWeekdayOffset count current target =
       weeks = if targetNumber < currentNumber then count - 1 else count
    in -(daysPerWeek * weeks + currentNumber - targetNumber)
 
+||| Apply calendar period components from largest to smallest, preserving a
+||| separate shift for weeks before the final day shift.
+export
+applyDatePeriodWith :
+  (shiftYears : Integer -> date -> date) ->
+  (shiftMonths : Integer -> date -> date) ->
+  (shiftDays : Integer -> date -> date) ->
+  Period target -> date -> date
+applyDatePeriodWith shiftYears shiftMonths shiftDays period =
+    shiftDays (periodDays period)
+  . shiftDays (daysPerWeek * periodWeeks period)
+  . shiftMonths (periodMonths period)
+  . shiftYears (periodYears period)
+
 public export
 Eq DayOfWeek where
   left == right = weekdayNumber left == weekdayNumber right

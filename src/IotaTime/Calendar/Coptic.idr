@@ -172,11 +172,8 @@ shiftCopticYears amount date =
   in makeCopticDate (copticDaysFromCivil targetYear valueMonth targetDay)
 
 applyCopticPeriod : Period target -> CopticDate -> CopticDate
-applyCopticPeriod period =
-    shiftCopticDays (periodDays period)
-  . shiftCopticDays (7 * periodWeeks period)
-  . shiftCopticMonths (periodMonths period)
-  . shiftCopticYears (periodYears period)
+applyCopticPeriod = applyDatePeriodWith
+  shiftCopticYears shiftCopticMonths shiftCopticDays
 
 copticWeekdayFromDays : Integer -> DayOfWeek
 copticWeekdayFromDays days = weekdayFromNumber (days + 3)

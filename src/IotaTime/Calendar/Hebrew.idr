@@ -474,11 +474,8 @@ shiftHebrewYears amount date = case hebrewDateParts date of
 
 applyHebrewPeriod : {numbering : HebrewNumbering} ->
                     Period target -> HebrewDate numbering -> HebrewDate numbering
-applyHebrewPeriod period =
-    shiftHebrewDays (periodDays period)
-  . shiftHebrewDays (7 * periodWeeks period)
-  . shiftHebrewMonths (periodMonths period)
-  . shiftHebrewYears (periodYears period)
+applyHebrewPeriod = applyDatePeriodWith
+  shiftHebrewYears shiftHebrewMonths shiftHebrewDays
 
 hebrewDayOfWeek : HebrewDate numbering -> DayOfWeek
 hebrewDayOfWeek date = weekdayFromNumber (date.daysSinceEpoch + 3)

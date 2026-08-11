@@ -4,6 +4,7 @@ import Data.So
 import Data.String.Parser
 import IotaTime.Locale
 import IotaTime.LocalTime
+import IotaTime.Internal.Text
 import IotaTime.Pattern
 
 %default total
@@ -25,28 +26,6 @@ finishTime fields = case refineLocalTime
   fields.parsedHour fields.parsedMinute fields.parsedSecond fields.parsedNanosecond of
     Left _ => Left (InvalidValue "invalid local time")
     Right value => Right value
-
-zeros : Nat -> String
-zeros Z = ""
-zeros (S count) = "0" ++ zeros count
-
-spaces : Nat -> String
-spaces Z = ""
-spaces (S count) = " " ++ spaces count
-
-padNumber : Nat -> Integer -> String
-padNumber width value =
-  let shown = show value
-      currentWidth = length (unpack shown)
-   in if currentWidth >= width then shown
-      else zeros (width `minus` currentWidth) ++ shown
-
-spacePadNumber : Nat -> Integer -> String
-spacePadNumber width value =
-  let shown = show value
-      currentWidth = length (unpack shown)
-   in if currentWidth >= width then shown
-    else spaces (width `minus` currentWidth) ++ shown
 
 setHour : Integer -> TimeFields -> TimeFields
 setHour value fields = { parsedHour := value } fields
@@ -80,7 +59,7 @@ timeField getter setter width maximumWidth minimum maximum = MkPattern
   initialTimeFields
   finishTime
   (numberUpdatePart setter width maximumWidth minimum maximum)
-  (padNumber width . getter)
+  (zeroPadInteger width . getter)
 
 ||| A 24-hour field with the requested output width and up to two input digits.
 public export
@@ -108,7 +87,7 @@ phh = MkPattern
   initialTimeFields
   finishTime
   (numberUpdatePart setTwelveHour 2 2 1 12)
-  (padNumber 2 . formatTwelveHour)
+  (zeroPadInteger 2 . formatTwelveHour)
 
 ||| A space-padded two-character 12-hour clock field.
 public export
@@ -117,7 +96,7 @@ phhSpace = MkPattern
   initialTimeFields
   finishTime
   (spaceNumberUpdatePart setTwelveHour 2 1 12)
-  (spacePadNumber 2 . formatTwelveHour)
+  (padIntegerWith ' ' 2 . formatTwelveHour)
 
 ||| A minute field with the requested output width and up to two input digits.
 public export
@@ -162,7 +141,7 @@ pfrac width =
         finishTime
         (numberUpdatePart (\value => setNanosecond (value * scale))
           width width 0 maximum)
-        (padNumber width . (`div` scale) . timeNanosecond)
+        (zeroPadInteger width . (`div` scale) . timeNanosecond)
 
 setPeriod : Bool -> TimeFields -> TimeFields
 setPeriod isPm fields =

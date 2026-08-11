@@ -16,6 +16,7 @@ sourcedir = "src"
 
 modules = IotaTime.Duration,
 		  IotaTime.Internal.Normalization,
+		  IotaTime.Internal.Text,
 		  IotaTime.Instant,
 		  IotaTime.Interval,
 		  IotaTime.Offset,

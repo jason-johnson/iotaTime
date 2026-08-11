@@ -1,6 +1,7 @@
 module IotaTime.Pattern.Offset
 
 import Data.String.Parser
+import IotaTime.Internal.Text
 import IotaTime.Offset
 import IotaTime.Pattern
 
@@ -31,16 +32,6 @@ offsetValue separator withSeconds = do
         Left _ => Left (InvalidValue "offset is outside -18:00 to +18:00")
         Right value => Right value)
 
-zeros : Nat -> String
-zeros Z = ""
-zeros (S count) = "0" ++ zeros count
-
-padTwo : Integer -> String
-padTwo value =
-  let shown = show value
-      width = length (unpack shown)
-   in if width >= 2 then shown else zeros (2 `minus` width) ++ shown
-
 renderOffset : String -> Bool -> Offset -> String
 renderOffset separator withSeconds value =
   let totalSeconds = totalOffsetSeconds value
@@ -49,10 +40,11 @@ renderOffset separator withSeconds value =
       valueMinutes = magnitude `div` 60 `mod` 60
       valueSeconds = magnitude `mod` 60
       suffix = if withSeconds
-        then separator ++ padTwo valueSeconds
+        then separator ++ zeroPadInteger 2 valueSeconds
         else ""
-  in (if totalSeconds < 0 then "-" else "+") ++ padTwo valueHours ++
-      separator ++ padTwo valueMinutes ++ suffix
+  in (if totalSeconds < 0 then "-" else "+") ++
+      zeroPadInteger 2 valueHours ++ separator ++
+      zeroPadInteger 2 valueMinutes ++ suffix
 
 offsetPattern : String -> Bool -> Pattern Offset Offset
 offsetPattern separator withSeconds = MkPattern

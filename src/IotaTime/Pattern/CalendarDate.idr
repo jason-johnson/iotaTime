@@ -6,6 +6,7 @@ import IotaTime.Pattern
 import IotaTime.Locale
 import IotaTime.Calendar
 import IotaTime.Calendar.Gregorian
+import IotaTime.Internal.Text
 import IotaTime.Pattern.Calendar
 
 %default total
@@ -49,17 +50,6 @@ finishDate {calendar} @{patterned} fields = do
         then Right date
         else Left (InvalidValue "weekday does not match date")
 
-zeros : Nat -> String
-zeros Z = ""
-zeros (S count) = "0" ++ zeros count
-
-padNumber : Nat -> Integer -> String
-padNumber width value =
-  let shown = show value
-      currentWidth = length (unpack shown)
-   in if currentWidth >= width then shown
-      else zeros (width `minus` currentWidth) ++ shown
-
 dateField : {calendar : Type} ->
             {auto patterned : CalendarPattern calendar} ->
             (CalendarDate calendar -> Integer) ->
@@ -71,7 +61,7 @@ dateField getter setter width maximumWidth minimum maximum = MkPattern
   initialDateFields
   finishDate
   (numberUpdatePart setter width maximumWidth minimum maximum)
-  (padNumber width . getter)
+  (zeroPadInteger width . getter)
 
 setYearField : Integer -> DateFields -> DateFields
 setYearField value fields = { parsedYear := value } fields
@@ -211,7 +201,7 @@ pyy = MkPattern
     (\value, fields =>
       { parsedYear := inferTwoDigitYear fields.parsedYear value } fields)
     2 2 0 99)
-  (padNumber 2 . (`mod` 100) . calendarYear)
+  (zeroPadInteger 2 . (`mod` 100) . calendarYear)
 
 ||| A numeric month field bounded by the selected calendar's month count.
 public export

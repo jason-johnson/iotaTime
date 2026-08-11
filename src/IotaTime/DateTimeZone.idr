@@ -4,6 +4,7 @@ import public Data.So
 import public IotaTime.Instant
 import public IotaTime.Offset
 import public IotaTime.OffsetDateTime
+import IotaTime.Internal.Gregorian
 
 %default total
 
@@ -288,17 +289,6 @@ isGregorianLeapYear : Integer -> Bool
 isGregorianLeapYear year =
   year `mod` 400 == 0 || (year `mod` 4 == 0 && year `mod` 100 /= 0)
 
-daysFromGregorianCivil : Integer -> Integer -> Integer -> Integer
-daysFromGregorianCivil year month day =
-  let shiftedYear = if month <= 2 then year - 1 else year
-   in let era = shiftedYear `div` 400
-     in let yearOfEra = shiftedYear - era * 400
-       in let shiftedMonth = month + if month > 2 then -3 else 9
-         in let dayOfYear = (153 * shiftedMonth + 2) `div` 5 + day - 1
-           in let dayOfEra = yearOfEra * 365 + yearOfEra `div` 4 -
-                yearOfEra `div` 100 + dayOfYear
-             in era * 146097 + dayOfEra - 730485
-
 gregorianYearFromDays : Integer -> Integer
 gregorianYearFromDays days =
   let shifted = days + 730485
@@ -320,12 +310,12 @@ daysInGregorianMonth year month =
 
 recurrenceDayInYear : Integer -> RecurrenceDay -> Integer
 recurrenceDayInYear year (JulianWithoutLeap day) =
-  daysFromGregorianCivil year 1 1 + day - 1 +
+  gregorianDaysFromCivil year 1 1 + day - 1 +
     if isGregorianLeapYear year && day >= 60 then 1 else 0
 recurrenceDayInYear year (JulianWithLeap day) =
-  daysFromGregorianCivil year 1 1 + day
+  gregorianDaysFromCivil year 1 1 + day
 recurrenceDayInYear year (MonthWeekDay month week weekday) =
-  let first = daysFromGregorianCivil year month 1
+  let first = gregorianDaysFromCivil year month 1
    in let firstWeekday = (first + 3) `mod` 7
      in let candidate = first + (weekday - firstWeekday) `mod` 7 + 7 * (week - 1)
        in if candidate >= first + daysInGregorianMonth year month

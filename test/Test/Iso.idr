@@ -9,9 +9,20 @@ ymd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) =>
     (valueYear, valueMonth, valueDay)
 
+isoCivilDaysMatch : Bool
+isoCivilDaysMatch =
+  IotaTime.Calendar.Iso.daysFromCivil 2000 3 1 ==
+    toDays (IotaTime.Calendar.Gregorian.calendarDate 1 March 2000) &&
+  IotaTime.Calendar.Iso.daysFromCivil 2000 2 29 ==
+    toDays (IotaTime.Calendar.Gregorian.calendarDate 29 February 2000) &&
+  IotaTime.Calendar.Iso.daysFromCivil 1900 3 1 ==
+    toDays (IotaTime.Calendar.Gregorian.calendarDate 1 March 1900)
+
 isoCases : List RuntimeCase
 isoCases =
-  [ MkRuntimeCase "ISO week one can begin in the preceding year"
+  [ MkRuntimeCase "ISO civil days match Gregorian date coordinates"
+      isoCivilDaysMatch
+  , MkRuntimeCase "ISO week one can begin in the preceding year"
       (ymd (IotaTime.Calendar.Iso.fromWeekDate 1 Monday 2020) ==
         (2019, December, 30))
   , MkRuntimeCase "ISO week one Sunday follows the January 4 rule"

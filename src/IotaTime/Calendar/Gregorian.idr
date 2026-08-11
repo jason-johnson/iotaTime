@@ -1,6 +1,7 @@
 module IotaTime.Calendar.Gregorian
 
 import IotaTime.Calendar
+import IotaTime.Internal.Gregorian
 import IotaTime.Period
 import Data.So
 import Derive.Prelude
@@ -111,16 +112,10 @@ isValidDate valueDay valueMonth valueYear =
 
 daysFromCivil : Year -> Month -> DayOfMonth -> Integer
 daysFromCivil valueYear valueMonth valueDay =
-  let number = monthNumber valueMonth
-      yearNumber = yearValue valueYear
-      dayNumber = dayOfMonthValue valueDay
-      shiftedYear = if number <= 2 then yearNumber - 1 else yearNumber
-      era = shiftedYear `div` 400
-      yearOfEra = shiftedYear - era * 400
-      shiftedMonth = number + if number > 2 then -3 else 9
-      dayOfYear = (153 * shiftedMonth + 2) `div` 5 + dayNumber - 1
-      dayOfEra = yearOfEra * 365 + yearOfEra `div` 4 - yearOfEra `div` 100 + dayOfYear
-   in era * 146097 + dayOfEra - 730485
+  gregorianDaysFromCivil
+    (yearValue valueYear)
+    (monthNumber valueMonth)
+    (dayOfMonthValue valueDay)
 
 civilFromDays : Integer -> (Year, Month, DayOfMonth)
 civilFromDays value =

@@ -19,6 +19,7 @@ postinstall = "make install-support"
 postclean = "make clean-support"
 
 modules = IotaTime.Duration,
+		  IotaTime.Internal.Gregorian,
 		  IotaTime.Internal.Normalization,
 		  IotaTime.Internal.Text,
 		  IotaTime.Clock,

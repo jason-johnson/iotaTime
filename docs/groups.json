@@ -66,12 +66,14 @@
     { "title": "Runtime refinement", "names": ["GregorianDateError", "refineGregorianDate", "refineGregorianDays", "refineGregorianNthDay", "refineGregorianWeekDate"] }
   ],
   "IotaTime.Calendar.Persian": [
-    { "title": "Calendar rules and components", "names": ["Persian", "PersianSimple", "PersianArithmetic", "PersianArithmeticRule", "ArithmeticPersian", "PersianMonth"] },
-    { "title": "Astronomical construction", "names": ["persianDate", "persianFromDays", "persianFromNthDay", "persianFromWeekDate"] },
-    { "title": "Astronomical runtime refinement", "names": ["PersianDateError", "refinePersianDate", "refinePersianDays", "refinePersianNthDay", "refinePersianWeekDate"] },
-    { "title": "Arithmetic construction", "names": ["simplePersianDate", "arithmeticPersianDate", "arithmeticRulePersianDate", "arithmeticPersianFromNthDay", "arithmeticPersianFromWeekDate"] },
-    { "title": "Arithmetic runtime refinement", "names": ["refineSimplePersianDate", "refineArithmeticPersianDate", "refineArithmeticRulePersianDate", "refineArithmeticPersianDays", "refineArithmeticPersianNthDay", "refineArithmeticPersianWeekDate"] },
-    { "title": "Arithmetic rules and bounds", "names": ["KnownPersianArithmeticRule", "minimumArithmeticPersianYear", "maximumArithmeticPersianYear", "isArithmeticPersianLeapYear", "arithmeticPersianNewYearDay", "maxArithmeticPersianDaysInMonth", "isValidArithmeticPersianDate", "isValidArithmeticPersianDays"] }
+    { "hidden": true, "names": ["weekdayFromDays", "minimumYear", "maximumYear", "epoch", "leapYears", "countLeapsBefore", "newYearDay", "lastDay", "monthOffset", "daysFromCivil", "nthDayOfMonth", "weekDateDays", "arithmeticLastDay", "arithmeticDaysFromCivil"] },
+    { "title": "Calendar types and components", "names": ["Persian", "PersianMonths.PersianMonth", "PersianMonths.monthNumber", "PersianSimple", "PersianArithmetic", "PersianArithmeticRule", "ArithmeticPersian"] },
+    { "title": "Astronomical rules", "names": ["isLeapYear", "maxDaysInMonth", "isValidDate", "isValidNthDay", "isValidWeekDate"] },
+    { "title": "Astronomical construction", "names": ["calendarDate", "fromDays", "fromNthDay", "fromWeekDate"] },
+    { "title": "Astronomical runtime refinement", "names": ["PersianDateError", "refineDate", "refineDays", "refineNthDay", "refineWeekDate"] },
+    { "title": "Arithmetic rules and bounds", "names": ["minimumArithmeticYear", "maximumArithmeticYear", "isArithmeticLeapYear", "arithmeticNewYearDay", "maxArithmeticDaysInMonth", "isValidArithmeticDate", "isValidArithmeticNthDay", "isValidArithmeticWeekDate"] },
+    { "title": "Arithmetic construction", "names": ["simpleCalendarDate", "arithmeticCalendarDate", "arithmeticRuleCalendarDate", "arithmeticFromNthDay", "arithmeticFromWeekDate"] },
+    { "title": "Arithmetic runtime refinement", "names": ["refineSimpleDate", "refineArithmeticDate", "refineArithmeticRuleDate", "refineArithmeticDays", "refineArithmeticNthDay", "refineArithmeticWeekDate"] }
   ],
   "IotaTime.LocalTime": [
     { "title": "Type and construction", "names": ["LocalTime", "localTime"] },

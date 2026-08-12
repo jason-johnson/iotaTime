@@ -97,4 +97,32 @@ if (!durationPage.includes(
   throw new Error("IotaTime.Duration.html lacks the public fromNanoseconds description");
 }
 
+const persianPage = await readFile(
+  path.join(outputDirectory, "docs", "IotaTime.Calendar.Persian.html"),
+  "utf8",
+);
+const hiddenPersianNames = [
+  "weekdayFromDays",
+  "epoch",
+  "leapYears",
+  "countLeapsBefore",
+  "newYearDay",
+  "lastDay",
+  "monthOffset",
+  "daysFromCivil",
+  "nthDayOfMonth",
+  "weekDateDays",
+  "KnownPersianArithmeticRule",
+  "arithmeticLastDay",
+  "arithmeticDaysFromCivil",
+];
+for (const name of hiddenPersianNames) {
+  if (persianPage.includes(`IotaTime.Calendar.Persian.${name}`)) {
+    throw new Error(`IotaTime.Calendar.Persian.html exposes internal ${name}`);
+  }
+}
+if (persianPage.includes('id="other-definitions"')) {
+  throw new Error("IotaTime.Calendar.Persian.html has ungrouped declarations");
+}
+
 console.log(`Validated documentation in ${outputDirectory}`);

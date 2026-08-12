@@ -15,8 +15,7 @@ pymd date = case yearMonthDay date of
     (valueYear, valueMonth, valueDay)
 
 arithmeticPymd : {rule : PersianArithmeticRule} ->
-  KnownPersianArithmeticRule rule =>
-  CalendarDate (ArithmeticPersian rule) -> (Year, PersianMonth, DayOfMonth)
+  ArithmeticPersianDate rule -> (Year, PersianMonth, DayOfMonth)
 arithmeticPymd {rule} date =
   case yearMonthDay date of
     (valueYear ** (valueMonth, valueDay)) =>
@@ -37,7 +36,7 @@ persianRoundTrips final current =
                 persianRoundTrips final (current + 97)
 
 arithmeticPersianRoundTrips : {rule : PersianArithmeticRule} ->
-  KnownPersianArithmeticRule rule => Integer -> Integer -> Bool
+  Integer -> Integer -> Bool
 arithmeticPersianRoundTrips {rule} final current =
   if current > final
     then True

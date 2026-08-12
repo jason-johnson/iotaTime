@@ -312,7 +312,7 @@ CalendarPattern Persian where
     IotaTime.Calendar.Persian.refineDate
 
 public export
-{rule : PersianArithmeticRule} -> KnownPersianArithmeticRule rule =>
+{rule : PersianArithmeticRule} ->
   CalendarPattern (ArithmeticPersian rule) where
   patternMonthCount = 12
   patternMonthNames = persianMonthNames
@@ -322,7 +322,7 @@ public export
   patternWeekdayIndex date = weekdayIndex7 (weekdayNumber
     (dayOfWeek date))
   refinePatternDate = refineTwelveMonthDate
-    (ruleName {rule}) persianMonth
+    (arithmeticRuleName rule) persianMonth
     (refineArithmeticRuleDate {rule})
 
 hebrewMonthName : {numbering : HebrewNumbering} ->

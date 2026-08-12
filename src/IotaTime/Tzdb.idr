@@ -28,12 +28,12 @@ timeZoneFromTzif valueId decoded = case decoded.posixFooter of
     case parsed of
       PosixFixed _ => finiteZone
       PosixRecurring recurrence => mapLeft TzdbZoneError
-        (refineRecurringDateTimeZone valueId decoded.initialTransition
+        (refineRecurringTimeZone valueId decoded.initialTransition
           decoded.transitions recurrence)
   where
     finiteZone : Either TzdbError TimeZone
     finiteZone = mapLeft TzdbZoneError
-      (refineDateTimeZone valueId decoded.initialTransition decoded.transitions)
+      (refineTimeZone valueId decoded.initialTransition decoded.transitions)
 
 bufferBytes : Buffer -> IO (List Bits8)
 bufferBytes buffer = do

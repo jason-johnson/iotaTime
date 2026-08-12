@@ -1,4 +1,4 @@
-module IotaTime.DateTimeZone
+module IotaTime.TimeZone
 
 import public Data.So
 import public IotaTime.Instant
@@ -160,28 +160,23 @@ record RecurrenceEra where
   eraRecurrence : Maybe ZoneRecurrence
 
 export
-record DateTimeZoneRep where
-  constructor MkDateTimeZone
+record TimeZoneRep where
+  constructor MkTimeZone
   storedZoneId : String
   initialTransition : TransitionInfo
   transitions : List ZoneTransition
   recurrenceEras : List RecurrenceEra
 
 public export
-DateTimeZone : Type
-DateTimeZone = DateTimeZoneRep
-
-||| HodaTime-compatible name for a date-time zone.
-public export
 TimeZone : Type
-TimeZone = DateTimeZone
+TimeZone = TimeZoneRep
 
 public export
-Eq DateTimeZoneRep where
+Eq TimeZoneRep where
   left == right = left.storedZoneId == right.storedZoneId
 
 public export
-Show DateTimeZoneRep where
+Show TimeZoneRep where
   show value = if value.storedZoneId == "UTC"
     then "<TimeZone UTC>"
     else "<TimeZone " ++ show value.storedZoneId ++ ">"
@@ -207,22 +202,24 @@ toTransitions ((instant, valueInfo) :: rest) =
 
 ||| Construct a fixed-offset zone.
 export
-fixedDateTimeZone : String -> Offset -> DateTimeZone
-fixedDateTimeZone valueId valueOffset =
-  MkDateTimeZone valueId (transitionInfo valueOffset False valueId) [] []
+fixedTimeZone : String -> Offset -> TimeZone
+fixedTimeZone valueId valueOffset =
+  MkTimeZone valueId (transitionInfo valueOffset False valueId) [] []
 
 ||| Construct a transition zone from statically known, strictly increasing
 ||| nanosecond instants and the offsets effective from those instants onward.
 export
-dateTimeZone : (valueId : String) -> (valueInitialInfo : TransitionInfo) ->
-               (valueTransitions : List (Integer, TransitionInfo)) ->
-               {auto 0 valid : So (isValidZoneTransitions valueTransitions)} ->
-               DateTimeZone
-dateTimeZone valueId valueInitialInfo valueTransitions =
-  MkDateTimeZone valueId valueInitialInfo (toTransitions valueTransitions) []
+timeZoneFromTransitions : (valueId : String) ->
+                          (valueInitialInfo : TransitionInfo) ->
+                          (valueTransitions : List (Integer, TransitionInfo)) ->
+                          {auto 0 valid : So
+                            (isValidZoneTransitions valueTransitions)} ->
+                          TimeZone
+timeZoneFromTransitions valueId valueInitialInfo valueTransitions =
+  MkTimeZone valueId valueInitialInfo (toTransitions valueTransitions) []
 
 public export
-data DateTimeZoneError
+data TimeZoneError
   = TransitionsNotStrictlyIncreasing
   | RecurrenceErasNotStrictlyIncreasing
   | MissingRecurrenceEra
@@ -243,23 +240,23 @@ toRuntimeTransitions ((instant, valueInfo) :: rest) =
 
 ||| Validate transition data learned at runtime.
 export
-refineDateTimeZone : String -> TransitionInfo -> List (Instant, TransitionInfo) ->
-                     Either DateTimeZoneError DateTimeZone
-refineDateTimeZone valueId valueInitialInfo valueTransitions =
+refineTimeZone : String -> TransitionInfo -> List (Instant, TransitionInfo) ->
+                 Either TimeZoneError TimeZone
+refineTimeZone valueId valueInitialInfo valueTransitions =
   if runtimeTransitionsValid valueTransitions
-    then Right (MkDateTimeZone valueId valueInitialInfo
+    then Right (MkTimeZone valueId valueInitialInfo
       (toRuntimeTransitions valueTransitions) [])
     else Left TransitionsNotStrictlyIncreasing
 
 ||| Validate explicit transitions and attach recurring rules used after them.
 export
-refineRecurringDateTimeZone : String -> TransitionInfo ->
-                              List (Instant, TransitionInfo) -> ZoneRecurrence ->
-                              Either DateTimeZoneError DateTimeZone
-refineRecurringDateTimeZone valueId valueInitialInfo valueTransitions recurrence =
+refineRecurringTimeZone : String -> TransitionInfo ->
+                          List (Instant, TransitionInfo) -> ZoneRecurrence ->
+                          Either TimeZoneError TimeZone
+refineRecurringTimeZone valueId valueInitialInfo valueTransitions recurrence =
   if runtimeTransitionsValid valueTransitions
     then let (boundary, initial) = finalExplicit valueInitialInfo valueTransitions
-          in Right (MkDateTimeZone valueId valueInitialInfo
+          in Right (MkTimeZone valueId valueInitialInfo
             (toRuntimeTransitions valueTransitions)
             [MkRecurrenceEra boundary initial (Just recurrence)])
     else Left TransitionsNotStrictlyIncreasing
@@ -276,7 +273,7 @@ refineRecurringDateTimeZone valueId valueInitialInfo valueTransitions recurrence
           go next nextInfo remaining
 
 export
-zoneId : DateTimeZone -> String
+zoneId : TimeZone -> String
 zoneId = storedZoneId
 
 recurrenceNanosecondsPerSecond : Integer
@@ -450,12 +447,12 @@ toZoneEras ((start, initial, recurrence) :: rest) =
 export
 refineTimeZoneEras : String ->
   List (Maybe Instant, TransitionInfo, Maybe ZoneRecurrence) ->
-  Either DateTimeZoneError TimeZone
+  Either TimeZoneError TimeZone
 refineTimeZoneEras valueId specs =
   if zoneEraSpecsValid specs
     then case toZoneEras specs of
       [] => Left MissingRecurrenceEra
-      first :: eras => Right (MkDateTimeZone valueId
+      first :: eras => Right (MkTimeZone valueId
         first.eraInitialTransition [] (first :: eras))
     else case specs of
       [] => Left MissingRecurrenceEra
@@ -463,13 +460,14 @@ refineTimeZoneEras valueId specs =
 
 ||| Validate ordered recurrence eras. An initial `Nothing` boundary applies
 ||| without a lower timeline bound; subsequent boundaries must increase.
-refineRecurrenceErasDateTimeZone : String ->
-  List (Maybe Instant, ZoneRecurrence) -> Either DateTimeZoneError TimeZone
-refineRecurrenceErasDateTimeZone valueId specs =
+export
+refineRecurrenceErasTimeZone : String ->
+  List (Maybe Instant, ZoneRecurrence) -> Either TimeZoneError TimeZone
+refineRecurrenceErasTimeZone valueId specs =
   if eraSpecsValid specs
     then case toRecurrenceEras specs of
       [] => Left MissingRecurrenceEra
-      first :: eras => Right (MkDateTimeZone valueId
+      first :: eras => Right (MkTimeZone valueId
         first.eraInitialTransition [] (first :: eras))
     else case specs of
       [] => Left MissingRecurrenceEra
@@ -532,7 +530,7 @@ addUnique value (current :: rest) =
   if value == current then current :: rest
   else current :: addUnique value rest
 
-zoneOffsets : DateTimeZone -> List Offset
+zoneOffsets : TimeZone -> List Offset
 zoneOffsets valueZone =
   recurrenceOffsets valueZone.recurrenceEras valueZone.transitions
   where
@@ -569,7 +567,7 @@ insertByInstant value (current :: rest) =
 
 mappingCandidates : {calendar : Type} -> {auto cal : Calendar calendar} ->
                     {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
-                    DateTimeZone -> CalendarDateTime calendar @{cal} ->
+                    TimeZone -> CalendarDateTime calendar @{cal} ->
                     List (OffsetDateTime calendar @{cal})
 mappingCandidates valueZone local = go (zoneOffsets valueZone)
   where
@@ -657,7 +655,7 @@ data LocalMapping : (calendar : Type) ->
 export
 mapLocal : {calendar : Type} -> {auto cal : Calendar calendar} ->
            {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
-           DateTimeZone -> CalendarDateTime calendar @{cal} ->
+           TimeZone -> CalendarDateTime calendar @{cal} ->
            LocalMapping calendar cal
 mapLocal valueZone local = case mappingCandidates valueZone local of
   [] => Skipped

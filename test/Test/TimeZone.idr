@@ -1,6 +1,7 @@
 module Test.TimeZone
 
 import IotaTime
+import IotaTime.TimeZone
 import IotaTime.Tzdb.Windows.Platform
 import IotaTime.Tzdb.Windows.Types
 import Test.Support
@@ -19,8 +20,8 @@ testDaylightInfo : TransitionInfo
 testDaylightInfo = transitionInfoWithSavings
   (IotaTime.Offset.fromHours 1) (IotaTime.Offset.fromHours 1) "TDT"
 
-testTransitionZone : Either DateTimeZoneError TimeZone
-testTransitionZone = refineDateTimeZone "Test/Transitions" testStandardInfo
+testTransitionZone : Either TimeZoneError TimeZone
+testTransitionZone = refineTimeZone "Test/Transitions" testStandardInfo
   [ (fromNanosecondsSinceEpoch 1000000000, testDaylightInfo)
   , (fromNanosecondsSinceEpoch 2000000000, testStandardInfo)
   ]
@@ -68,13 +69,13 @@ cachePolicyWorks = do
   availableCount <- newIORef 0
   metadataCount <- newIORef 0
   let base = MkTimeZoneProvider
-        (pure (Right (fixedDateTimeZone "UTC" zeroOffset)))
+        (pure (Right (fixedTimeZone "UTC" zeroOffset)))
         (\name => counted namedCount $ pure $
           if name == "Missing"
             then Left (WindowsZoneNotFound name)
-            else Right (fixedDateTimeZone name zeroOffset))
+            else Right (fixedTimeZone name zeroOffset))
         (counted localCount $
-          pure (Right (fixedDateTimeZone "Local" zeroOffset)))
+          pure (Right (fixedTimeZone "Local" zeroOffset)))
         (counted availableCount $ pure (Right ["Test/A", "Test/B"]))
         (counted metadataCount $
           pure (Right (MkTzdbMetadata (Just "test") [])))
@@ -154,7 +155,7 @@ run = do
           _ => False)
     , MkRuntimeCase "fixed zone interval is unbounded with zero savings"
         (let interval = zoneIntervalAt
-               (fixedDateTimeZone "Fixed/+02" (IotaTime.Offset.fromHours 2))
+               (fixedTimeZone "Fixed/+02" (IotaTime.Offset.fromHours 2))
                (fromNanosecondsSinceEpoch 0)
           in intervalStart interval == Nothing &&
              intervalEnd interval == Nothing &&

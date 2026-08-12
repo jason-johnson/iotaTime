@@ -244,7 +244,7 @@ windowsRecurringTimeZone valueId initial transitions rule = do
   recurrence <- case windowsZoneRecurrence rule of
     Left error => Left (InvalidWindowsRule error)
     Right value => Right value
-  case refineRecurringDateTimeZone valueId initial transitions recurrence of
+  case refineRecurringTimeZone valueId initial transitions recurrence of
     Left error => Left (InvalidWindowsTransitions error)
     Right value => Right value
 
@@ -279,9 +279,9 @@ windowsTimeZone valueId rule =
   case windowsZoneEra rule of
     Left error => Left (InvalidWindowsRule error)
     Right (standardInfo, Nothing) =>
-      Right (fixedDateTimeZone valueId (utcOffset standardInfo))
+      Right (fixedTimeZone valueId (utcOffset standardInfo))
     Right (standardInfo, Just recurrence) =>
-      case refineRecurringDateTimeZone valueId standardInfo [] recurrence of
+      case refineRecurringTimeZone valueId standardInfo [] recurrence of
         Left error => Left (InvalidWindowsTransitions error)
         Right value => Right value
 

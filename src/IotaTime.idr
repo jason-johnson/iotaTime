@@ -1,7 +1,7 @@
 module IotaTime
 
 import public IotaTime.Duration
-import public IotaTime.DateTimeZone
+import public IotaTime.TimeZone
 import public IotaTime.Instant
 import public IotaTime.Clock
 import public IotaTime.Interval

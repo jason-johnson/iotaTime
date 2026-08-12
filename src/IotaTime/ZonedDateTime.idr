@@ -1,6 +1,6 @@
 module IotaTime.ZonedDateTime
 
-import public IotaTime.DateTimeZone
+import public IotaTime.TimeZone
 import public IotaTime.Duration
 import public IotaTime.OffsetDateTime
 
@@ -10,7 +10,7 @@ export
 record ZonedDateTimeRep (calendar : Type) (cal : Calendar calendar) where
   constructor MkZonedDateTime
   zonedValue : OffsetDateTime calendar @{cal}
-  zonedZone : DateTimeZone
+  zonedZone : TimeZone
 
 public export
 ZonedDateTime : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
@@ -28,7 +28,7 @@ public export
 export
 inZone : {calendar : Type} -> {auto cal : Calendar calendar} ->
          {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
-         DateTimeZone -> Instant ->
+         TimeZone -> Instant ->
          Either CalendarConversionError (ZonedDateTime calendar @{cal})
 inZone valueZone valueInstant =
   case IotaTime.OffsetDateTime.fromInstant
@@ -133,8 +133,8 @@ public export
   compare left right = case compare
     (zonedInstant left) (zonedInstant right) of
       EQ => compare
-        (IotaTime.DateTimeZone.zoneId left.zonedZone)
-        (IotaTime.DateTimeZone.zoneId right.zonedZone)
+        (IotaTime.TimeZone.zoneId left.zonedZone)
+        (IotaTime.TimeZone.zoneId right.zonedZone)
       ordering => ordering
 
 public export
@@ -147,13 +147,13 @@ public export
 
 export
 zoneOf : {calendar : Type} -> {auto cal : Calendar calendar} ->
-         ZonedDateTime calendar @{cal} -> DateTimeZone
+         ZonedDateTime calendar @{cal} -> TimeZone
 zoneOf = zonedZone
 
 public export
 zoneId : {calendar : Type} -> {auto cal : Calendar calendar} ->
          ZonedDateTime calendar @{cal} -> String
-zoneId = IotaTime.DateTimeZone.zoneId . zonedZone
+zoneId = IotaTime.TimeZone.zoneId . zonedZone
 
 public export
 inDst : {calendar : Type} -> {auto cal : Calendar calendar} ->
@@ -181,12 +181,12 @@ data ZonedMapping : (calendar : Type) ->
                    ZonedMapping calendar cal
 
 attachZone : {calendar : Type} -> {auto cal : Calendar calendar} ->
-             DateTimeZone -> OffsetDateTime calendar @{cal} ->
+             TimeZone -> OffsetDateTime calendar @{cal} ->
              ZonedDateTime calendar @{cal}
 attachZone valueZone value = MkZonedDateTime value valueZone
 
 attachAll : {calendar : Type} -> {auto cal : Calendar calendar} ->
-            DateTimeZone -> List (OffsetDateTime calendar @{cal}) ->
+            TimeZone -> List (OffsetDateTime calendar @{cal}) ->
             List (ZonedDateTime calendar @{cal})
 attachAll valueZone [] = []
 attachAll valueZone (value :: rest) =
@@ -197,7 +197,7 @@ attachAll valueZone (value :: rest) =
 public export
 resolveLocal : {calendar : Type} -> {auto cal : Calendar calendar} ->
                {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
-               DateTimeZone -> CalendarDateTime calendar @{cal} ->
+               TimeZone -> CalendarDateTime calendar @{cal} ->
                ZonedMapping calendar cal
 resolveLocal valueZone local = case mapLocal valueZone local of
   Skipped => ZonedSkipped
@@ -259,7 +259,7 @@ fromCalendarDateTimeLeniently local valueZone =
 public export
 withZone : {calendar : Type} -> {auto cal : Calendar calendar} ->
            {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
-           DateTimeZone -> ZonedDateTime calendar @{cal} ->
+           TimeZone -> ZonedDateTime calendar @{cal} ->
            Either CalendarConversionError (ZonedDateTime calendar @{cal})
 withZone valueZone value = inZone valueZone (zonedInstant value)
 

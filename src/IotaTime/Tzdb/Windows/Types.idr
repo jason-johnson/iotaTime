@@ -1,6 +1,6 @@
 module IotaTime.Tzdb.Windows.Types
 
-import public IotaTime.DateTimeZone
+import public IotaTime.TimeZone
 
 %default total
 
@@ -66,7 +66,7 @@ data WindowsZoneError
 public export
 data WindowsTimeZoneError
   = InvalidWindowsRule WindowsZoneError
-  | InvalidWindowsTransitions DateTimeZoneError
+  | InvalidWindowsTransitions TimeZoneError
   | DynamicYearsNotStrictlyIncreasing
 
 public export

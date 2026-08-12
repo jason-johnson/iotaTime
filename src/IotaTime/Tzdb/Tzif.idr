@@ -1,7 +1,7 @@
 module IotaTime.Tzdb.Tzif
 
 import public Data.Bits
-import public IotaTime.DateTimeZone
+import public IotaTime.TimeZone
 import Data.List
 import Derive.Prelude
 

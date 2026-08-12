@@ -2,7 +2,7 @@
   "IotaTime",
   "IotaTime.Pure",
   "IotaTime.Duration",
-  "IotaTime.DateTimeZone",
+  "IotaTime.TimeZone",
   "IotaTime.Instant",
   "IotaTime.Clock",
   "IotaTime.Interval",

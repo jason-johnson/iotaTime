@@ -1,6 +1,6 @@
 module IotaTime.Tzdb.Provider
 
-import public IotaTime.DateTimeZone
+import public IotaTime.TimeZone
 import public IotaTime.Tzdb.Metadata
 import IotaTime.Tzdb.Posix
 import IotaTime.Tzdb.Tzif
@@ -15,7 +15,7 @@ data TzdbError
   = TzdbFileError String
   | TzdbParseError TzifError
   | TzdbPosixError PosixTzError
-  | TzdbZoneError DateTimeZoneError
+  | TzdbZoneError TimeZoneError
   | TzdbWindowsError WindowsRegistryError
   | WindowsRegistrySourceError String
   | WindowsZoneNotFound String

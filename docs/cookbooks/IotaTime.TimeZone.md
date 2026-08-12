@@ -1,4 +1,4 @@
-## Using DateTimeZone
+## Using TimeZone
 
 ### Load a named system time zone
 

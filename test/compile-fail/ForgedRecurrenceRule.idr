@@ -1,8 +1,8 @@
--- EXPECT: IotaTime.DateTimeZone.MkRecurrenceRule is private.
+-- EXPECT: IotaTime.TimeZone.MkRecurrenceRule is private.
 
 module ForgedRecurrenceRule
 
-import IotaTime.DateTimeZone
+import IotaTime.TimeZone
 
 invalid : RecurrenceRule
 invalid = MkRecurrenceRule

@@ -35,8 +35,9 @@
     { "title": "Unbounded endpoints and membership", "names": ["unboundedStart", "unboundedEnd", "unboundedContains", "unboundedIsEmpty", "unboundedDuration"] },
     { "title": "Unbounded relationships and set operations", "names": ["unboundedOverlaps", "unboundedIsAdjacent", "unboundedIntersection", "unboundedUnion"] }
   ],
-  "IotaTime.DateTimeZone": [
-    { "title": "Zone type and identity", "names": ["TimeZone", "DateTimeZone", "zoneId"] },
+  "IotaTime.TimeZone": [
+    { "title": "Zone type and identity", "names": ["TimeZone", "zoneId"] },
+    { "title": "Construction", "names": ["fixedTimeZone", "timeZoneFromTransitions", "refineTimeZone", "TimeZoneError"] },
     { "title": "Instant queries", "names": ["zoneOffsetAt", "ZoneInterval", "zoneIntervalAt", "intervalStart", "intervalEnd", "wallOffset", "savings", "intervalIsDaylightSavingTime", "intervalAbbreviation"] },
     { "title": "Local mapping", "names": ["LocalMapping", "mapLocal"] }
   ],

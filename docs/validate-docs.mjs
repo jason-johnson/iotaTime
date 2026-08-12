@@ -125,4 +125,12 @@ if (persianPage.includes('id="other-definitions"')) {
   throw new Error("IotaTime.Calendar.Persian.html has ungrouped declarations");
 }
 
+const timeZonePage = await readFile(
+  path.join(outputDirectory, "docs", "IotaTime.TimeZone.html"),
+  "utf8",
+);
+if (timeZonePage.includes("IotaTime.TimeZone.LocalMapping")) {
+  throw new Error("IotaTime.TimeZone.html exposes internal LocalMapping");
+}
+
 console.log(`Validated documentation in ${outputDirectory}`);

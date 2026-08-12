@@ -24,14 +24,14 @@ Ord Duration where
 
 public export
 Show Duration where
-  show value = "durationFromNanoseconds " ++ show value.storedNanoseconds
+  show value = "fromNanoseconds " ++ show value.storedNanoseconds
 
 ||| Construct a duration from an exact number of nanoseconds.
 export
 durationFromNanoseconds : Integer -> Duration
 durationFromNanoseconds = MkDuration
 
-||| Alias for `durationFromNanoseconds`.
+||| Construct a duration from an exact number of nanoseconds.
 public export
 fromNanoseconds : Integer -> Duration
 fromNanoseconds = durationFromNanoseconds
@@ -41,7 +41,7 @@ export
 durationFromMicroseconds : Integer -> Duration
 durationFromMicroseconds value = MkDuration (value * 1000)
 
-||| Alias for `durationFromMicroseconds`.
+||| Construct a duration from an exact number of microseconds.
 public export
 fromMicroseconds : Integer -> Duration
 fromMicroseconds = durationFromMicroseconds
@@ -51,7 +51,7 @@ export
 durationFromMilliseconds : Integer -> Duration
 durationFromMilliseconds value = MkDuration (value * 1000000)
 
-||| Alias for `durationFromMilliseconds`.
+||| Construct a duration from an exact number of milliseconds.
 public export
 fromMilliseconds : Integer -> Duration
 fromMilliseconds = durationFromMilliseconds
@@ -61,7 +61,7 @@ export
 durationFromSeconds : Integer -> Duration
 durationFromSeconds value = MkDuration (value * 1000000000)
 
-||| Alias for `durationFromSeconds`.
+||| Construct a duration from an exact number of seconds.
 public export
 fromSeconds : Integer -> Duration
 fromSeconds = durationFromSeconds
@@ -71,7 +71,7 @@ export
 durationFromMinutes : Integer -> Duration
 durationFromMinutes value = durationFromSeconds (value * 60)
 
-||| Alias for `durationFromMinutes`.
+||| Construct a duration from fixed 60-second minutes.
 public export
 fromMinutes : Integer -> Duration
 fromMinutes = durationFromMinutes
@@ -81,7 +81,7 @@ export
 durationFromHours : Integer -> Duration
 durationFromHours value = durationFromMinutes (value * 60)
 
-||| Alias for `durationFromHours`.
+||| Construct a duration from fixed 60-minute hours.
 public export
 fromHours : Integer -> Duration
 fromHours = durationFromHours
@@ -91,7 +91,7 @@ export
 durationFromStandardDays : Integer -> Duration
 durationFromStandardDays value = durationFromHours (value * 24)
 
-||| Alias for `durationFromStandardDays`.
+||| Construct a duration from fixed 24-hour days, independent of calendars and zones.
 public export
 fromStandardDays : Integer -> Duration
 fromStandardDays = durationFromStandardDays
@@ -101,7 +101,7 @@ export
 durationFromStandardWeeks : Integer -> Duration
 durationFromStandardWeeks value = durationFromStandardDays (value * 7)
 
-||| Alias for `durationFromStandardWeeks`.
+||| Construct a duration from fixed seven-day weeks.
 public export
 fromStandardWeeks : Integer -> Duration
 fromStandardWeeks = durationFromStandardWeeks
@@ -122,7 +122,7 @@ addDurations : Duration -> Duration -> Duration
 addDurations left right =
   MkDuration (left.storedNanoseconds + right.storedNanoseconds)
 
-||| Alias for `addDurations`.
+||| Add two elapsed durations.
 public export
 add : Duration -> Duration -> Duration
 add = addDurations
@@ -133,7 +133,7 @@ subtractDurations : Duration -> Duration -> Duration
 subtractDurations left right =
   MkDuration (left.storedNanoseconds - right.storedNanoseconds)
 
-||| Alias for `subtractDurations`.
+||| Subtract the second duration from the first.
 public export
 minus : Duration -> Duration -> Duration
 minus = subtractDurations
@@ -151,11 +151,11 @@ scaleDuration factor value = MkDuration (factor * value.storedNanoseconds)
 ||| Proof that constructing then observing a nanosecond count is lossless.
 public export
 durationNanosecondsRoundTrip : (value : Integer) ->
-  toDurationNanoseconds (durationFromNanoseconds value) = value
+  toDurationNanoseconds (fromNanoseconds value) = value
 durationNanosecondsRoundTrip value = Refl
 
 ||| Proof that observing then reconstructing a duration preserves it.
 public export
 durationRoundTrip : (value : Duration) ->
-  durationFromNanoseconds (toDurationNanoseconds value) = value
+  fromNanoseconds (toDurationNanoseconds value) = value
 durationRoundTrip (MkDuration value) = Refl

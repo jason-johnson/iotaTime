@@ -70,4 +70,31 @@ if (!/<pre><code(?: class="[^"]+")?>[\s\S]*?<\/code><\/pre>/.test(patternPage)) 
   throw new Error("IotaTime.Pattern.html has no fenced cookbook code block");
 }
 
+const durationPage = await readFile(
+  path.join(outputDirectory, "docs", "IotaTime.Duration.html"),
+  "utf8",
+);
+const hiddenDurationNames = [
+  "durationFromNanoseconds",
+  "durationFromMicroseconds",
+  "durationFromMilliseconds",
+  "durationFromSeconds",
+  "durationFromMinutes",
+  "durationFromHours",
+  "durationFromStandardDays",
+  "durationFromStandardWeeks",
+  "addDurations",
+  "subtractDurations",
+];
+for (const name of hiddenDurationNames) {
+  if (durationPage.includes(name)) {
+    throw new Error(`IotaTime.Duration.html exposes hidden helper ${name}`);
+  }
+}
+if (!durationPage.includes(
+  "Construct a duration from an exact number of nanoseconds.",
+)) {
+  throw new Error("IotaTime.Duration.html lacks the public fromNanoseconds description");
+}
+
 console.log(`Validated documentation in ${outputDirectory}`);

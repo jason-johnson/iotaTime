@@ -67,6 +67,33 @@ hours.</p>
 <pre><code class="language-idris">calendarAndClockPeriod : Period (CalendarDateTime Gregorian)
 calendarAndClockPeriod = months 1 &lt;+&gt; hours 2
 </code></pre>
+<p><code>Period target</code> implements these Prelude interfaces:</p>
+<table>
+<thead>
+<tr>
+<th>Interface</th>
+<th>Available operations</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Eq</code></td>
+<td><code>==</code>, <code>/=</code></td>
+</tr>
+<tr>
+<td><code>Show</code></td>
+<td><code>show</code></td>
+</tr>
+<tr>
+<td><code>Semigroup</code></td>
+<td><code>&lt;+&gt;</code> combines corresponding period components</td>
+</tr>
+<tr>
+<td><code>Monoid</code></td>
+<td><code>neutral</code> is the period with every component set to zero</td>
+</tr>
+</tbody></table>
+<p>It does not implement <code>Num</code>: use <code>negatePeriod</code> and <code>scalePeriod</code> for the
+supported arithmetic operations rather than <code>+</code>, <code>-</code>, or <code>*</code>.</p>
 <p>The target index rejects nonsensical combinations at compile time, such as
 months for <code>LocalTime</code> or hours for <code>CalendarDate</code>.</p>
 <h3 id="recipe-apply-a-period">Apply a period</h3>

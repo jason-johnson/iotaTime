@@ -1,6 +1,6 @@
 module IotaTime.Tzdb.Provider
 
-import public IotaTime.TimeZone
+import public IotaTime.TimeZone.Core
 import public IotaTime.Tzdb.Metadata
 import IotaTime.Tzdb.Posix
 import IotaTime.Tzdb.Tzif

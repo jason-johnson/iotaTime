@@ -1,6 +1,6 @@
 module IotaTime.Tzdb.Windows.Types
 
-import public IotaTime.TimeZone
+import IotaTime.TimeZone.Core
 
 %default total
 

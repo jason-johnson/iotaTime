@@ -304,9 +304,9 @@ The HodaTime names `empty`, `fromSeconds`, `fromMinutes`, `fromHours`, `seconds`
 
 ## Date-time zones
 
-`TimeZone` is the HodaTime-compatible name for the opaque in-memory zone model; `DateTimeZone` remains an alias. Applications acquire zones through the platform provider rather than constructing transitions directly. The implementation uses bounds-checked TZif decoding, validated POSIX future rules, and native Windows registry data, but those parsers and assembly types are internal modules rather than supported consumer API.
+`TimeZone` is the HodaTime-compatible name for the opaque in-memory zone model. `IotaTime.TimeZone` also owns HodaTime's platform-loading API. The implementation uses bounds-checked TZif decoding, validated POSIX future rules, and native Windows registry data, but those parsers and assembly types are internal modules rather than supported consumer API. Explicit providers, caching, and metadata remain available through `IotaTime.Tzdb`.
 
-On Unix-like systems, the HodaTime-compatible names have typed effect signatures:
+The HodaTime-compatible platform loaders have typed effect signatures:
 
 ```idris
 utc : IO (Either TzdbError TimeZone)

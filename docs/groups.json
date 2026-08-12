@@ -43,12 +43,10 @@
     { "title": "Values and arithmetic", "names": ["empty", "addClamped", "minusClamped", "negateOffset"] }
   ],
   "IotaTime.TimeZone": [
-    { "hidden": true, "names": ["TransitionTimeMode", "RecurrenceRuleError"] },
-    { "title": "Zone type", "names": ["TimeZone"] },
-    { "title": "Errors", "names": ["TimeZoneError"] }
+    { "title": "Zone acquisition", "names": ["utc", "timeZone", "localZone", "availableZones"] }
   ],
   "IotaTime.Tzdb": [
-    { "title": "Platform provider", "names": ["systemTimeZoneProvider", "unixTimeZoneProvider", "utc", "timeZone", "localZone", "availableZones", "metadata"] },
+    { "title": "Platform provider", "names": ["systemTimeZoneProvider", "unixTimeZoneProvider", "metadata"] },
     { "title": "Explicit providers", "names": ["utcWith", "timeZoneWith", "localZoneWith", "availableZonesWith", "metadataWith"] },
     { "title": "Windows snapshots", "names": ["windowsSnapshotTimeZoneProvider"] }
   ],

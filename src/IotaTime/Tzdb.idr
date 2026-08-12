@@ -208,24 +208,24 @@ metadataWith : TimeZoneProvider -> IO (Either TzdbError TzdbMetadata)
 metadataWith = providerMetadata
 
 ||| Load UTC from the platform TZDB.
-public export
-utc : IO (Either TzdbError TimeZone)
-utc = utcWith systemTimeZoneProvider
+export
+loadSystemUtc : IO (Either TzdbError TimeZone)
+loadSystemUtc = utcWith systemTimeZoneProvider
 
 ||| Load a named zone from the platform TZDB.
-public export
-timeZone : String -> IO (Either TzdbError TimeZone)
-timeZone = timeZoneWith systemTimeZoneProvider
+export
+loadSystemTimeZone : String -> IO (Either TzdbError TimeZone)
+loadSystemTimeZone = timeZoneWith systemTimeZoneProvider
 
 ||| Load the locally configured platform zone.
-public export
-localZone : IO (Either TzdbError TimeZone)
-localZone = localZoneWith systemTimeZoneProvider
+export
+loadSystemLocalZone : IO (Either TzdbError TimeZone)
+loadSystemLocalZone = localZoneWith systemTimeZoneProvider
 
 ||| List every zone available through the platform provider.
-public export
-availableZones : IO (Either TzdbError (List String))
-availableZones = availableZonesWith systemTimeZoneProvider
+export
+loadSystemAvailableZones : IO (Either TzdbError (List String))
+loadSystemAvailableZones = availableZonesWith systemTimeZoneProvider
 
 ||| Query version, aliases, and Windows/IANA mappings from the platform
 ||| provider.

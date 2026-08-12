@@ -1,4 +1,4 @@
--- EXPECT: IotaTime.TimeZone.MkTimeZone is private.
+-- EXPECT: IotaTime.TimeZone.Core.MkTimeZone is private.
 
 module ForgedTimeZone
 

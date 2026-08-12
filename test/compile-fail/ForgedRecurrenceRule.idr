@@ -1,4 +1,4 @@
--- EXPECT: IotaTime.TimeZone.MkRecurrenceRule is private.
+-- EXPECT: IotaTime.TimeZone.Core.MkRecurrenceRule is private.
 
 module ForgedRecurrenceRule
 

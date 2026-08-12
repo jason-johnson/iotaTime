@@ -1,7 +1,6 @@
 module Test.TimeZone
 
 import IotaTime
-import IotaTime.TimeZone
 import IotaTime.Tzdb.Windows.Platform
 import IotaTime.Tzdb.Windows.Types
 import Test.Support
@@ -136,7 +135,7 @@ windowsSnapshotReadsOnce = do
 export
 run : IO Bool
 run = do
-  systemUtc <- utc
+  systemUtc <- the (IO (Either TzdbError TimeZone)) utc
   systemNewYork <- timeZone "America/New_York"
   rejectedPath <- timeZone "../etc/passwd"
   systemLocal <- localZone

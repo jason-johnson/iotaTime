@@ -18,7 +18,7 @@ import public IotaTime.Calendar.Hebrew
 import public IotaTime.LocalTime
 import public IotaTime.CalendarDateTime
 import public IotaTime.OffsetDateTime
-import public IotaTime.TimeZone
+import public IotaTime.TimeZone.Core
 import public IotaTime.ZonedDateTime
 import public IotaTime.Clock
 import public IotaTime.Tzdb.Provider

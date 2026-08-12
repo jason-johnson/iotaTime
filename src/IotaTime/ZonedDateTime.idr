@@ -1,6 +1,6 @@
 module IotaTime.ZonedDateTime
 
-import public IotaTime.TimeZone
+import public IotaTime.TimeZone.Core
 import public IotaTime.Duration
 import public IotaTime.OffsetDateTime
 
@@ -133,8 +133,8 @@ public export
   compare left right = case compare
     (zonedInstant left) (zonedInstant right) of
       EQ => compare
-        (IotaTime.TimeZone.zoneId left.zonedZone)
-        (IotaTime.TimeZone.zoneId right.zonedZone)
+        (IotaTime.TimeZone.Core.zoneId left.zonedZone)
+        (IotaTime.TimeZone.Core.zoneId right.zonedZone)
       ordering => ordering
 
 public export
@@ -153,7 +153,7 @@ zoneOf = zonedZone
 public export
 zoneId : {calendar : Type} -> {auto cal : Calendar calendar} ->
          ZonedDateTime calendar @{cal} -> String
-zoneId = IotaTime.TimeZone.zoneId . zonedZone
+zoneId = IotaTime.TimeZone.Core.zoneId . zonedZone
 
 public export
 inDst : {calendar : Type} -> {auto cal : Calendar calendar} ->

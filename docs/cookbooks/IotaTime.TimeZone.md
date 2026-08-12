@@ -1,12 +1,10 @@
 ## Using TimeZone
 
-`IotaTime.TimeZone` publicly re-exports the opaque zone type and its error
-types, but no zone operations. Acquire system and named zones through
-[`IotaTime.Tzdb`](IotaTime.Tzdb.html), and resolve local civil times or work
-with zoned values through
-[`IotaTime.ZonedDateTime`](IotaTime.ZonedDateTime.html). Lower-level
-declarations in this module use `export` for direct internal consumers and are
-not part of the re-exported public API documented here.
+`IotaTime.TimeZone` re-exports the opaque `TimeZone` type and provides the
+HodaTime-compatible platform loaders. Advanced provider selection, caching,
+and metadata are available through [`IotaTime.Tzdb`](IotaTime.Tzdb.html).
+Resolve local civil times and work with zoned values through
+[`IotaTime.ZonedDateTime`](IotaTime.ZonedDateTime.html).
 
 ### Load a named system time zone
 

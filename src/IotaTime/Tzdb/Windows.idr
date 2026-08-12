@@ -1,6 +1,7 @@
 module IotaTime.Tzdb.Windows
 
 import IotaTime.Internal.Gregorian
+import IotaTime.TimeZone.Core
 import IotaTime.Tzdb.Windows.Types
 import Data.String
 

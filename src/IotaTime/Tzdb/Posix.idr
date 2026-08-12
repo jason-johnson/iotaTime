@@ -1,6 +1,6 @@
 module IotaTime.Tzdb.Posix
 
-import public IotaTime.TimeZone
+import public IotaTime.TimeZone.Core
 import Data.List
 
 %default total

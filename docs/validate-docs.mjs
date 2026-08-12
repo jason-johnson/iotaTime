@@ -2,7 +2,12 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
+const scriptDirectory = path.dirname(new URL(import.meta.url).pathname);
 const outputDirectory = path.resolve(process.argv[2] ?? "build/docs");
+const publicModules = JSON.parse(await readFile(
+  path.join(scriptDirectory, "public-modules.json"),
+  "utf8",
+));
 
 function ruleProperties(stylesheet, selector) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -39,6 +44,16 @@ const stylesheet = await readFile(
   path.join(outputDirectory, "iotatime.css"),
   "utf8",
 );
+for (const moduleName of publicModules) {
+  const page = await readFile(
+    path.join(outputDirectory, "docs", `${moduleName}.html`),
+    "utf8",
+  );
+  if (page.includes('id="other-definitions"')) {
+    throw new Error(`${moduleName}.html has ungrouped declarations`);
+  }
+}
+
 await Promise.all([
   "cookbooks.html",
   "guide.html",

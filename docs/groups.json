@@ -1,8 +1,8 @@
 {
   "IotaTime.Pattern": [
-    { "title": "Core types", "names": ["Pattern", "PatternError", "LiteralPattern"] },
+    { "title": "Core types", "names": ["Pattern", "PatternError", "LiteralPattern", "PatternParser", "Pattern.(.initialState)", "Pattern.initialState", "Pattern.(.finish)", "Pattern.finish", "Pattern.(.parsePart)", "Pattern.parsePart", "Pattern.(.formatPart)", "Pattern.formatPart", "LiteralPattern.(.literalText)", "LiteralPattern.literalText"] },
     { "title": "Parsing and formatting", "names": ["parse", "parseWith", "format", "pSignedInteger"] },
-    { "title": "Composition", "names": ["string", "char", "<%"] }
+    { "title": "Composition", "names": ["string", "char", "(<%)"] }
   ],
   "IotaTime.Pattern.Scalar": [
     { "title": "Timeline and calendar scalars", "names": ["pInstantNanoseconds", "pCalendarDays"] },
@@ -29,6 +29,7 @@
   ],
   "IotaTime.Interval": [
     { "title": "Type and construction", "names": ["Interval", "interval", "refineInterval", "IntervalError"] },
+    { "title": "Proof predicates and laws", "names": ["isValidInterval", "intervalIsValid"] },
     { "title": "Endpoints and membership", "names": ["start", "end", "contains", "isEmpty", "duration"] },
     { "title": "Relationships and set operations", "names": ["overlaps", "isAdjacent", "intersection", "union"] },
     { "title": "Unbounded construction and conversion", "names": ["UnboundedInterval", "isValidUnboundedInterval", "isValidUnboundedNanosecondInterval", "unboundedInterval", "refineUnboundedInterval", "toUnboundedInterval", "toBoundedInterval"] },
@@ -42,34 +43,40 @@
     { "title": "Values and arithmetic", "names": ["empty", "addClamped", "minusClamped", "negateOffset"] }
   ],
   "IotaTime.TimeZone": [
+    { "hidden": true, "names": ["TransitionTimeMode", "RecurrenceRuleError"] },
     { "title": "Zone type and identity", "names": ["TimeZone", "zoneId"] },
     { "title": "Construction", "names": ["fixedTimeZone", "timeZoneFromTransitions", "refineTimeZone", "TimeZoneError"] },
     { "title": "Instant queries", "names": ["zoneOffsetAt", "ZoneInterval", "zoneIntervalAt", "intervalStart", "intervalEnd", "wallOffset", "savings", "intervalIsDaylightSavingTime", "intervalAbbreviation"] }
   ],
   "IotaTime.Tzdb": [
-    { "title": "Platform provider", "names": ["systemTimeZoneProvider", "utc", "timeZone", "localZone", "availableZones", "metadata"] },
+    { "title": "Platform provider", "names": ["systemTimeZoneProvider", "unixTimeZoneProvider", "utc", "timeZone", "localZone", "availableZones", "metadata"] },
     { "title": "Explicit providers", "names": ["utcWith", "timeZoneWith", "localZoneWith", "availableZonesWith", "metadataWith"] },
     { "title": "Windows snapshots", "names": ["windowsSnapshotTimeZoneProvider"] }
   ],
   "IotaTime.Tzdb.Provider": [
-    { "title": "Provider contract", "names": ["TzdbError", "TimeZoneProvider"] },
-    { "title": "Opt-in caching", "names": ["TimeZoneCachePolicy", "defaultTimeZoneCachePolicy", "cachedTimeZoneProvider"] }
+    { "title": "Provider contract", "names": ["TzdbError", "TimeZoneProvider", "TimeZoneProvider.(.providerUtc)", "TimeZoneProvider.providerUtc", "TimeZoneProvider.(.providerTimeZone)", "TimeZoneProvider.providerTimeZone", "TimeZoneProvider.(.providerLocalZone)", "TimeZoneProvider.providerLocalZone", "TimeZoneProvider.(.providerAvailableZones)", "TimeZoneProvider.providerAvailableZones", "TimeZoneProvider.(.providerMetadata)", "TimeZoneProvider.providerMetadata"] },
+    { "title": "Opt-in caching", "names": ["TimeZoneCachePolicy", "TimeZoneCachePolicy.(.cacheNamedZones)", "TimeZoneCachePolicy.cacheNamedZones", "TimeZoneCachePolicy.(.cacheAvailableZones)", "TimeZoneCachePolicy.cacheAvailableZones", "TimeZoneCachePolicy.(.cacheMetadata)", "TimeZoneCachePolicy.cacheMetadata", "TimeZoneCachePolicy.(.cacheLocalZone)", "TimeZoneCachePolicy.cacheLocalZone", "defaultTimeZoneCachePolicy", "cachedTimeZoneProvider"] }
   ],
   "IotaTime.Tzdb.Metadata": [
     { "title": "Metadata", "names": ["TzdbMetadata", "tzdbVersion"] },
     { "title": "TZDB identity", "names": ["ZoneAlias", "zoneAliases", "canonicalZoneId", "parseTzdataIdentity"] }
   ],
   "IotaTime.Calendar": [
+    { "hidden": true, "names": ["DateRep", "MonthRep", "isValidDays", "fromDays", "toDaysValid", "toFromDays", "fromToDays", "calendarName", "year'", "toYmd", "day'", "month'", "applyCalendarPeriod'", "shiftCalendarDays'", "CalendarMonth", "calendarValueToDays", "calendarValueYear", "calendarValueMonthDay", "calendarValueDayOfWeek", "calendarValueBetweenWith", "calendarValueNext", "calendarValuePrevious"] },
     { "title": "Calendar capability", "names": ["Calendar", "CalendarDate", "HasCalendarDate"] },
-    { "title": "Date components", "names": ["DayOfWeek", "weekdayNumber", "weekdayFromNumber", "year", "month", "day", "dayOfWeek", "yearMonthDay"] },
-    { "title": "Difference policy", "names": ["DateDifferenceUnits", "MonthArithmeticPolicy", "DateDifferencePolicy", "nodaTimePolicy"] },
-    { "title": "Conversion and arithmetic", "names": ["withCalendar", "between", "betweenWith", "betweenDays"] }
+    { "title": "Weekdays", "names": ["DayOfWeek", "daysPerWeek", "DayNth", "weekdayNumber", "weekdayFromNumber"] },
+    { "title": "Date components", "names": ["year", "month", "day", "dayOfWeek", "yearMonthDay"] },
+    { "title": "Difference policy", "names": ["DateDifferenceUnits", "MonthArithmeticPolicy", "DateDifferencePolicy", "DateDifferencePolicy.(.units)", "DateDifferencePolicy.units", "DateDifferencePolicy.(.monthArithmetic)", "DateDifferencePolicy.monthArithmetic", "nodaTimePolicy"] },
+    { "title": "Conversion and arithmetic", "names": ["CalendarConversionError", "withCalendar", "toDays", "between", "betweenWith", "betweenDays"] },
+    { "title": "Dictionary-based operations", "names": ["toDaysFor", "dayOfWeekFor", "nextFor", "previousFor", "yearFor", "monthFor", "dayFor", "betweenDaysFor", "betweenWithFor", "betweenFor", "yearMonthDayFor"] },
+    { "title": "Proofs and navigation", "names": ["calendarComponentsCoherent", "next", "previous"] }
   ],
   "IotaTime.Calendar.Gregorian": [
+    { "hidden": true, "names": ["epochDay"] },
     { "title": "Calendar and components", "names": ["Gregorian", "Month", "monthNumber"] },
-    { "title": "Calendar rules", "names": ["isLeapYear", "maxDaysInMonth", "isValidGregorianDate", "isValidGregorianDays", "isValidGregorianNthDay", "isValidGregorianWeekDate"] },
-    { "title": "Static construction", "names": ["calendarDate", "gregorianFromDays", "fromNthDay", "fromWeekDate"] },
-    { "title": "Runtime refinement", "names": ["GregorianDateError", "refineGregorianDate", "refineGregorianDays", "refineGregorianNthDay", "refineGregorianWeekDate"] }
+    { "title": "Calendar rules", "names": ["isLeapYear", "maxDaysInMonth", "isValidDate", "isValidGregorianDate", "isValidGregorianDays", "isValidNthDay", "isValidGregorianNthDay", "isValidWeekDate", "isValidGregorianWeekDate"] },
+    { "title": "Static construction", "names": ["calendarDate", "fromDays", "gregorianFromDays", "fromNthDay", "fromWeekDate"] },
+    { "title": "Runtime refinement", "names": ["GregorianDateError", "refineDate", "refineGregorianDate", "refineDays", "refineGregorianDays", "refineNthDay", "refineGregorianNthDay", "refineWeekDate", "refineGregorianWeekDate"] }
   ],
   "IotaTime.Calendar.Persian": [
     { "hidden": true, "names": ["weekdayFromDays", "minimumYear", "maximumYear", "epoch", "leapYears", "countLeapsBefore", "newYearDay", "lastDay", "monthOffset", "daysFromCivil", "nthDayOfMonth", "weekDateDays", "arithmeticLastDay", "arithmeticDaysFromCivil"] },
@@ -88,39 +95,115 @@
     { "title": "Runtime refinement", "names": ["LocalTimeError", "refineLocalTime"] }
   ],
   "IotaTime.CalendarDateTime": [
+    { "hidden": true, "names": ["CalendarDateTimeRep", "CalendarDateTimeRep.(.date)", "CalendarDateTimeRep.date", "CalendarDateTimeRep.(.time)", "CalendarDateTimeRep.time"] },
     { "title": "Type and construction", "names": ["CalendarDateTime", "on", "at", "atStartOfDay"] },
     { "title": "Components", "names": ["datePart", "localTimeOfDay"] },
-    { "title": "Conversion and arithmetic", "names": ["withCalendar", "between"] }
+    { "title": "Conversion and arithmetic", "names": ["withCalendar", "between"] },
+    { "title": "Proofs", "names": ["atDatePart", "atLocalTimeOfDay", "calendarDateTimeRoundTrip"] }
   ],
   "IotaTime.OffsetDateTime": [
     { "title": "Type and construction", "names": ["OffsetDateTime", "fromCalendarDateTimeWithOffset", "fromInstantWithOffset"] },
     { "title": "Observation", "names": ["toCalendarDateTime", "offset", "toInstant"] },
-    { "title": "Conversion", "names": ["withOffset", "withCalendar"] }
+    { "title": "Conversion", "names": ["withOffset", "withCalendar"] },
+    { "title": "Proofs", "names": ["offsetDateTimeLocalPart", "offsetDateTimeOffsetPart", "offsetDateTimeRoundTrip"] }
   ],
   "IotaTime.ZonedDateTime": [
     { "title": "Type and instant-based construction", "names": ["ZonedDateTime", "fromInstant"] },
-    { "title": "Local mapping and resolution", "names": ["resolveLocal", "fromCalendarDateTimeAll", "ZonedDateTimeError", "fromCalendarDateTimeStrictly", "fromCalendarDateTimeLeniently"] },
+    { "title": "Local mapping and resolution", "names": ["ZonedMapping", "resolveLocal", "fromCalendarDateTimeAll", "ZonedDateTimeError", "fromCalendarDateTimeStrictly", "fromCalendarDateTimeLeniently"] },
     { "title": "Civil components", "names": ["toCalendarDateTime", "toCalendarDate", "toLocalTime", "year", "month", "day", "hour", "minute", "second", "nanosecond"] },
     { "title": "Timeline and zone information", "names": ["toInstant", "zoneId", "inDst", "zoneAbbreviation"] },
     { "title": "Conversion", "names": ["withZone", "withCalendar"] },
     { "title": "Fixed-duration arithmetic", "names": ["add", "minus"] }
   ],
   "IotaTime.Pattern.CalendarDate": [
-    { "title": "Pattern state", "names": ["DateFields"] },
+    { "title": "Pattern state", "names": ["DateFields", "DateFields.(.parsedYear)", "DateFields.parsedYear", "DateFields.(.parsedMonth)", "DateFields.parsedMonth", "DateFields.(.parsedDay)", "DateFields.parsedDay", "DateFields.(.parsedWeekday)", "DateFields.parsedWeekday"] },
     { "title": "Year fields", "names": ["pyear", "pyyyy", "pyy"] },
     { "title": "Month fields", "names": ["pmonthNum", "pMM", "pMonthName", "pMMMM", "pMMM", "pMMMM'", "pMMM'"] },
     { "title": "Day fields", "names": ["pday", "pdd", "pdaySpace", "pDayName", "pdddd", "pddd", "pdddd'", "pddd'"] },
+    { "title": "Verified weekday fields", "names": ["pVerifiedDayName", "pddddVerified", "pdddVerified", "pddddVerified'", "pdddVerified'"] },
     { "title": "Standard patterns", "names": ["pd", "pD", "pR", "pmonthDay", "pyearMonth"] }
   ],
   "IotaTime.Pattern.LocalTime": [
-    { "title": "Pattern state", "names": ["TimeFields"] },
+    { "title": "Pattern state", "names": ["TimeFields", "TimeFields.(.parsedHour)", "TimeFields.parsedHour", "TimeFields.(.parsedMinute)", "TimeFields.parsedMinute", "TimeFields.(.parsedSecond)", "TimeFields.parsedSecond", "TimeFields.(.parsedNanosecond)", "TimeFields.parsedNanosecond"] },
     { "title": "24-hour fields", "names": ["phour", "pHH", "pminute", "pmm", "psecond", "pss"] },
     { "title": "12-hour fields", "names": ["phh", "phhSpace", "pp", "ppp", "pPeriod", "ppp'"] },
-    { "title": "Fractional seconds", "names": ["pfrac"] },
+    { "title": "Fractional seconds", "names": ["isValidFractionWidth", "pfrac"] },
     { "title": "Standard patterns", "names": ["pt", "pT", "pr"] }
   ],
   "IotaTime.Pattern.ZonedDateTime": [
     { "title": "Formatting", "names": ["ZonedDateTimePattern", "zonedDateTimePattern", "formatZonedDateTime", "pZonedDateTime", "pZonedDateTimeQuoted"] },
     { "title": "Effectful parsing", "names": ["ZonedDateTimePatternError", "parseZonedDateTimePatternWith", "parseZonedDateTimeWith", "parseStandardZonedDateTime"] }
+  ],
+  "IotaTime.Period": [
+    { "hidden": true, "names": ["calendarCapability", "timeCapability"] },
+    { "title": "Construction", "names": ["years", "months", "weeks", "days", "hours", "minutes", "seconds", "nanoseconds"] },
+    { "title": "Application", "names": ["applyPeriod"] },
+    { "title": "Arithmetic", "names": ["negatePeriod", "scalePeriod"] }
+  ],
+  "IotaTime.Calendar.Iso": [
+    { "hidden": true, "names": ["daysFromCivil", "weekDateDays"] },
+    { "title": "ISO week-date rules", "names": ["isValidWeekDate"] },
+    { "title": "ISO week-date construction", "names": ["fromWeekDate"] },
+    { "title": "Runtime refinement", "names": ["IsoWeekDateError", "refineWeekDate"] }
+  ],
+  "IotaTime.Calendar.Coptic": [
+    { "hidden": true, "names": ["epochDay", "weekDateDays"] },
+    { "title": "Calendar and components", "names": ["Coptic", "CopticMonths.CopticMonth", "CopticMonths.monthNumber"] },
+    { "title": "Calendar rules", "names": ["isLeapYear", "maxDaysInMonth", "isValidDate", "isValidNthDay", "isValidWeekDate"] },
+    { "title": "Static construction", "names": ["calendarDate", "fromDays", "nthDayOfMonth", "fromNthDay", "fromWeekDate"] },
+    { "title": "Runtime refinement", "names": ["CopticDateError", "refineDate", "refineDays", "refineNthDay", "refineWeekDate"] }
+  ],
+  "IotaTime.Calendar.Islamic": [
+    { "hidden": true, "names": ["leapCycleYears", "epochDay", "dateConstructorName", "nthDayOfMonth", "civilNthDayOfMonth", "weekDateDays", "civilWeekDateDays"] },
+    { "title": "Calendar families", "names": ["IslamicLeapPattern", "IslamicEpoch", "IslamicByEpoch", "Islamic", "CivilIslamic", "IslamicBase15", "IslamicBase16", "IslamicIndian", "IslamicHabashAlHasib", "IslamicBcl", "CivilIslamicBase15", "CivilIslamicBase16", "CivilIslamicIndian", "CivilIslamicHabashAlHasib", "CivilIslamicBcl"] },
+    { "title": "Calendar components", "names": ["IslamicMonths.IslamicMonth", "IslamicMonths.monthNumber"] },
+    { "title": "Calendar rules", "names": ["isLeapYear", "maxDaysInMonth", "isValidDate", "isValidNthDay", "isValidCivilNthDay", "isValidWeekDate", "isValidCivilWeekDate"] },
+    { "title": "Astronomical construction", "names": ["calendarDate'", "calendarDate", "fromDays'", "fromDays", "fromNthDay'", "fromNthDay", "fromWeekDate'", "fromWeekDate"] },
+    { "title": "Civil construction", "names": ["civilCalendarDate'", "civilCalendarDate", "civilFromDays'", "civilFromDays", "civilFromNthDay'", "civilFromNthDay", "civilFromWeekDate'", "civilFromWeekDate"] },
+    { "title": "Runtime refinement", "names": ["IslamicDateError", "refineDate'", "refineDate", "refineDays'", "refineDays", "refineNthDay'", "refineNthDay", "refineWeekDate'", "refineWeekDate", "refineCivilDate'", "refineCivilDate", "refineCivilDays'", "refineCivilDays", "refineCivilNthDay'", "refineCivilNthDay", "refineCivilWeekDate'", "refineCivilWeekDate"] }
+  ],
+  "IotaTime.Calendar.Julian": [
+    { "hidden": true, "names": ["epochDay"] },
+    { "title": "Calendar and components", "names": ["Julian", "JulianMonths.JulianMonth", "JulianMonths.monthNumber"] },
+    { "title": "Calendar rules", "names": ["isLeapYear", "maxDaysInMonth", "isValidDate", "isValidNthDay", "isValidWeekDate"] },
+    { "title": "Static construction", "names": ["calendarDate", "fromDays", "fromNthDay", "fromWeekDate"] },
+    { "title": "Runtime refinement", "names": ["JulianDateError", "refineDate", "refineDays", "refineNthDay", "refineWeekDate"] }
+  ],
+  "IotaTime.Calendar.Hebrew": [
+    { "hidden": true, "names": ["numberingStart", "HebrewMonths.calendarIndex", "monthsElapsed", "elapsedDays", "firstDayOfYear", "monthLengthByIndex", "epochDay", "nthDayOfMonth", "weekDateDays"] },
+    { "title": "Calendar families", "names": ["HebrewNumbering", "Hebrew", "HebrewCivil", "HebrewScriptural"] },
+    { "title": "Calendar components", "names": ["HebrewMonths.HebrewMonth", "HebrewMonthName", "monthName", "monthNumber"] },
+    { "title": "Calendar rules", "names": ["isLeapYear", "daysInYear", "isCheshvanLong", "isKislevShort", "maxDaysInMonth", "isValidDay", "isValidDate", "isValidNthDay", "isValidWeekDate"] },
+    { "title": "Static construction", "names": ["calendarDate'", "calendarDate", "fromDays'", "fromDays", "fromNthDay'", "fromNthDay", "fromWeekDate'", "fromWeekDate"] },
+    { "title": "Runtime refinement", "names": ["HebrewDateError", "refineMonth", "refineDate'", "refineDate", "refineDays'", "refineDays", "refineNthDay'", "refineNthDay", "refineWeekDate'", "refineWeekDate"] }
+  ],
+  "IotaTime.Locale": [
+    { "title": "Locale data", "names": ["localeId", "monthNames", "monthNamesShort", "dayNames", "dayNamesShort", "amName", "pmName"] },
+    { "title": "Locale acquisition", "names": ["LocaleError", "localeByName", "currentLocale"] },
+    { "title": "Built-in locales", "names": ["enUS", "deDE", "jaJP"] }
+  ],
+  "IotaTime.Pattern.Offset": [
+    { "title": "Standard patterns", "names": ["pOffset", "pOffsetFull", "pOffsetZ", "pOffsetCompact"] }
+  ],
+  "IotaTime.Pattern.Duration": [
+    { "title": "Standard patterns", "names": ["pDuration", "pDurationNano"] }
+  ],
+  "IotaTime.Pattern.Instant": [
+    { "title": "Pattern construction", "names": ["instantPattern", "parseInstant", "formatInstant"] },
+    { "title": "Standard patterns", "names": ["pInstant", "pInstantNano"] }
+  ],
+  "IotaTime.Pattern.CalendarDateTime": [
+    { "title": "Pattern construction", "names": ["calendarDateTimePattern"] },
+    { "title": "Standard patterns", "names": ["ps", "po", "pf", "pF", "pg", "pG"] }
+  ],
+  "IotaTime.Pattern.OffsetDateTime": [
+    { "title": "Pattern construction", "names": ["offsetDateTimePattern"] },
+    { "title": "Standard patterns", "names": ["pOffsetDateTime"] }
+  ],
+  "IotaTime.Pattern.Locale": [
+    { "title": "Layout compilation", "names": ["StrftimeError", "compileDatePattern", "localeDatePattern", "compileTimePattern", "localeTimePattern"] },
+    { "title": "Date-time parser state", "names": ["DateTimeFields", "DateTimeFields.(.parsedDateFields)", "DateTimeFields.parsedDateFields", "DateTimeFields.(.parsedTimeFields)", "DateTimeFields.parsedTimeFields"] },
+    { "title": "Date-time layouts", "names": ["compileDateTimePattern", "localeDateTimePattern", "compileOffsetDateTimePattern", "localeOffsetDateTimePattern"] },
+    { "title": "Zoned parsing", "names": ["ZonedPatternError", "parseZonedDateTime"] }
   ]
 }

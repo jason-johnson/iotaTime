@@ -173,5 +173,22 @@ const timeZonePage = await readFile(
 if (timeZonePage.includes("IotaTime.TimeZone.mappingCandidates")) {
   throw new Error("IotaTime.TimeZone.html exposes internal mappingCandidates");
 }
+for (const name of [
+  "fixedTimeZone",
+  "zoneId",
+  "zoneIntervalAt",
+  "zoneOffsetAt",
+]) {
+  if (timeZonePage.includes(`IotaTime.TimeZone.${name}`)) {
+    throw new Error(`IotaTime.TimeZone.html exposes export-only ${name}`);
+  }
+}
+if (!timeZonePage.includes("but no zone operations")) {
+  throw new Error("IotaTime.TimeZone.html lacks its public-surface notice");
+}
+if (!timeZonePage.includes('href="IotaTime.Tzdb.html"') ||
+    !timeZonePage.includes('href="IotaTime.ZonedDateTime.html"')) {
+  throw new Error("IotaTime.TimeZone.html lacks operational module links");
+}
 
 console.log(`Validated documentation in ${outputDirectory}`);

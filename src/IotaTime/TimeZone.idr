@@ -565,6 +565,7 @@ insertByInstant value (current :: rest) =
     then value :: current :: rest
     else current :: insertByInstant value rest
 
+export
 mappingCandidates : {calendar : Type} -> {auto cal : Calendar calendar} ->
                     {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                     TimeZone -> CalendarDateTime calendar @{cal} ->
@@ -638,28 +639,3 @@ lenientLocalMapping valueZone local = case mappingCandidates valueZone local of
       Just value => Right (Just value)
       Nothing => findLenientGapByOffsets valueZone local (zoneOffsets valueZone)
   first :: _ => Right (Just first)
-
-||| Internal mapping result used by `IotaTime.ZonedDateTime`.
-||| This type is not part of the supported public API; use
-||| `IotaTime.ZonedDateTime.ZonedMapping` instead.
-||| The ambiguous case retains every valid instant, including pathological
-||| zone data that creates more than the usual two candidates.
-public export
-data LocalMapping : (calendar : Type) ->
-                    (cal : Calendar calendar) -> Type where
-  Skipped : LocalMapping calendar cal
-  Unambiguous : OffsetDateTime calendar @{cal} -> LocalMapping calendar cal
-  Ambiguous : (earliest : OffsetDateTime calendar @{cal}) ->
-              (next : OffsetDateTime calendar @{cal}) ->
-              (additional : List (OffsetDateTime calendar @{cal})) ->
-              LocalMapping calendar cal
-
-export
-mapLocal : {calendar : Type} -> {auto cal : Calendar calendar} ->
-           {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
-           TimeZone -> CalendarDateTime calendar @{cal} ->
-           LocalMapping calendar cal
-mapLocal valueZone local = case mappingCandidates valueZone local of
-  [] => Skipped
-  [value] => Unambiguous value
-  first :: second :: rest => Ambiguous first second rest

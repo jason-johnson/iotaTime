@@ -36,7 +36,6 @@
     { "title": "Unbounded relationships and set operations", "names": ["unboundedOverlaps", "unboundedIsAdjacent", "unboundedIntersection", "unboundedUnion"] }
   ],
   "IotaTime.TimeZone": [
-    { "hidden": true, "names": ["LocalMapping"] },
     { "title": "Zone type and identity", "names": ["TimeZone", "zoneId"] },
     { "title": "Construction", "names": ["fixedTimeZone", "timeZoneFromTransitions", "refineTimeZone", "TimeZoneError"] },
     { "title": "Instant queries", "names": ["zoneOffsetAt", "ZoneInterval", "zoneIntervalAt", "intervalStart", "intervalEnd", "wallOffset", "savings", "intervalIsDaylightSavingTime", "intervalAbbreviation"] }

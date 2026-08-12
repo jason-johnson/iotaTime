@@ -129,8 +129,8 @@ const timeZonePage = await readFile(
   path.join(outputDirectory, "docs", "IotaTime.TimeZone.html"),
   "utf8",
 );
-if (timeZonePage.includes("IotaTime.TimeZone.LocalMapping")) {
-  throw new Error("IotaTime.TimeZone.html exposes internal LocalMapping");
+if (timeZonePage.includes("IotaTime.TimeZone.mappingCandidates")) {
+  throw new Error("IotaTime.TimeZone.html exposes internal mappingCandidates");
 }
 
 console.log(`Validated documentation in ${outputDirectory}`);

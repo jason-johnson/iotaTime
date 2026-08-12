@@ -199,10 +199,10 @@ resolveLocal : {calendar : Type} -> {auto cal : Calendar calendar} ->
                {auto rep : HasCalendarBridge (CalendarDate calendar @{cal})} ->
                TimeZone -> CalendarDateTime calendar @{cal} ->
                ZonedMapping calendar cal
-resolveLocal valueZone local = case mapLocal valueZone local of
-  Skipped => ZonedSkipped
-  Unambiguous value => ZonedUnambiguous (attachZone valueZone value)
-  Ambiguous first second rest => ZonedAmbiguous
+resolveLocal valueZone local = case mappingCandidates valueZone local of
+  [] => ZonedSkipped
+  [value] => ZonedUnambiguous (attachZone valueZone value)
+  first :: second :: rest => ZonedAmbiguous
     (attachZone valueZone first)
     (attachZone valueZone second)
     (attachAll valueZone rest)

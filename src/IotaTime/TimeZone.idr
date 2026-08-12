@@ -639,9 +639,11 @@ lenientLocalMapping valueZone local = case mappingCandidates valueZone local of
       Nothing => findLenientGapByOffsets valueZone local (zoneOffsets valueZone)
   first :: _ => Right (Just first)
 
-||| The complete result of mapping one local date-time into a zone. The
-||| ambiguous case retains every valid instant, including pathological zone
-||| data that creates more than the usual two candidates.
+||| Internal mapping result used by `IotaTime.ZonedDateTime`.
+||| This type is not part of the supported public API; use
+||| `IotaTime.ZonedDateTime.ZonedMapping` instead.
+||| The ambiguous case retains every valid instant, including pathological
+||| zone data that creates more than the usual two candidates.
 public export
 data LocalMapping : (calendar : Type) ->
                     (cal : Calendar calendar) -> Type where

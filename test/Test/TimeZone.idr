@@ -69,13 +69,13 @@ cachePolicyWorks = do
   availableCount <- newIORef 0
   metadataCount <- newIORef 0
   let base = MkTimeZoneProvider
-        (pure (Right (fixedTimeZone "UTC" zeroOffset)))
+        (pure (Right (fixedTimeZone "UTC" empty)))
         (\name => counted namedCount $ pure $
           if name == "Missing"
             then Left (WindowsZoneNotFound name)
-            else Right (fixedTimeZone name zeroOffset))
+            else Right (fixedTimeZone name empty))
         (counted localCount $
-          pure (Right (fixedTimeZone "Local" zeroOffset)))
+          pure (Right (fixedTimeZone "Local" empty)))
         (counted availableCount $ pure (Right ["Test/A", "Test/B"]))
         (counted metadataCount $
           pure (Right (MkTzdbMetadata (Just "test") [])))

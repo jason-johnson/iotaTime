@@ -35,6 +35,12 @@
     { "title": "Unbounded endpoints and membership", "names": ["unboundedStart", "unboundedEnd", "unboundedContains", "unboundedIsEmpty", "unboundedDuration"] },
     { "title": "Unbounded relationships and set operations", "names": ["unboundedOverlaps", "unboundedIsAdjacent", "unboundedIntersection", "unboundedUnion"] }
   ],
+  "IotaTime.Offset": [
+    { "title": "Type and construction", "names": ["Offset", "fromSeconds", "fromMinutes", "fromHours", "refineOffsetSeconds", "OffsetError"] },
+    { "title": "Validation", "names": ["isValidOffsetSeconds", "isValidOffsetMinutes", "isValidOffsetHours"] },
+    { "title": "Components", "names": ["hours", "minutes", "seconds"] },
+    { "title": "Values and arithmetic", "names": ["empty", "addClamped", "minusClamped", "negateOffset"] }
+  ],
   "IotaTime.TimeZone": [
     { "title": "Zone type and identity", "names": ["TimeZone", "zoneId"] },
     { "title": "Construction", "names": ["fixedTimeZone", "timeZoneFromTransitions", "refineTimeZone", "TimeZoneError"] },

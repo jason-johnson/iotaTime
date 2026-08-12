@@ -109,7 +109,7 @@ windowsRegistryAvailableZones source = do
 public export
 windowsRegistryTimeZoneProvider : WindowsRegistrySource -> TimeZoneProvider
 windowsRegistryTimeZoneProvider source = MkTimeZoneProvider
-  (pure (Right (fixedTimeZone "UTC" zeroOffset)))
+  (pure (Right (fixedTimeZone "UTC" empty)))
   (windowsRegistryNamedZone source)
   (windowsRegistryLocalZone source)
   (windowsRegistryAvailableZones source)

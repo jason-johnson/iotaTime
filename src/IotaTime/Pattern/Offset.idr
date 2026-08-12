@@ -48,7 +48,7 @@ renderOffset separator withSeconds value =
 
 offsetPattern : String -> Bool -> Pattern Offset Offset
 offsetPattern separator withSeconds = MkPattern
-  zeroOffset
+  empty
   Right
   (map (map const) (offsetValue separator withSeconds))
   (renderOffset separator withSeconds)
@@ -67,9 +67,9 @@ pOffsetFull = offsetPattern ":" True
 public export
 pOffsetZ : Pattern Offset Offset
 pOffsetZ = MkPattern
-  zeroOffset
+  empty
   Right
-  ((Parser.char 'Z' *> pure (Right (const zeroOffset))) <|>
+  ((Parser.char 'Z' *> pure (Right (const empty))) <|>
     map (map const) (offsetValue ":" False))
   (\value => if totalOffsetSeconds value == 0
     then "Z"

@@ -97,6 +97,32 @@ if (!durationPage.includes(
   throw new Error("IotaTime.Duration.html lacks the public fromNanoseconds description");
 }
 
+const offsetPage = await readFile(
+  path.join(outputDirectory, "docs", "IotaTime.Offset.html"),
+  "utf8",
+);
+const internalOffsetNames = [
+  "OffsetRep",
+  "totalOffsetSeconds",
+  "offsetFromSeconds",
+  "offsetFromMinutes",
+  "offsetFromHours",
+  "offsetHours",
+  "offsetMinutes",
+  "offsetSeconds",
+  "zeroOffset",
+  "addOffsetClamped",
+  "subtractOffsetClamped",
+];
+for (const name of internalOffsetNames) {
+  if (offsetPage.includes(`IotaTime.Offset.${name}`)) {
+    throw new Error(`IotaTime.Offset.html exposes internal ${name}`);
+  }
+}
+if (offsetPage.includes('id="other-definitions"')) {
+  throw new Error("IotaTime.Offset.html has ungrouped declarations");
+}
+
 const persianPage = await readFile(
   path.join(outputDirectory, "docs", "IotaTime.Calendar.Persian.html"),
   "utf8",

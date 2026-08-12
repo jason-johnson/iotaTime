@@ -11,6 +11,18 @@ calendarAndClockPeriod : Period (CalendarDateTime Gregorian)
 calendarAndClockPeriod = months 1 <+> hours 2
 ```
 
+`Period target` implements these Prelude interfaces:
+
+| Interface | Available operations |
+| --- | --- |
+| `Eq` | `==`, `/=` |
+| `Show` | `show` |
+| `Semigroup` | `<+>` combines corresponding period components |
+| `Monoid` | `neutral` is the period with every component set to zero |
+
+It does not implement `Num`: use `negatePeriod` and `scalePeriod` for the
+supported arithmetic operations rather than `+`, `-`, or `*`.
+
 The target index rejects nonsensical combinations at compile time, such as
 months for `LocalTime` or hours for `CalendarDate`.
 

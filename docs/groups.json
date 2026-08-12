@@ -38,8 +38,9 @@
     { "title": "Unbounded relationships and set operations", "names": ["unboundedOverlaps", "unboundedIsAdjacent", "unboundedIntersection", "unboundedUnion"] }
   ],
   "IotaTime.Offset": [
-    { "title": "Type and construction", "names": ["Offset", "fromSeconds", "fromMinutes", "fromHours", "refineOffsetSeconds", "OffsetError"] },
-    { "title": "Proof predicates", "names": ["isValidOffsetSeconds", "isValidOffsetMinutes", "isValidOffsetHours"] },
+    { "title": "Type and static construction", "names": ["Offset", "fromSeconds", "fromMinutes", "fromHours"] },
+    { "title": "Runtime validation", "names": ["OffsetError", "refineOffsetSeconds"] },
+    { "title": "Validity predicates", "names": ["isValidOffsetSeconds", "isValidOffsetMinutes", "isValidOffsetHours"] },
     { "title": "Components", "names": ["hours", "minutes", "seconds"] },
     { "title": "Values and arithmetic", "names": ["empty", "addClamped", "minusClamped", "negateOffset"] }
   ],

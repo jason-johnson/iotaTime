@@ -37,7 +37,7 @@
   ],
   "IotaTime.Offset": [
     { "title": "Type and construction", "names": ["Offset", "fromSeconds", "fromMinutes", "fromHours", "refineOffsetSeconds", "OffsetError"] },
-    { "title": "Validation", "names": ["isValidOffsetSeconds", "isValidOffsetMinutes", "isValidOffsetHours"] },
+    { "title": "Proof predicates", "names": ["isValidOffsetSeconds", "isValidOffsetMinutes", "isValidOffsetHours"] },
     { "title": "Components", "names": ["hours", "minutes", "seconds"] },
     { "title": "Values and arithmetic", "names": ["empty", "addClamped", "minusClamped", "negateOffset"] }
   ],

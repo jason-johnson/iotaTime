@@ -48,8 +48,8 @@
     { "title": "Values and arithmetic", "names": ["empty", "addClamped", "minusClamped", "negateOffset"] }
   ],
   "IotaTime.TimeZone": [
-    { "title": "Zone acquisition", "names": ["utc", "timeZone", "localZone", "availableZones", "metadata"] },
-    { "title": "Providers", "names": ["TimeZoneProvider", "timeZoneProvider", "systemTimeZoneProvider", "unixTimeZoneProvider", "windowsSnapshotTimeZoneProvider", "utcWith", "timeZoneWith", "localZoneWith", "availableZonesWith", "metadataWith", "TimeZoneCachePolicy", "timeZoneCachePolicy", "defaultTimeZoneCachePolicy", "cachedTimeZoneProvider"] }
+    { "title": "Zone acquisition", "names": ["utc", "timeZone", "localZone", "availableZones", "metadata", "utcWith", "timeZoneWith", "localZoneWith", "availableZonesWith", "metadataWith"] },
+    { "title": "Providers", "names": ["TimeZoneProvider", "timeZoneProvider", "systemTimeZoneProvider", "unixTimeZoneProvider", "windowsSnapshotTimeZoneProvider", "TimeZoneCachePolicy", "timeZoneCachePolicy", "defaultTimeZoneCachePolicy", "cachedTimeZoneProvider"] }
   ],
   "IotaTime.Calendar": [
     { "hidden": true, "names": ["DateRep", "MonthRep", "isValidDays", "fromDays", "toDaysValid", "toFromDays", "fromToDays", "calendarName", "year'", "toYmd", "day'", "month'", "applyCalendarPeriod'", "shiftCalendarDays'", "CalendarMonth", "calendarValueToDays", "calendarValueYear", "calendarValueMonthDay", "calendarValueDayOfWeek", "calendarValueBetweenWith", "calendarValueNext", "calendarValuePrevious"] },

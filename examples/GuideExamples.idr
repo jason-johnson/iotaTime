@@ -8,6 +8,50 @@ leapDay = calendarDate 29 February 2020
 runtimeLeapDay : Either GregorianDateError (CalendarDate Gregorian)
 runtimeLeapDay = refineDate 29 February 2020
 
+gregorianCutoverInput : Either GregorianDateError (CalendarDate Gregorian)
+gregorianCutoverInput = IotaTime.Calendar.Gregorian.refineDate
+  14 October 1582
+
+copticNewYear : CalendarDate Coptic
+copticNewYear = IotaTime.Calendar.Coptic.calendarDate
+  1 CopticMonths.Thout 1738
+
+copticEpagomenalInput : Either CopticDateError (CalendarDate Coptic)
+copticEpagomenalInput = IotaTime.Calendar.Coptic.refineDate
+  6 CopticMonths.PiKogiEnavot 1732
+
+islamicNewYear : CalendarDate IslamicBcl
+islamicNewYear = IotaTime.Calendar.Islamic.calendarDate
+  1 IslamicMonths.Muharram 1443
+
+civilIslamicNewYear : CalendarDate CivilIslamicBcl
+civilIslamicNewYear = IotaTime.Calendar.Islamic.civilCalendarDate
+  1 IslamicMonths.Muharram 1443
+
+base15IslamicNewYear : CalendarDate IslamicBase15
+base15IslamicNewYear = IotaTime.Calendar.Islamic.calendarDate'
+  {pattern = Base15} 1 IslamicMonths.Muharram 1443
+
+julianLeapDay1900 : CalendarDate Julian
+julianLeapDay1900 = IotaTime.Calendar.Julian.calendarDate
+  29 JulianMonths.February 1900
+
+julianLeapDayAsGregorian : Either CalendarConversionError
+  (CalendarDate Gregorian)
+julianLeapDayAsGregorian = withCalendar julianLeapDay1900
+
+hebrewPassover : CalendarDate HebrewCivil
+hebrewPassover = IotaTime.Calendar.Hebrew.calendarDate
+  15 5784 HebrewMonths.Nisan
+
+scripturalHebrewPassover : CalendarDate HebrewScriptural
+scripturalHebrewPassover = IotaTime.Calendar.Hebrew.calendarDate'
+  {numbering = Scriptural} 15 5784 HebrewMonths.Nisan
+
+hebrewLeapMonthInput : Either HebrewDateError (CalendarDate HebrewCivil)
+hebrewLeapMonthInput = IotaTime.Calendar.Hebrew.refineDate
+  1 AdarIName 5786
+
 start : Instant
 start = fromSecondsSinceUnixEpoch 0
 

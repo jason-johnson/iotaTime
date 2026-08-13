@@ -20,6 +20,10 @@ germanDate : Either StrftimeError
 germanDate = localeDatePattern deDE
 ```
 
+See [`IotaTime.Pattern`](IotaTime.Pattern.html) for pattern composition and
+[`IotaTime.Pattern.Locale`](IotaTime.Pattern.Locale.html) for the date, time,
+date-time, offset, and zoned layouts that consume `Locale` values.
+
 ### Load the user's current locale
 
 `currentLocale` reads the operating-system locale selection. On Unix, `LC_ALL`, `LC_TIME`, and `LANG` determine its identifier; Windows uses the current user locale.

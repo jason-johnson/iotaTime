@@ -23,8 +23,16 @@ public export
 TimeFields : Type
 TimeFields = TimeFieldsRep
 
+||| Seed omitted hour, minute, second, and nanosecond fields for `parseWith`.
+||| Parsed fields replace the corresponding seed values; final local-time
+||| validation still occurs after parsing.
+public export
+timeFields : (hour : Integer) -> (minute : Integer) -> (second : Integer) ->
+             (nanosecond : Integer) -> TimeFields
+timeFields = MkTimeFields
+
 initialTimeFields : TimeFields
-initialTimeFields = MkTimeFields 0 0 0 0
+initialTimeFields = timeFields 0 0 0 0
 
 finishTime : TimeFields -> Either PatternError LocalTime
 finishTime fields = case refineLocalTime

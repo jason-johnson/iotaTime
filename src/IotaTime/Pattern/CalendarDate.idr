@@ -25,8 +25,16 @@ public export
 DateFields : Type
 DateFields = DateFieldsRep
 
+||| Seed omitted year, month, and day fields for `parseWith`.
+||| Parsed fields replace the corresponding seed values; final calendar-date
+||| validation still occurs after parsing.
+public export
+dateFields : (year : Integer) -> (month : Integer) -> (day : Integer) ->
+             DateFields
+dateFields year month day = MkDateFields year month day
+
 initialDateFields : DateFields
-initialDateFields = MkDateFields 2000 3 1
+initialDateFields = dateFields 2000 3 1
 
 monthFromInteger : Integer -> Month
 monthFromInteger 1 = January

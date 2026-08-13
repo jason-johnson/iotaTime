@@ -38,6 +38,11 @@ patternLocalTimeCases =
   , MkRuntimeCase "standard time patterns format expected layouts"
       (IotaTime.Pattern.format pt (localTime 13 24 35 0) == "13:24" &&
        IotaTime.Pattern.format pT (localTime 13 24 35 0) == "13:24:35")
+    , MkRuntimeCase "seeded parsing supplies omitted time fields"
+            (case IotaTime.Pattern.parseWith pHH
+                            (timeFields 0 24 35 123456789) "13" of
+                 Right actual => actual == localTime 13 24 35 123456789
+                 Left _ => False)
   , MkRuntimeCase "12-hour formatting folds midnight noon and afternoon"
       (IotaTime.Pattern.format phh (localTime 0 0 0 0) == "12" &&
        IotaTime.Pattern.format phh (localTime 12 0 0 0) == "12" &&

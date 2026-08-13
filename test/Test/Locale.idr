@@ -232,6 +232,18 @@ localeCases =
             case IotaTime.Pattern.parse pattern "13:24 2020-03-15" of
               Left _ => False
               Right actual => sameDateTime actual expected)
+  , MkRuntimeCase "seeded parsing supplies omitted date-time fields"
+      (case compileDateTimePattern enUS "%m-%d %H:%M" of
+        Left _ => False
+        Right pattern =>
+          let seed = dateTimeFields
+                (dateFields 2024 1 1)
+                (timeFields 0 0 35 123456789)
+              expected = on (localTime 13 24 35 123456789)
+                (IotaTime.Calendar.Gregorian.calendarDate 15 March 2024) in
+            case IotaTime.Pattern.parseWith pattern seed "03-15 13:24" of
+              Left _ => False
+              Right actual => sameDateTime actual expected)
   , MkRuntimeCase "locale date-time layouts support Julian dates"
       (case compileDateTimePattern {calendar = Julian} enUS "%F %T" of
         Left _ => False

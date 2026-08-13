@@ -160,7 +160,7 @@ patternCases =
         , MkRuntimeCase "seeded parsing supplies omitted date fields"
                         (case IotaTime.Pattern.parseWith
                                 (pmonthDay {calendar = Gregorian})
-                                (MkDateFields 2024 1 1) "March 03" of
+                            (dateFields 2024 1 1) "March 03" of
                             Right actual => toBridgeDays actual ==
                                 toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 3 March 2024)
                             Left _ => False)

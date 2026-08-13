@@ -106,7 +106,7 @@
     { "title": "Fixed-duration arithmetic", "names": ["add", "minus"] }
   ],
   "IotaTime.Pattern.CalendarDate": [
-    { "title": "Pattern state", "names": ["DateFields"] },
+    { "title": "Pattern state", "names": ["DateFields", "dateFields"] },
     { "title": "Year fields", "names": ["pyear", "pyyyy", "pyy"] },
     { "title": "Month fields", "names": ["pmonthNum", "pMM", "pMonthName", "pMMMM", "pMMM", "pMMMM'", "pMMM'"] },
     { "title": "Day fields", "names": ["pday", "pdd", "pdaySpace", "pDayName", "pdddd", "pddd", "pdddd'", "pddd'"] },
@@ -114,7 +114,7 @@
     { "title": "Standard patterns", "names": ["pd", "pD", "pR", "pmonthDay", "pyearMonth"] }
   ],
   "IotaTime.Pattern.LocalTime": [
-    { "title": "Pattern state", "names": ["TimeFields"] },
+    { "title": "Pattern state", "names": ["TimeFields", "timeFields"] },
     { "title": "24-hour fields", "names": ["phour", "pHH", "pminute", "pmm", "psecond", "pss"] },
     { "title": "12-hour fields", "names": ["phh", "phhSpace", "pp", "ppp", "pPeriod", "ppp'"] },
     { "title": "Fractional seconds", "names": ["isValidFractionWidth", "pfrac"] },
@@ -192,7 +192,7 @@
   ],
   "IotaTime.Pattern.Locale": [
     { "title": "Layout compilation", "names": ["StrftimeError", "compileDatePattern", "localeDatePattern", "compileTimePattern", "localeTimePattern"] },
-    { "title": "Date-time parser state", "names": ["DateTimeFields"] },
+    { "title": "Date-time parser state", "names": ["DateTimeFields", "dateTimeFields"] },
     { "title": "Date-time layouts", "names": ["compileDateTimePattern", "localeDateTimePattern", "compileOffsetDateTimePattern", "localeOffsetDateTimePattern"] },
     { "title": "Zoned parsing", "names": ["ZonedPatternError", "parseZonedDateTime"] }
   ]

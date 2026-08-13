@@ -187,10 +187,15 @@ public export
 DateTimeFields : Type
 DateTimeFields = DateTimeFieldsRep
 
+||| Combine date and time seeds for `parseWith` on a partial date-time pattern.
+public export
+dateTimeFields : DateFields -> TimeFields -> DateTimeFields
+dateTimeFields = MkDateTimeFields
+
 initialDateTimeFields : {calendar : Type} ->
                         {auto patterned : CalendarPattern calendar} ->
                         DateTimeFields
-initialDateTimeFields {calendar} = MkDateTimeFields
+initialDateTimeFields {calendar} = dateTimeFields
   (patternInitialState (pyyyy {calendar})) (patternInitialState pHH)
 
 finishDateTime : {calendar : Type} ->

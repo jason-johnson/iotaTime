@@ -59,7 +59,7 @@
 </script>
 
 </header>
-<div class="container"><div id="module-header"><h1>IotaTime.Calendar</h1><pre></pre></div><section class="module-cookbook"><h2>Using CalendarDate</h2><nav class="cookbook-toc" aria-label="Cookbook recipes"><strong>Recipes</strong><ul><li><a href="#recipe-construct-a-statically-known-date">Construct a statically known date</a></li><li><a href="#recipe-validate-date-components-at-runtime">Validate date components at runtime</a></li><li><a href="#recipe-convert-between-calendars">Convert between calendars</a></li><li><a href="#recipe-decompose-a-difference-by-calendar-units">Decompose a difference by calendar units</a></li><li><a href="#recipe-request-an-exact-day-difference">Request an exact day difference</a></li></ul></nav>
+<div class="container"><div id="module-header"><h1>IotaTime.Calendar</h1><pre></pre></div><section class="module-cookbook"><h2>Using CalendarDate</h2><nav class="cookbook-toc" aria-label="Cookbook recipes"><strong>Recipes</strong><ul><li><a href="#recipe-construct-a-statically-known-date">Construct a statically known date</a></li><li><a href="#recipe-validate-date-components-at-runtime">Validate date components at runtime</a></li><li><a href="#recipe-convert-between-calendars">Convert between calendars</a></li><li><a href="#recipe-decompose-a-difference-by-calendar-units">Decompose a difference by calendar units</a></li><li><a href="#recipe-standard-and-for-calendar-functions">Standard and "...For {calendar}" functions</a></li><li><a href="#recipe-request-an-exact-day-difference">Request an exact day difference</a></li></ul></nav>
 <h3 id="recipe-construct-a-statically-known-date">Construct a statically known date</h3>
 <p><code>IotaTime.Calendar.Gregorian.calendarDate</code> constructs a Gregorian date whose validity Idris proves while
 elaborating. Invalid literals, such as 29 February 2021, do not compile.</p>
@@ -94,6 +94,9 @@ differenceEnd = IotaTime.Calendar.Gregorian.calendarDate 30 March 2025
 calendarDifference : Period (CalendarDate Gregorian)
 calendarDifference = IotaTime.Calendar.between differenceStart differenceEnd
 </code></pre>
+<p>This period contains one month and 30 days. A direct two-month application
+would produce 31 March, which passes the endpoint.</p>
+<h3 id="recipe-standard-and-for-calendar-functions">Standard and "...For {calendar}" functions</h3>
 <p>The concrete date representation determines its calendar, so callers do not
 repeat <code>{calendar = Gregorian}</code>. Calendar-polymorphic implementation code that
 has a <code>Calendar calendar</code> dictionary rather than a concrete representation can
@@ -105,8 +108,6 @@ uses their <code>...For {calendar}</code> variants.</p>
 <p>Weekday navigation keeps its existing argument order while also inferring the
 calendar: use <code>next count weekday date</code> and <code>previous count weekday date</code>.
 Abstract calendar code uses <code>nextFor {calendar}</code> and <code>previousFor {calendar}</code>.</p>
-<p>This period contains one month and 30 days. A direct two-month application
-would produce 31 March, which passes the endpoint.</p>
 <h3 id="recipe-request-an-exact-day-difference">Request an exact day difference</h3>
 <p>Use <code>betweenDays</code> when the protocol or calculation needs only elapsed civil
 days. The equivalent explicit policy is available through <code>betweenWith</code>.</p>

@@ -236,6 +236,21 @@ for (const name of [
   }
 }
 
+const localePatternPage = await readFile(
+  path.join(outputDirectory, "docs", "IotaTime.Pattern.Locale.html"),
+  "utf8",
+);
+for (const name of [
+  "DateTimeFieldsRep",
+  "MkDateTimeFields",
+  "parsedDateFields",
+  "parsedTimeFields",
+]) {
+  if (localePatternPage.includes(`IotaTime.Pattern.Locale.${name}`)) {
+    throw new Error(`IotaTime.Pattern.Locale.html exposes internal ${name}`);
+  }
+}
+
 const timeZonePage = await readFile(
   path.join(outputDirectory, "docs", "IotaTime.TimeZone.html"),
   "utf8",

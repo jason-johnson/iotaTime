@@ -176,11 +176,16 @@ localeTimePattern : Locale ->
 localeTimePattern locale = compileTimePattern locale (rawTimeFormat locale)
 
 ||| Parser state for a combined calendar date and local-time pattern.
-public export
-record DateTimeFields where
+export
+record DateTimeFieldsRep where
   constructor MkDateTimeFields
   parsedDateFields : DateFields
   parsedTimeFields : TimeFields
+
+||| Opaque parser state for combined calendar date and local-time patterns.
+public export
+DateTimeFields : Type
+DateTimeFields = DateTimeFieldsRep
 
 initialDateTimeFields : {calendar : Type} ->
                         {auto patterned : CalendarPattern calendar} ->

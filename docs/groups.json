@@ -192,7 +192,7 @@
   ],
   "IotaTime.Pattern.Locale": [
     { "title": "Layout compilation", "names": ["StrftimeError", "compileDatePattern", "localeDatePattern", "compileTimePattern", "localeTimePattern"] },
-    { "title": "Date-time parser state", "names": ["DateTimeFields", "DateTimeFields.(.parsedDateFields)", "DateTimeFields.parsedDateFields", "DateTimeFields.(.parsedTimeFields)", "DateTimeFields.parsedTimeFields"] },
+    { "title": "Date-time parser state", "names": ["DateTimeFields"] },
     { "title": "Date-time layouts", "names": ["compileDateTimePattern", "localeDateTimePattern", "compileOffsetDateTimePattern", "localeOffsetDateTimePattern"] },
     { "title": "Zoned parsing", "names": ["ZonedPatternError", "parseZonedDateTime"] }
   ]

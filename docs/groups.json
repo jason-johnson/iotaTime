@@ -52,11 +52,11 @@
     { "title": "Providers", "names": ["TimeZoneProvider", "timeZoneProvider", "systemTimeZoneProvider", "unixTimeZoneProvider", "windowsSnapshotTimeZoneProvider", "TimeZoneCachePolicy", "timeZoneCachePolicy", "defaultTimeZoneCachePolicy", "cachedTimeZoneProvider"] }
   ],
   "IotaTime.Calendar": [
-    { "hidden": true, "names": ["DateRep", "MonthRep", "isValidDays", "fromDays", "toDaysValid", "toFromDays", "fromToDays", "calendarName", "year'", "toYmd", "day'", "month'", "applyCalendarPeriod'", "shiftCalendarDays'", "CalendarMonth", "calendarValueToDays", "calendarValueYear", "calendarValueMonthDay", "calendarValueDayOfWeek", "calendarValueBetweenWith", "calendarValueNext", "calendarValuePrevious"] },
+    { "hidden": true, "names": ["DateRep", "MonthRep", "isValidDays", "fromDays", "toDaysValid", "toFromDays", "fromToDays", "calendarName", "year'", "toYmd", "day'", "month'", "applyCalendarPeriod'", "shiftCalendarDays'", "CalendarMonth", "calendarValueToDays", "calendarValueYear", "calendarValueMonthDay", "calendarValueDayOfWeek", "calendarValueBetweenWith", "calendarValueNext", "calendarValuePrevious", "DateDifferencePolicy.(.units)", "DateDifferencePolicy.(.monthArithmetic)"] },
     { "title": "Calendar capability", "names": ["Calendar", "CalendarDate", "HasCalendarDate"] },
     { "title": "Weekdays", "names": ["DayOfWeek", "daysPerWeek", "DayNth", "weekdayNumber", "weekdayFromNumber"] },
     { "title": "Date components", "names": ["year", "month", "day", "dayOfWeek", "yearMonthDay"] },
-    { "title": "Difference policy", "names": ["DateDifferenceUnits", "MonthArithmeticPolicy", "DateDifferencePolicy", "DateDifferencePolicy.(.units)", "DateDifferencePolicy.units", "DateDifferencePolicy.(.monthArithmetic)", "DateDifferencePolicy.monthArithmetic", "nodaTimePolicy"] },
+    { "title": "Difference policy", "names": ["DateDifferenceUnits", "MonthArithmeticPolicy", "DateDifferencePolicy", "DateDifferencePolicy.units", "DateDifferencePolicy.monthArithmetic", "nodaTimePolicy"] },
     { "title": "Conversion and arithmetic", "names": ["CalendarConversionError", "withCalendar", "toDays", "between", "betweenWith", "betweenDays"] },
     { "title": "Dictionary-based operations", "names": ["toDaysFor", "dayOfWeekFor", "nextFor", "previousFor", "yearFor", "monthFor", "dayFor", "betweenDaysFor", "betweenWithFor", "betweenFor", "yearMonthDayFor"] },
     { "title": "Proofs and navigation", "names": ["calendarComponentsCoherent", "next", "previous"] }

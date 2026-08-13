@@ -138,6 +138,19 @@ if (offsetPage.includes('id="other-definitions"')) {
   throw new Error("IotaTime.Offset.html has ungrouped declarations");
 }
 
+const calendarPage = await readFile(
+  path.join(outputDirectory, "docs", "IotaTime.Calendar.html"),
+  "utf8",
+);
+for (const name of [
+  "DateDifferencePolicy.(.units)",
+  "DateDifferencePolicy.(.monthArithmetic)",
+]) {
+  if (calendarPage.includes(`id="IotaTime.Calendar.${name}"`)) {
+    throw new Error(`IotaTime.Calendar.html exposes duplicate projection ${name}`);
+  }
+}
+
 const persianPage = await readFile(
   path.join(outputDirectory, "docs", "IotaTime.Calendar.Persian.html"),
   "utf8",

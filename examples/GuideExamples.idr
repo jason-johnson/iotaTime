@@ -225,3 +225,15 @@ parseQuotedWindowsZone provider resolver =
 germanDate : Either StrftimeError
   (Pattern DateFields (CalendarDate Gregorian))
 germanDate = localeDatePattern deDE
+
+germanLocale : Locale
+germanLocale = deDE
+
+germanLocaleId : String
+germanLocaleId = localeId germanLocale
+
+configuredLocale : IO (Either LocaleError Locale)
+configuredLocale = currentLocale
+
+posixLocale : IO (Either LocaleError Locale)
+posixLocale = localeByName "C"

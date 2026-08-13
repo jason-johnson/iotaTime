@@ -73,6 +73,9 @@ germanLocaleId = localeId germanLocale
   (Pattern DateFields (CalendarDate Gregorian))
 germanDate = localeDatePattern deDE
 </code></pre>
+<p>See <a href="IotaTime.Pattern.html"><code>IotaTime.Pattern</code></a> for pattern composition and
+<a href="IotaTime.Pattern.Locale.html"><code>IotaTime.Pattern.Locale</code></a> for the date, time,
+date-time, offset, and zoned layouts that consume <code>Locale</code> values.</p>
 <h3 id="recipe-load-the-user-s-current-locale">Load the user's current locale</h3>
 <p><code>currentLocale</code> reads the operating-system locale selection. On Unix, <code>LC_ALL</code>, <code>LC_TIME</code>, and <code>LANG</code> determine its identifier; Windows uses the current user locale.</p>
 <pre><code class="language-idris">configuredLocale : IO (Either LocaleError Locale)

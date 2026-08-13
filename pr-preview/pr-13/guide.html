@@ -192,7 +192,7 @@ custom =
   (Pattern DateFields (CalendarDate Gregorian))
 germanDate = localeDatePattern deDE
 </code></pre>
-<p><code>localeDatePattern</code>, <code>localeTimePattern</code>, and <code>localeDateTimePattern</code> compile OS-style <code>strftime</code> layouts into typed patterns. Locale date layouts remain Gregorian because native locale snapshots expose exactly twelve Gregorian month names.</p>
+<p><code>localeDatePattern</code>, <code>localeTimePattern</code>, and <code>localeDateTimePattern</code> compile the OS layout hidden inside an opaque <code>Locale</code> into typed patterns. Applications can load a locale at runtime, but cannot supply arbitrary layout strings. Locale date layouts remain Gregorian because native locale snapshots expose exactly twelve Gregorian month names.</p>
 <h2>Where to go next</h2>
 <ul>
 <li>Browse the <a href="index.html">API index</a> for all modules.</li>

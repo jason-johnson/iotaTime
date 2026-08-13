@@ -12,7 +12,7 @@ germanLocaleId : String
 germanLocaleId = localeId germanLocale
 ```
 
-Built-in locales also supply the layouts used by locale-aware patterns.
+Built-in locales also supply opaque layouts used by locale-aware patterns.
 
 ```idris
 germanDate : Either StrftimeError
@@ -22,7 +22,8 @@ germanDate = localeDatePattern deDE
 
 See [`IotaTime.Pattern`](IotaTime.Pattern.html) for pattern composition and
 [`IotaTime.Pattern.Locale`](IotaTime.Pattern.Locale.html) for the date, time,
-date-time, offset, and zoned layouts that consume `Locale` values.
+date-time, offset, and zoned layouts that consume `Locale` values. The raw
+layout and arbitrary string compilers are not public.
 
 ### Load the user's current locale
 

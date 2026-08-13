@@ -226,6 +226,34 @@ germanDate : Either StrftimeError
   (Pattern DateFields (CalendarDate Gregorian))
 germanDate = localeDatePattern deDE
 
+formattedGermanDate : Either StrftimeError String
+formattedGermanDate = map
+  (\pattern => format pattern (calendarDate 15 March 2020))
+  germanDate
+
+germanDateTime : Either StrftimeError
+  (Pattern DateTimeFields (CalendarDateTime Gregorian))
+germanDateTime = localeDateTimePattern deDE
+
+parseSeededDateTime :
+  Pattern DateTimeFields (CalendarDateTime Gregorian) ->
+  String -> Either PatternError (CalendarDateTime Gregorian)
+parseSeededDateTime pattern source = parseWith pattern
+  (dateTimeFields
+    (dateFields 2024 1 1)
+    (timeFields 0 0 35 123456789))
+  source
+
+parseLocalizedZoned :
+  (String -> IO (Either providerError TimeZone)) ->
+  (CalendarDateTime Gregorian -> TimeZone ->
+    Either resolutionError (ZonedDateTime Gregorian)) ->
+  IO (Either (ZonedPatternError providerError resolutionError)
+    (ZonedDateTime Gregorian))
+parseLocalizedZoned provider resolver =
+  parseZonedDateTime provider resolver enUS
+    "Sun 15 Mar 2020 01:24:35 PM UTC"
+
 germanLocale : Locale
 germanLocale = deDE
 

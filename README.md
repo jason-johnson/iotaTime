@@ -727,21 +727,21 @@ Named locale fields parse case-insensitively. As with the fixed English weekday 
 
 On Unix, `localeByName` reads an installed locale through `newlocale` and `nl_langinfo_l`, while `currentLocale` follows `LC_ALL`, `LC_TIME`, and `LANG` and falls back to the POSIX `C` locale. The per-locale C APIs do not mutate process-global locale state.
 
-On Windows, both functions read through `GetLocaleInfoEx`. Windows date and time picture strings are translated into the supported `strftime` subset, and Monday-first Win32 weekday tables are normalized to the library's Sunday-first order. `C` and `POSIX` names select the Windows invariant locale.
+On Windows, both functions read through `GetLocaleInfoEx`. Windows date and time picture strings are translated internally into the supported locale-layout subset, and Monday-first Win32 weekday tables are normalized to the library's Sunday-first order. `C` and `POSIX` names select the Windows invariant locale.
 
 Both platforms return `IO (Either LocaleError Locale)`, keeping unknown names and platform failures explicit at the native trust boundary. Native snapshots are copied before their handles are freed.
 
-`localeDatePattern` compiles a locale's date layout into a bidirectional Gregorian pattern. `compileDatePattern` accepts an explicit `strftime` layout. Date conversion support includes `%Y`, `%y`, `%m`, `%d`, `%e`, `%B`, `%b`, `%h`, `%A`, and `%a`, plus `%%`, `%n`, `%t`, and the composite `%F` and `%D` layouts. Unsupported conversions return `Left (UnsupportedSpecifier value)` and a trailing bare percent returns `Left DanglingPercent`.
+`localeDatePattern` compiles the date layout hidden inside an opaque `Locale` into a bidirectional pattern. Date conversion support includes `%Y`, `%y`, `%m`, `%d`, `%e`, `%B`, `%b`, `%h`, `%A`, and `%a`, plus `%%`, `%n`, `%t`, and the composite `%F` and `%D` layouts. Unsupported native conversions return `Left (UnsupportedSpecifier value)` and a trailing bare percent returns `Left DanglingPercent`.
 
-`localeTimePattern` similarly compiles a locale's time layout into a bidirectional `LocalTime` pattern, while `compileTimePattern` accepts an explicit layout. Time conversions include `%H`, `%I`, `%l`, `%M`, `%S`, and `%p`; the tokenizer also expands the composite `%T`, `%R`, and `%r` layouts.
+`localeTimePattern` similarly compiles a locale's hidden time layout into a bidirectional `LocalTime` pattern. Time conversions include `%H`, `%I`, `%l`, `%M`, `%S`, and `%p`; the internal tokenizer also expands the composite `%T`, `%R`, and `%r` layouts.
 
-`localeDateTimePattern` compiles the combined locale layout into a Gregorian `CalendarDateTime` pattern, and `compileDateTimePattern` accepts an explicit combined layout. Date and time fields share a `DateTimeFields` accumulator, so their order is independent. Because `CalendarDateTime` represents civil time without a zone, `%Z` and `%z` fields and their preceding layout spaces are deliberately omitted.
+`localeDateTimePattern` compiles the hidden combined locale layout into a `CalendarDateTime` pattern. Date and time fields share a `DateTimeFields` accumulator, so their order is independent. Because `CalendarDateTime` represents civil time without a zone, `%Z` and `%z` fields and their preceding layout spaces are deliberately omitted.
 
-`compileOffsetDateTimePattern` compiles a combined layout containing `%z` into a pure bidirectional `OffsetDateTime` pattern, and `localeOffsetDateTimePattern` applies it to a locale's combined layout. A missing `%z` returns `MissingOffsetSpecifier`.
+`localeOffsetDateTimePattern` compiles a locale's combined layout containing `%z` into a pure bidirectional `OffsetDateTime` pattern. A missing `%z` returns `MissingOffsetSpecifier`.
 
 `parseZonedDateTime` handles locale layouts containing `%Z`. It parses the local fields and one non-whitespace zone token, asks a caller-supplied provider to load that abbreviation, then applies a caller-supplied resolver such as `fromCalendarDateTimeStrictly` or `fromCalendarDateTimeLeniently`. `ZonedPatternError` keeps layout, structural parse, provider, and resolver failures distinct and preserves the caller's error types. A layout without `%Z` returns `MissingZoneSpecifier`.
 
-Machine locale acquisition and locale-driven date, time, and combined date-time patterns are available on Unix and Windows.
+Machine locale acquisition and locale-driven date, time, and combined date-time patterns are available on Unix and Windows. Arbitrary layout strings cannot be supplied through the public API.
 
 Operating-system locale date layouts remain Gregorian because `Locale` intentionally stores complete `Vect 12` Gregorian month tables. Canonical and numeric patterns outside the locale compiler are calendar-polymorphic, including date, local date-time, offset date-time, and zoned date-time patterns.
 

@@ -130,7 +130,6 @@ assemble template conversion (fragment :: rest) = do
 
 ||| Compile a calendar date pattern from a supported `strftime` layout.
 ||| Locale month and weekday names are used for textual fields.
-public export
 compileDatePattern : {default Gregorian calendar : Type} ->
                      {auto patterned : CalendarPattern calendar} ->
                      Locale -> String ->
@@ -162,7 +161,6 @@ timeConversion locale 'p' = Right (ppp' locale)
 timeConversion _ value = Left (UnsupportedSpecifier value)
 
 ||| Compile a local-time pattern from a supported `strftime` layout.
-public export
 compileTimePattern : Locale -> String ->
                      Either StrftimeError (Pattern TimeFields LocalTime)
 compileTimePattern locale layout = do
@@ -277,7 +275,6 @@ stripZones (Conversion value :: rest) =
 
 ||| Compile a calendar-local date-time pattern from a supported `strftime`
 ||| layout. Zone specifiers are omitted because this pattern has no zone value.
-public export
 compileDateTimePattern : {default Gregorian calendar : Type} ->
                          {auto patterned : CalendarPattern calendar} ->
                          Locale -> String ->
@@ -318,7 +315,6 @@ splitOffset (fragment :: rest) = do
   Right (fragment :: before, trailing)
 
 ||| Compile an offset date-time layout containing a numeric `%z` field.
-public export
 compileOffsetDateTimePattern : {default Gregorian calendar : Type} ->
   {auto patterned : CalendarPattern calendar} -> Locale -> String ->
   Either StrftimeError

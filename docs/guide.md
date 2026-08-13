@@ -188,7 +188,7 @@ germanDate : Either StrftimeError
 germanDate = localeDatePattern deDE
 ```
 
-`localeDatePattern`, `localeTimePattern`, and `localeDateTimePattern` compile OS-style `strftime` layouts into typed patterns. Locale date layouts remain Gregorian because native locale snapshots expose exactly twelve Gregorian month names.
+`localeDatePattern`, `localeTimePattern`, and `localeDateTimePattern` compile the OS layout hidden inside an opaque `Locale` into typed patterns. Applications can load a locale at runtime, but cannot supply arbitrary layout strings. Locale date layouts remain Gregorian because native locale snapshots expose exactly twelve Gregorian month names.
 
 ## Where to go next
 

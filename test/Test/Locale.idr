@@ -119,17 +119,9 @@ localeCases =
         IotaTime.Pattern.format (pMMMM' {calendar = Julian} deDE) value ==
           "März")
   , MkRuntimeCase "Coptic locale patterns retain canonical month names"
-      (case compileDatePattern {calendar = Coptic} deDE "%d %B %Y" of
-        Left _ => False
-        Right pattern =>
-          let first = IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1736
-              last = IotaTime.Calendar.Coptic.calendarDate 5 CopticMonths.PiKogiEnavot 1736 in
-            IotaTime.Pattern.format pattern first == "01 Thout 1736" &&
-            IotaTime.Pattern.format pattern last ==
-              "05 PiKogiEnavot 1736" &&
-            case IotaTime.Pattern.parse pattern "05 PiKogiEnavot 1736" of
-              Left _ => False
-              Right actual => actual == last)
+      (IotaTime.Pattern.format (pMMMM' {calendar = Coptic} deDE)
+        (IotaTime.Calendar.Coptic.calendarDate
+          5 CopticMonths.PiKogiEnavot 1736) == "PiKogiEnavot")
   , MkRuntimeCase "Persian locale patterns retain canonical month names"
       (IotaTime.Pattern.format (pMMMM' {calendar = Persian} deDE)
         (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1400) == "Farvardin" &&
@@ -173,20 +165,6 @@ localeCases =
             case IotaTime.Pattern.parse pattern "03/15/2020" of
               Left _ => False
               Right actual => actual == expected)
-  , MkRuntimeCase "date layout compiler expands composites and literals"
-      (case compileDatePattern enUS "Date: %F %% %A" of
-        Left _ => False
-        Right pattern =>
-          IotaTime.Pattern.format pattern (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020) ==
-            "Date: 2020-03-15 % Sunday" &&
-          parsesAs pattern "Date: 2020-03-15 % Sunday"
-            (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020))
-  , MkRuntimeCase "date layout compiler rejects unsupported fields"
-      (hasStrftimeError (UnsupportedSpecifier 'Q')
-        (compileDatePattern enUS "%Q"))
-  , MkRuntimeCase "date layout compiler rejects a dangling percent"
-      (hasStrftimeError DanglingPercent
-        (compileDatePattern enUS "%Y-%"))
   , MkRuntimeCase "US locale time layout uses a 12-hour period"
       (localeTimeFormatsAs enUS (localTime 13 24 35 0) "01:24:35 PM" &&
        localeTimeParsesAs enUS "01:24:35 PM" (localTime 13 24 35 0))
@@ -196,15 +174,6 @@ localeCases =
   , MkRuntimeCase "Japanese locale time layout preserves separators"
       (localeTimeFormatsAs jaJP (localTime 13 24 35 0) "13時24分35秒" &&
        localeTimeParsesAs jaJP "13時24分35秒" (localTime 13 24 35 0))
-  , MkRuntimeCase "time compiler supports short and space-padded layouts"
-      (case (compileTimePattern enUS "%R", compileTimePattern enUS "%l:%M") of
-        (Right short, Right padded) =>
-          IotaTime.Pattern.format short (localTime 13 24 0 0) == "13:24" &&
-          IotaTime.Pattern.format padded (localTime 13 24 0 0) == " 1:24"
-        _ => False)
-  , MkRuntimeCase "time compiler rejects date-only specifiers"
-      (hasStrftimeError (UnsupportedSpecifier 'Y')
-        (compileTimePattern enUS "%Y"))
   , MkRuntimeCase "US locale date-time drops the zone and round-trips"
       (let value = on (localTime 13 24 35 0)
             (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020) in
@@ -222,81 +191,9 @@ localeCases =
             (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020) in
         localeDateTimeFormatsAs jaJP value "2020年03月15日 13時24分35秒" &&
         localeDateTimeParsesAs jaJP "2020年03月15日 13時24分35秒" value)
-  , MkRuntimeCase "date-time fields parse independently of field order"
-      (case compileDateTimePattern enUS "%H:%M %F" of
-        Left _ => False
-        Right pattern =>
-          let expected = on (localTime 13 24 0 0)
-                (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020) in
-            IotaTime.Pattern.format pattern expected == "13:24 2020-03-15" &&
-            case IotaTime.Pattern.parse pattern "13:24 2020-03-15" of
-              Left _ => False
-              Right actual => sameDateTime actual expected)
-  , MkRuntimeCase "seeded parsing supplies omitted date-time fields"
-      (case compileDateTimePattern enUS "%m-%d %H:%M" of
-        Left _ => False
-        Right pattern =>
-          let seed = dateTimeFields
-                (dateFields 2024 1 1)
-                (timeFields 0 0 35 123456789)
-              expected = on (localTime 13 24 35 123456789)
-                (IotaTime.Calendar.Gregorian.calendarDate 15 March 2024) in
-            case IotaTime.Pattern.parseWith pattern seed "03-15 13:24" of
-              Left _ => False
-              Right actual => sameDateTime actual expected)
-  , MkRuntimeCase "locale date-time layouts support Julian dates"
-      (case compileDateTimePattern {calendar = Julian} enUS "%F %T" of
-        Left _ => False
-        Right pattern =>
-          let expected = on (localTime 13 24 35 0)
-                (IotaTime.Calendar.Julian.calendarDate 15 JulianMonths.March 2020) in
-            IotaTime.Pattern.format pattern expected ==
-              "2020-03-15 13:24:35" &&
-            case IotaTime.Pattern.parse pattern "2020-03-15 13:24:35" of
-              Left _ => False
-              Right actual => sameJulianDateTime actual expected)
-  , MkRuntimeCase "date-time compiler drops numeric zones"
-      (case compileDateTimePattern enUS "%F %T %z" of
-        Left _ => False
-        Right pattern =>
-          IotaTime.Pattern.format pattern
-            (on (localTime 13 24 35 0) (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020)) ==
-              "2020-03-15 13:24:35")
-  , MkRuntimeCase "date-time compiler rejects unsupported fields"
-      (hasStrftimeError (UnsupportedSpecifier 'Q')
-        (compileDateTimePattern enUS "%F %Q"))
-  , MkRuntimeCase "locale offset date-time compiler round-trips percent-z"
-      (case compileOffsetDateTimePattern enUS "%F %T %z end" of
-        Left _ => False
-        Right pattern =>
-          let expected = fromCalendarDateTimeWithOffset
-                (on (localTime 13 24 35 0) (IotaTime.Calendar.Gregorian.calendarDate 15 March 2020))
-                (fromHours 2) in
-            IotaTime.Pattern.format pattern expected ==
-              "2020-03-15 13:24:35 +0200 end" &&
-            case IotaTime.Pattern.parse pattern
-              "2020-03-15 13:24:35 +0200 end" of
-                Left _ => False
-                Right actual => sameOffsetDateTime actual expected)
-  , MkRuntimeCase "locale offset date-time layouts support Julian dates"
-      (case compileOffsetDateTimePattern {calendar = Julian}
-        enUS "%F %T %z" of
-          Left _ => False
-          Right pattern =>
-            let expected = fromCalendarDateTimeWithOffset
-                  (on (localTime 13 24 35 0)
-                    (IotaTime.Calendar.Julian.calendarDate 15 JulianMonths.March 2020))
-                  (fromHours 2) in
-              case IotaTime.Pattern.parse pattern
-                "2020-03-15 13:24:35 +0200" of
-                  Left _ => False
-                  Right actual => sameJulianOffsetDateTime actual expected)
   , MkRuntimeCase "locale offset date-time requires percent-z"
       (hasStrftimeError MissingOffsetSpecifier
         (localeOffsetDateTimePattern deDE))
-  , MkRuntimeCase "locale offset rejects fields following percent-z"
-      (hasStrftimeError (UnsupportedSpecifier 'Y')
-        (compileOffsetDateTimePattern enUS "%F %z %Y"))
   ]
 
 patternsCompile : Locale -> Bool

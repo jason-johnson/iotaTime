@@ -241,6 +241,10 @@ const localePatternPage = await readFile(
   "utf8",
 );
 for (const name of [
+  "compileDatePattern",
+  "compileTimePattern",
+  "compileDateTimePattern",
+  "compileOffsetDateTimePattern",
   "DateTimeFieldsRep",
   "MkDateTimeFields",
   "parsedDateFields",

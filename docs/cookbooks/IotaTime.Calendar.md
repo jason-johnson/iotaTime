@@ -50,6 +50,11 @@ calendarDifference : Period (CalendarDate Gregorian)
 calendarDifference = IotaTime.Calendar.between differenceStart differenceEnd
 ```
 
+This period contains one month and 30 days. A direct two-month application
+would produce 31 March, which passes the endpoint.
+
+### Standard and "...For {calendar}" functions
+
 The concrete date representation determines its calendar, so callers do not
 repeat `{calendar = Gregorian}`. Calendar-polymorphic implementation code that
 has a `Calendar calendar` dictionary rather than a concrete representation can
@@ -63,9 +68,6 @@ uses their `...For {calendar}` variants.
 Weekday navigation keeps its existing argument order while also inferring the
 calendar: use `next count weekday date` and `previous count weekday date`.
 Abstract calendar code uses `nextFor {calendar}` and `previousFor {calendar}`.
-
-This period contains one month and 30 days. A direct two-month application
-would produce 31 March, which passes the endpoint.
 
 ### Request an exact day difference
 

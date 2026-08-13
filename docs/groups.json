@@ -106,7 +106,7 @@
     { "title": "Fixed-duration arithmetic", "names": ["add", "minus"] }
   ],
   "IotaTime.Pattern.CalendarDate": [
-    { "title": "Pattern state", "names": ["DateFields", "DateFields.(.parsedYear)", "DateFields.parsedYear", "DateFields.(.parsedMonth)", "DateFields.parsedMonth", "DateFields.(.parsedDay)", "DateFields.parsedDay", "DateFields.(.parsedWeekday)", "DateFields.parsedWeekday"] },
+    { "title": "Pattern state", "names": ["DateFields"] },
     { "title": "Year fields", "names": ["pyear", "pyyyy", "pyy"] },
     { "title": "Month fields", "names": ["pmonthNum", "pMM", "pMonthName", "pMMMM", "pMMM", "pMMMM'", "pMMM'"] },
     { "title": "Day fields", "names": ["pday", "pdd", "pdaySpace", "pDayName", "pdddd", "pddd", "pdddd'", "pddd'"] },

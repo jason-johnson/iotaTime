@@ -12,13 +12,18 @@ import IotaTime.Pattern.Calendar
 %default total
 
 ||| Intermediate fields accumulated while parsing a calendar date.
-public export
-record DateFields where
+export
+record DateFieldsRep where
   constructor MkDateFields
   parsedYear : Integer
   parsedMonth : Integer
   parsedDay : Integer
   {default Nothing parsedWeekday : Maybe (Fin 7)}
+
+||| Opaque intermediate state used by calendar-date patterns.
+public export
+DateFields : Type
+DateFields = DateFieldsRep
 
 initialDateFields : DateFields
 initialDateFields = MkDateFields 2000 3 1

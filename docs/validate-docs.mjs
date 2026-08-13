@@ -198,6 +198,25 @@ if (persianPage.includes('id="other-definitions"')) {
   throw new Error("IotaTime.Calendar.Persian.html has ungrouped declarations");
 }
 
+const calendarDatePatternPage = await readFile(
+  path.join(outputDirectory, "docs", "IotaTime.Pattern.CalendarDate.html"),
+  "utf8",
+);
+for (const name of [
+  "DateFieldsRep",
+  "MkDateFields",
+  "parsedYear",
+  "parsedMonth",
+  "parsedDay",
+  "parsedWeekday",
+]) {
+  if (calendarDatePatternPage.includes(`IotaTime.Pattern.CalendarDate.${name}`)) {
+    throw new Error(
+      `IotaTime.Pattern.CalendarDate.html exposes internal ${name}`,
+    );
+  }
+}
+
 const timeZonePage = await readFile(
   path.join(outputDirectory, "docs", "IotaTime.TimeZone.html"),
   "utf8",

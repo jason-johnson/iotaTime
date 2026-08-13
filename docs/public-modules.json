@@ -10,8 +10,6 @@
   "IotaTime.OffsetDateTime",
   "IotaTime.Period",
   "IotaTime.ZonedDateTime",
-  "IotaTime.Tzdb",
-  "IotaTime.Tzdb.Provider",
   "IotaTime.LocalTime",
   "IotaTime.Calendar",
   "IotaTime.Calendar.Gregorian",

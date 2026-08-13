@@ -1,16 +1,19 @@
 module IotaTime.Tzdb
 
+import IotaTime.TimeZone.Core
+import IotaTime.TimeZone.Error
 import IotaTime.Tzdb.Tzif
 import IotaTime.Tzdb.Posix
 import IotaTime.Tzdb.Windows
 import IotaTime.Tzdb.Windows.Platform
-import public IotaTime.Tzdb.Provider
-import public Data.Buffer
-import public System.File.Buffer
+import IotaTime.Tzdb.Metadata
+import IotaTime.Tzdb.Provider
+import Data.Buffer
+import System.File.Buffer
 import System.File.ReadWrite
-import public System
-import public System.Directory
-import public System.Info
+import System
+import System.Directory
+import System.Info
 import Data.List
 
 %default total
@@ -161,14 +164,14 @@ unixMetadata = assert_total $ do
        in Right (MkTzdbMetadata version aliases)
 
 ||| The built-in Unix filesystem provider.
-public export
-unixTimeZoneProvider : TimeZoneProvider
-unixTimeZoneProvider = MkTimeZoneProvider unixUtc unixTimeZone
+export
+unixTimeZoneProvider : TimeZoneProviderRep
+unixTimeZoneProvider = timeZoneProvider unixUtc unixTimeZone
   unixLocalZone unixAvailableZones unixMetadata
 
 ||| The provider selected for the current operating system.
-public export
-systemTimeZoneProvider : TimeZoneProvider
+export
+systemTimeZoneProvider : TimeZoneProviderRep
 systemTimeZoneProvider = if isWindows
   then windowsRegistryTimeZoneProvider windowsNativeRegistrySource
   else unixTimeZoneProvider
@@ -177,35 +180,35 @@ systemTimeZoneProvider = if isWindows
 ||| immutable snapshot. Construct another provider to observe registry changes.
 ||| On non-Windows hosts this returns `UnsupportedPlatform` through the native
 ||| registry source.
-public export
-windowsSnapshotTimeZoneProvider : IO (Either TzdbError TimeZoneProvider)
+export
+windowsSnapshotTimeZoneProvider : IO (Either TzdbError TimeZoneProviderRep)
 windowsSnapshotTimeZoneProvider =
   windowsRegistrySnapshotProvider windowsNativeRegistrySource
 
 ||| Load UTC through an explicit platform provider.
-public export
-utcWith : TimeZoneProvider -> IO (Either TzdbError TimeZone)
-utcWith = providerUtc
+export
+utcWith : TimeZoneProviderRep -> IO (Either TzdbError TimeZone)
+utcWith = runProviderUtc
 
 ||| Load a named zone through an explicit platform provider.
-public export
-timeZoneWith : TimeZoneProvider -> String -> IO (Either TzdbError TimeZone)
-timeZoneWith = providerTimeZone
+export
+timeZoneWith : TimeZoneProviderRep -> String -> IO (Either TzdbError TimeZone)
+timeZoneWith = runProviderTimeZone
 
 ||| Load the local zone through an explicit platform provider.
-public export
-localZoneWith : TimeZoneProvider -> IO (Either TzdbError TimeZone)
-localZoneWith = providerLocalZone
+export
+localZoneWith : TimeZoneProviderRep -> IO (Either TzdbError TimeZone)
+localZoneWith = runProviderLocalZone
 
 ||| Enumerate zones through an explicit platform provider.
-public export
-availableZonesWith : TimeZoneProvider -> IO (Either TzdbError (List String))
-availableZonesWith = providerAvailableZones
+export
+availableZonesWith : TimeZoneProviderRep -> IO (Either TzdbError (List String))
+availableZonesWith = runProviderAvailableZones
 
 ||| Query version and identifier metadata through an explicit provider.
-public export
-metadataWith : TimeZoneProvider -> IO (Either TzdbError TzdbMetadata)
-metadataWith = providerMetadata
+export
+metadataWith : TimeZoneProviderRep -> IO (Either TzdbError TzdbMetadata)
+metadataWith = runProviderMetadata
 
 ||| Load UTC from the platform TZDB.
 export
@@ -229,6 +232,6 @@ loadSystemAvailableZones = availableZonesWith systemTimeZoneProvider
 
 ||| Query version, aliases, and Windows/IANA mappings from the platform
 ||| provider.
-public export
+export
 metadata : IO (Either TzdbError TzdbMetadata)
 metadata = metadataWith systemTimeZoneProvider

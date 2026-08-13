@@ -1,4 +1,7 @@
 {
+  "IotaTime.Pure": [
+    { "title": "Custom providers", "names": ["TimeZoneProvider", "timeZoneProvider", "TimeZoneCachePolicy", "timeZoneCachePolicy", "defaultTimeZoneCachePolicy", "cachedTimeZoneProvider", "utcWith", "timeZoneWith", "localZoneWith", "availableZonesWith", "metadataWith"] }
+  ],
   "IotaTime.Pattern": [
     { "title": "Core types", "names": ["Pattern", "PatternError", "LiteralPattern", "PatternParser", "Pattern.(.initialState)", "Pattern.initialState", "Pattern.(.finish)", "Pattern.finish", "Pattern.(.parsePart)", "Pattern.parsePart", "Pattern.(.formatPart)", "Pattern.formatPart", "LiteralPattern.(.literalText)", "LiteralPattern.literalText"] },
     { "title": "Parsing and formatting", "names": ["parse", "parseWith", "format", "pSignedInteger"] },
@@ -45,21 +48,8 @@
     { "title": "Values and arithmetic", "names": ["empty", "addClamped", "minusClamped", "negateOffset"] }
   ],
   "IotaTime.TimeZone": [
-    { "title": "Zone acquisition", "names": ["utc", "timeZone", "localZone", "availableZones"] }
-  ],
-  "IotaTime.Tzdb": [
-    { "title": "Platform provider", "names": ["systemTimeZoneProvider", "unixTimeZoneProvider", "metadata"] },
-    { "title": "Explicit providers", "names": ["utcWith", "timeZoneWith", "localZoneWith", "availableZonesWith", "metadataWith"] },
-    { "title": "Windows snapshots", "names": ["windowsSnapshotTimeZoneProvider"] }
-  ],
-  "IotaTime.Tzdb.Provider": [
-    { "hidden": true, "names": ["TimeZoneProvider.(.providerUtc)", "TimeZoneProvider.(.providerTimeZone)", "TimeZoneProvider.(.providerLocalZone)", "TimeZoneProvider.(.providerAvailableZones)", "TimeZoneProvider.(.providerMetadata)", "TimeZoneCachePolicy.(.cacheNamedZones)", "TimeZoneCachePolicy.(.cacheAvailableZones)", "TimeZoneCachePolicy.(.cacheMetadata)", "TimeZoneCachePolicy.(.cacheLocalZone)"] },
-    { "title": "Provider contract", "names": ["TzdbError", "TimeZoneProvider", "TimeZoneProvider.providerUtc", "TimeZoneProvider.providerTimeZone", "TimeZoneProvider.providerLocalZone", "TimeZoneProvider.providerAvailableZones", "TimeZoneProvider.providerMetadata"] },
-    { "title": "Opt-in caching", "names": ["TimeZoneCachePolicy", "TimeZoneCachePolicy.cacheNamedZones", "TimeZoneCachePolicy.cacheAvailableZones", "TimeZoneCachePolicy.cacheMetadata", "TimeZoneCachePolicy.cacheLocalZone", "defaultTimeZoneCachePolicy", "cachedTimeZoneProvider"] }
-  ],
-  "IotaTime.Tzdb.Metadata": [
-    { "title": "Metadata", "names": ["TzdbMetadata", "tzdbVersion"] },
-    { "title": "TZDB identity", "names": ["ZoneAlias", "zoneAliases", "canonicalZoneId", "parseTzdataIdentity"] }
+    { "title": "Zone acquisition", "names": ["utc", "timeZone", "localZone", "availableZones", "metadata"] },
+    { "title": "Providers", "names": ["TimeZoneProvider", "timeZoneProvider", "systemTimeZoneProvider", "unixTimeZoneProvider", "windowsSnapshotTimeZoneProvider", "utcWith", "timeZoneWith", "localZoneWith", "availableZonesWith", "metadataWith", "TimeZoneCachePolicy", "timeZoneCachePolicy", "defaultTimeZoneCachePolicy", "cachedTimeZoneProvider"] }
   ],
   "IotaTime.Calendar": [
     { "hidden": true, "names": ["DateRep", "MonthRep", "isValidDays", "fromDays", "toDaysValid", "toFromDays", "fromToDays", "calendarName", "year'", "toYmd", "day'", "month'", "applyCalendarPeriod'", "shiftCalendarDays'", "CalendarMonth", "calendarValueToDays", "calendarValueYear", "calendarValueMonthDay", "calendarValueDayOfWeek", "calendarValueBetweenWith", "calendarValueNext", "calendarValuePrevious"] },

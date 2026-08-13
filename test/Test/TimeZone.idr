@@ -1,6 +1,7 @@
 module Test.TimeZone
 
 import IotaTime
+import IotaTime.Tzdb.Provider
 import IotaTime.Tzdb.Windows.Platform
 import IotaTime.Tzdb.Windows.Types
 import Test.Support
@@ -67,7 +68,7 @@ cachePolicyWorks = do
   localCount <- newIORef 0
   availableCount <- newIORef 0
   metadataCount <- newIORef 0
-  let base = MkTimeZoneProvider
+  let base = IotaTime.TimeZone.timeZoneProvider
         (pure (Right (fixedTimeZone "UTC" empty)))
         (\name => counted namedCount $ pure $
           if name == "Missing"
@@ -78,7 +79,8 @@ cachePolicyWorks = do
         (counted availableCount $ pure (Right ["Test/A", "Test/B"]))
         (counted metadataCount $
           pure (Right (MkTzdbMetadata (Just "test") [])))
-  cached <- cachedTimeZoneProvider defaultTimeZoneCachePolicy base
+  cached <- IotaTime.TimeZone.cachedTimeZoneProvider
+    IotaTime.TimeZone.defaultTimeZoneCachePolicy base
   firstA <- timeZoneWith cached "Test/A"
   secondA <- timeZoneWith cached "Test/A"
   firstB <- timeZoneWith cached "Test/B"
@@ -90,8 +92,8 @@ cachePolicyWorks = do
   secondAvailable <- availableZonesWith cached
   firstMetadata <- metadataWith cached
   secondMetadata <- metadataWith cached
-  cachedLocal <- cachedTimeZoneProvider
-    (MkTimeZoneCachePolicy False False False True) base
+  cachedLocal <- IotaTime.TimeZone.cachedTimeZoneProvider
+    (IotaTime.TimeZone.timeZoneCachePolicy False False False True) base
   thirdLocal <- localZoneWith cachedLocal
   fourthLocal <- localZoneWith cachedLocal
   namedCalls <- readIORef namedCount
@@ -116,7 +118,7 @@ windowsSnapshotReadsOnce : IO Bool
 windowsSnapshotReadsOnce = do
   sourceCount <- newIORef 0
   let snapshot = MkWindowsRegistrySnapshot "Missing Local" []
-      source = MkWindowsRegistrySource
+      source = windowsRegistrySource
         (counted sourceCount (pure (Right snapshot)))
   loaded <- windowsRegistrySnapshotProvider source
   case loaded of

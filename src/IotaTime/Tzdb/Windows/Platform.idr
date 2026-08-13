@@ -1,5 +1,8 @@
 module IotaTime.Tzdb.Windows.Platform
 
+import IotaTime.TimeZone.Core
+import IotaTime.TimeZone.Error
+import IotaTime.Tzdb.Metadata
 import IotaTime.Tzdb.Provider
 import IotaTime.Tzdb.Windows
 import IotaTime.Tzdb.Windows.Types
@@ -44,10 +47,15 @@ windowsToIanaZone = convertZoneId prim__windowsWindowsToIana
 
 ||| Native Windows adapters provide one atomic registry snapshot containing
 ||| both the available zones and locally configured Windows zone identifier.
-public export
+export
 record WindowsRegistrySource where
   constructor MkWindowsRegistrySource
   sourceRegistrySnapshot : IO (Either String WindowsRegistrySnapshot)
+
+export
+windowsRegistrySource : IO (Either String WindowsRegistrySnapshot) ->
+                        WindowsRegistrySource
+windowsRegistrySource = MkWindowsRegistrySource
 
 windowsRegistrySnapshot : WindowsRegistrySource ->
                           IO (Either TzdbError WindowsRegistrySnapshot)
@@ -106,9 +114,9 @@ windowsRegistryAvailableZones source = do
   pure (map (sort . map registryZoneId) loaded)
 
 ||| Build a provider around a Windows registry reader.
-public export
-windowsRegistryTimeZoneProvider : WindowsRegistrySource -> TimeZoneProvider
-windowsRegistryTimeZoneProvider source = MkTimeZoneProvider
+export
+windowsRegistryTimeZoneProvider : WindowsRegistrySource -> TimeZoneProviderRep
+windowsRegistryTimeZoneProvider source = timeZoneProvider
   (pure (Right (fixedTimeZone "UTC" empty)))
   (windowsRegistryNamedZone source)
   (windowsRegistryLocalZone source)
@@ -117,9 +125,9 @@ windowsRegistryTimeZoneProvider source = MkTimeZoneProvider
 
 ||| Read a registry source once and return a provider with a consistent,
 ||| immutable view of its zones and local-zone identifier.
-public export
+export
 windowsRegistrySnapshotProvider : WindowsRegistrySource ->
-                                  IO (Either TzdbError TimeZoneProvider)
+                                  IO (Either TzdbError TimeZoneProviderRep)
 windowsRegistrySnapshotProvider source = do
   loaded <- windowsRegistrySnapshot source
   pure $ map
@@ -161,7 +169,7 @@ runWindowsNativeRegistry = do
           Right snapshot => Right snapshot
 
 ||| Registry source backed by Win32 registry APIs through the native FFI.
-public export
+export
 windowsNativeRegistrySource : WindowsRegistrySource
 windowsNativeRegistrySource = MkWindowsRegistrySource
   runWindowsNativeRegistry

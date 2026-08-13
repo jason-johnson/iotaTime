@@ -178,23 +178,40 @@ for (const name of [
   "timeZone",
   "localZone",
   "availableZones",
+  "metadata",
+  "TimeZoneProvider",
+  "timeZoneProvider",
+  "systemTimeZoneProvider",
+  "unixTimeZoneProvider",
+  "windowsSnapshotTimeZoneProvider",
+  "utcWith",
+  "timeZoneWith",
+  "localZoneWith",
+  "availableZonesWith",
+  "metadataWith",
+  "TimeZoneCachePolicy",
+  "timeZoneCachePolicy",
+  "defaultTimeZoneCachePolicy",
+  "cachedTimeZoneProvider",
 ]) {
   if (!timeZonePage.includes(`id="IotaTime.TimeZone.${name}"`)) {
     throw new Error(`IotaTime.TimeZone.html lacks public ${name}`);
   }
 }
-if (!timeZonePage.includes('href="IotaTime.Tzdb.html"') ||
-    !timeZonePage.includes('href="IotaTime.ZonedDateTime.html"')) {
-  throw new Error("IotaTime.TimeZone.html lacks operational module links");
+if (!timeZonePage.includes('href="IotaTime.ZonedDateTime.html"')) {
+  throw new Error("IotaTime.TimeZone.html lacks zoned date-time link");
 }
 
-const tzdbPage = await readFile(
-  path.join(outputDirectory, "docs", "IotaTime.Tzdb.html"),
-  "utf8",
-);
-for (const name of ["utc", "timeZone", "localZone", "availableZones"]) {
-  if (tzdbPage.includes(`id="IotaTime.Tzdb.${name}"`)) {
-    throw new Error(`IotaTime.Tzdb.html duplicates canonical loader ${name}`);
+for (const moduleName of [
+  "IotaTime.Tzdb",
+  "IotaTime.Tzdb.Provider",
+  "IotaTime.Tzdb.Metadata",
+]) {
+  try {
+    await readFile(path.join(outputDirectory, "docs", `${moduleName}.html`));
+    throw new Error(`${moduleName}.html exposes an internal support module`);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
   }
 }
 

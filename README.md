@@ -304,7 +304,7 @@ The HodaTime names `empty`, `fromSeconds`, `fromMinutes`, `fromHours`, `seconds`
 
 ## Date-time zones
 
-`TimeZone` is the HodaTime-compatible name for the opaque in-memory zone model. `IotaTime.TimeZone` also owns HodaTime's platform-loading API. The implementation uses bounds-checked TZif decoding, validated POSIX future rules, and native Windows registry data, but those parsers and assembly types are internal modules rather than supported consumer API. Explicit providers, caching, and metadata remain available through `IotaTime.Tzdb`.
+`TimeZone` is the HodaTime-compatible name for the opaque in-memory zone model. `IotaTime.TimeZone` owns the platform-loading API, explicit providers, caching, and metadata. The implementation uses bounds-checked TZif decoding, validated POSIX future rules, and native Windows registry data, but the `IotaTime.Tzdb` support modules are not part of the documented consumer API.
 
 The HodaTime-compatible platform loaders have typed effect signatures:
 
@@ -336,7 +336,7 @@ resolve it, while `availableZones` lists every installed Windows registry ID.
 
 `TZDIR` overrides `/usr/share/zoneinfo`; `TZ` overrides `/etc/localtime` for the local zone. Named zones cannot escape the TZDB root. `availableZones` reports files that successfully decode as TZif rather than relying on filename conventions.
 
-`TimeZoneProvider` isolates platform discovery. The `utcWith`, `timeZoneWith`, `localZoneWith`, `availableZonesWith`, and `metadataWith` variants accept an explicit provider; the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. On Windows, internal registry models decode `REG_TZI_FORMAT`, `SYSTEMTIME`, and Dynamic DST history with typed malformed-data and unknown-zone failures; ICU supplies IANA/Windows identifier conversion.
+The opaque `TimeZoneProvider` isolates platform discovery. Build a custom provider with `timeZoneProvider`; the `utcWith`, `timeZoneWith`, `localZoneWith`, `availableZonesWith`, and `metadataWith` variants accept an explicit provider, while the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. On Windows, internal registry models decode `REG_TZI_FORMAT`, `SYSTEMTIME`, and Dynamic DST history with typed malformed-data and unknown-zone failures; ICU supplies IANA/Windows identifier conversion.
 
 Provider caching is explicit and caller-owned. `cachedTimeZoneProvider policy provider` returns a new provider with mutex-protected caches for the successful operations selected by `TimeZoneCachePolicy`; failures are retried rather than retained. `defaultTimeZoneCachePolicy` caches named zones, enumeration, and metadata, but leaves the local zone live so changes to `TZ`, `/etc/localtime`, or Windows configuration remain observable. Constructing another wrapper discards the old cache without introducing global mutable state.
 

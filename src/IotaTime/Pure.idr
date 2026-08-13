@@ -30,10 +30,15 @@ import public IotaTime.Pattern.Calendar
 import public IotaTime.Pattern.Duration
 import public IotaTime.Pattern.Offset
 
+export
+record TimeZoneProviderRep where
+	constructor MkTimeZoneProviderRep
+	providerRepresentation : IotaTime.Tzdb.Provider.TimeZoneProviderRep
+
 ||| An opaque caller-supplied source of time zones and associated metadata.
 public export
 TimeZoneProvider : Type
-TimeZoneProvider = IotaTime.Tzdb.Provider.TimeZoneProviderRep
+TimeZoneProvider = IotaTime.Pure.TimeZoneProviderRep
 
 ||| Build a provider from its loading operations.
 public export
@@ -43,11 +48,18 @@ timeZoneProvider : IO (Either TzdbError TimeZone) ->
 									 IO (Either TzdbError (List String)) ->
 									 IO (Either TzdbError TzdbMetadata) ->
 									 TimeZoneProvider
-timeZoneProvider = IotaTime.Tzdb.Provider.timeZoneProvider
+timeZoneProvider utcAction zoneAction localAction availableAction metadataAction =
+	MkTimeZoneProviderRep $ IotaTime.Tzdb.Provider.timeZoneProvider
+		utcAction zoneAction localAction availableAction metadataAction
+
+export
+record TimeZoneCachePolicyRep where
+	constructor MkTimeZoneCachePolicyRep
+	cachePolicyRepresentation : IotaTime.Tzdb.Provider.TimeZoneCachePolicyRep
 
 public export
 TimeZoneCachePolicy : Type
-TimeZoneCachePolicy = IotaTime.Tzdb.Provider.TimeZoneCachePolicyRep
+TimeZoneCachePolicy = IotaTime.Pure.TimeZoneCachePolicyRep
 
 public export
 timeZoneCachePolicy : (cacheNamedZones : Bool) ->
@@ -55,35 +67,45 @@ timeZoneCachePolicy : (cacheNamedZones : Bool) ->
 											(cacheMetadata : Bool) ->
 											(cacheLocalZone : Bool) ->
 											TimeZoneCachePolicy
-timeZoneCachePolicy = IotaTime.Tzdb.Provider.timeZoneCachePolicy
+timeZoneCachePolicy named available valueMetadata local =
+	MkTimeZoneCachePolicyRep $ IotaTime.Tzdb.Provider.timeZoneCachePolicy
+		named available valueMetadata local
 
 public export
 defaultTimeZoneCachePolicy : TimeZoneCachePolicy
 defaultTimeZoneCachePolicy =
-	IotaTime.Tzdb.Provider.defaultTimeZoneCachePolicy
+	MkTimeZoneCachePolicyRep IotaTime.Tzdb.Provider.defaultTimeZoneCachePolicy
 
 public export
 cachedTimeZoneProvider : TimeZoneCachePolicy -> TimeZoneProvider ->
 												 IO TimeZoneProvider
-cachedTimeZoneProvider = IotaTime.Tzdb.Provider.cachedTimeZoneProvider
+cachedTimeZoneProvider (MkTimeZoneCachePolicyRep policy)
+								 (MkTimeZoneProviderRep provider) =
+	MkTimeZoneProviderRep <$>
+		IotaTime.Tzdb.Provider.cachedTimeZoneProvider policy provider
 
 public export
 utcWith : TimeZoneProvider -> IO (Either TzdbError TimeZone)
-utcWith = IotaTime.Tzdb.Provider.runProviderUtc
+utcWith (MkTimeZoneProviderRep provider) =
+	IotaTime.Tzdb.Provider.runProviderUtc provider
 
 public export
 timeZoneWith : TimeZoneProvider -> String -> IO (Either TzdbError TimeZone)
-timeZoneWith = IotaTime.Tzdb.Provider.runProviderTimeZone
+timeZoneWith (MkTimeZoneProviderRep provider) =
+	IotaTime.Tzdb.Provider.runProviderTimeZone provider
 
 public export
 localZoneWith : TimeZoneProvider -> IO (Either TzdbError TimeZone)
-localZoneWith = IotaTime.Tzdb.Provider.runProviderLocalZone
+localZoneWith (MkTimeZoneProviderRep provider) =
+	IotaTime.Tzdb.Provider.runProviderLocalZone provider
 
 public export
 availableZonesWith : TimeZoneProvider ->
 										 IO (Either TzdbError (List String))
-availableZonesWith = IotaTime.Tzdb.Provider.runProviderAvailableZones
+availableZonesWith (MkTimeZoneProviderRep provider) =
+	IotaTime.Tzdb.Provider.runProviderAvailableZones provider
 
 public export
 metadataWith : TimeZoneProvider -> IO (Either TzdbError TzdbMetadata)
-metadataWith = IotaTime.Tzdb.Provider.runProviderMetadata
+metadataWith (MkTimeZoneProviderRep provider) =
+	IotaTime.Tzdb.Provider.runProviderMetadata provider

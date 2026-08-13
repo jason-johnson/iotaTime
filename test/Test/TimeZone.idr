@@ -124,9 +124,9 @@ windowsSnapshotReadsOnce = do
   case loaded of
     Left _ => pure False
     Right provider => do
-      firstAvailable <- availableZonesWith provider
-      secondAvailable <- availableZonesWith provider
-      local <- localZoneWith provider
+      firstAvailable <- runProviderAvailableZones provider
+      secondAvailable <- runProviderAvailableZones provider
+      local <- runProviderLocalZone provider
       reads <- readIORef sourceCount
       pure $
         hasAvailableZones [] firstAvailable &&

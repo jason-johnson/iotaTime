@@ -1,5 +1,6 @@
 module IotaTime.Calendar.Hebrew
 
+import IotaTime.Internal.ApplyPeriod
 import IotaTime.Calendar
 import IotaTime.Internal.Normalization
 import IotaTime.Period
@@ -523,6 +524,11 @@ public export
 public export
 {numbering : HebrewNumbering} -> HasCalendar (HebrewDate numbering) where
   calendarCapability = ()
+
+public export
+{numbering : HebrewNumbering} ->
+  PeriodTarget (HebrewDate numbering) where
+  periodTarget = ()
 
 public export
 {numbering : HebrewNumbering} -> ApplyPeriod (HebrewDate numbering) where

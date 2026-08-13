@@ -1,6 +1,7 @@
 module IotaTime.Calendar.Gregorian
 
 import IotaTime.Calendar
+import IotaTime.Internal.ApplyPeriod
 import IotaTime.Internal.Gregorian
 import IotaTime.Period
 import Data.So
@@ -196,6 +197,10 @@ applyGregorianPeriod = applyDatePeriodWith
 public export
 HasCalendar GregorianDate where
   calendarCapability = ()
+
+public export
+PeriodTarget GregorianDate where
+  periodTarget = ()
 
 public export
 ApplyPeriod GregorianDate where

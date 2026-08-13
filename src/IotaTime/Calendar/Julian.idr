@@ -1,5 +1,6 @@
 module IotaTime.Calendar.Julian
 
+import IotaTime.Internal.ApplyPeriod
 import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
@@ -214,6 +215,10 @@ Show JulianDate where
 public export
 HasCalendar JulianDate where
   calendarCapability = ()
+
+public export
+PeriodTarget JulianDate where
+  periodTarget = ()
 
 public export
 ApplyPeriod JulianDate where

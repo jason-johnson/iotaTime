@@ -1,5 +1,6 @@
 module IotaTime.Calendar.Islamic
 
+import IotaTime.Internal.ApplyPeriod
 import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
@@ -415,6 +416,12 @@ public export
 {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
   HasCalendar (IslamicDate epoch pattern) where
   calendarCapability = ()
+
+public export
+{epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->
+  KnownIslamicEpoch epoch => KnownIslamicLeapPattern pattern =>
+  PeriodTarget (IslamicDate epoch pattern) where
+  periodTarget = ()
 
 public export
 {epoch : IslamicEpoch} -> {pattern : IslamicLeapPattern} ->

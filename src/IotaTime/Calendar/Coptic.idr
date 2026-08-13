@@ -1,5 +1,6 @@
 module IotaTime.Calendar.Coptic
 
+import IotaTime.Internal.ApplyPeriod
 import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
@@ -228,6 +229,10 @@ Show CopticDate where
 public export
 HasCalendar CopticDate where
   calendarCapability = ()
+
+public export
+PeriodTarget CopticDate where
+  periodTarget = ()
 
 public export
 ApplyPeriod CopticDate where

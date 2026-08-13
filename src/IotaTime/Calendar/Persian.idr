@@ -1,5 +1,6 @@
 module IotaTime.Calendar.Persian
 
+import IotaTime.Internal.ApplyPeriod
 import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
@@ -297,6 +298,10 @@ Show PersianDate where
 public export
 HasCalendar PersianDate where
   calendarCapability = ()
+
+public export
+PeriodTarget PersianDate where
+  periodTarget = ()
 
 public export
 ApplyPeriod PersianDate where
@@ -754,6 +759,11 @@ public export
 public export
 HasCalendar (ArithmeticPersianDate rule) where
   calendarCapability = ()
+
+public export
+{rule : PersianArithmeticRule} ->
+  PeriodTarget (ArithmeticPersianDate rule) where
+  periodTarget = ()
 
 public export
 {rule : PersianArithmeticRule} ->

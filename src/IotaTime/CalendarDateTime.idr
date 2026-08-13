@@ -1,6 +1,7 @@
 module IotaTime.CalendarDateTime
 
 import IotaTime.Calendar
+import IotaTime.Internal.ApplyPeriod
 import IotaTime.LocalTime
 import IotaTime.Period
 
@@ -121,6 +122,11 @@ public export
 implementation {calendar : Type} -> {cal : Calendar calendar} ->
   HasTime (CalendarDateTime calendar @{cal}) where
   timeCapability = ()
+
+public export
+implementation {calendar : Type} -> {cal : Calendar calendar} ->
+  PeriodTarget (CalendarDateTime calendar @{cal}) where
+  periodTarget = ()
 
 public export
 implementation {calendar : Type} -> {cal : Calendar calendar} ->

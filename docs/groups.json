@@ -53,8 +53,9 @@
     { "title": "Windows snapshots", "names": ["windowsSnapshotTimeZoneProvider"] }
   ],
   "IotaTime.Tzdb.Provider": [
-    { "title": "Provider contract", "names": ["TzdbError", "TimeZoneProvider", "TimeZoneProvider.(.providerUtc)", "TimeZoneProvider.providerUtc", "TimeZoneProvider.(.providerTimeZone)", "TimeZoneProvider.providerTimeZone", "TimeZoneProvider.(.providerLocalZone)", "TimeZoneProvider.providerLocalZone", "TimeZoneProvider.(.providerAvailableZones)", "TimeZoneProvider.providerAvailableZones", "TimeZoneProvider.(.providerMetadata)", "TimeZoneProvider.providerMetadata"] },
-    { "title": "Opt-in caching", "names": ["TimeZoneCachePolicy", "TimeZoneCachePolicy.(.cacheNamedZones)", "TimeZoneCachePolicy.cacheNamedZones", "TimeZoneCachePolicy.(.cacheAvailableZones)", "TimeZoneCachePolicy.cacheAvailableZones", "TimeZoneCachePolicy.(.cacheMetadata)", "TimeZoneCachePolicy.cacheMetadata", "TimeZoneCachePolicy.(.cacheLocalZone)", "TimeZoneCachePolicy.cacheLocalZone", "defaultTimeZoneCachePolicy", "cachedTimeZoneProvider"] }
+    { "hidden": true, "names": ["TimeZoneProvider.(.providerUtc)", "TimeZoneProvider.(.providerTimeZone)", "TimeZoneProvider.(.providerLocalZone)", "TimeZoneProvider.(.providerAvailableZones)", "TimeZoneProvider.(.providerMetadata)", "TimeZoneCachePolicy.(.cacheNamedZones)", "TimeZoneCachePolicy.(.cacheAvailableZones)", "TimeZoneCachePolicy.(.cacheMetadata)", "TimeZoneCachePolicy.(.cacheLocalZone)"] },
+    { "title": "Provider contract", "names": ["TzdbError", "TimeZoneProvider", "TimeZoneProvider.providerUtc", "TimeZoneProvider.providerTimeZone", "TimeZoneProvider.providerLocalZone", "TimeZoneProvider.providerAvailableZones", "TimeZoneProvider.providerMetadata"] },
+    { "title": "Opt-in caching", "names": ["TimeZoneCachePolicy", "TimeZoneCachePolicy.cacheNamedZones", "TimeZoneCachePolicy.cacheAvailableZones", "TimeZoneCachePolicy.cacheMetadata", "TimeZoneCachePolicy.cacheLocalZone", "defaultTimeZoneCachePolicy", "cachedTimeZoneProvider"] }
   ],
   "IotaTime.Tzdb.Metadata": [
     { "title": "Metadata", "names": ["TzdbMetadata", "tzdbVersion"] },

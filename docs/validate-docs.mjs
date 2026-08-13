@@ -217,6 +217,25 @@ for (const name of [
   }
 }
 
+const localTimePatternPage = await readFile(
+  path.join(outputDirectory, "docs", "IotaTime.Pattern.LocalTime.html"),
+  "utf8",
+);
+for (const name of [
+  "TimeFieldsRep",
+  "MkTimeFields",
+  "parsedHour",
+  "parsedMinute",
+  "parsedSecond",
+  "parsedNanosecond",
+]) {
+  if (localTimePatternPage.includes(`IotaTime.Pattern.LocalTime.${name}`)) {
+    throw new Error(
+      `IotaTime.Pattern.LocalTime.html exposes internal ${name}`,
+    );
+  }
+}
+
 const timeZonePage = await readFile(
   path.join(outputDirectory, "docs", "IotaTime.TimeZone.html"),
   "utf8",

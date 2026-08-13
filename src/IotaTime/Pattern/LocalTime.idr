@@ -10,13 +10,18 @@ import IotaTime.Pattern
 %default total
 
 ||| Intermediate fields accumulated while parsing a local time.
-public export
-record TimeFields where
+export
+record TimeFieldsRep where
   constructor MkTimeFields
   parsedHour : Integer
   parsedMinute : Integer
   parsedSecond : Integer
   parsedNanosecond : Integer
+
+||| Opaque intermediate state used by local-time patterns.
+public export
+TimeFields : Type
+TimeFields = TimeFieldsRep
 
 initialTimeFields : TimeFields
 initialTimeFields = MkTimeFields 0 0 0 0

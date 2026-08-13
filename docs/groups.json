@@ -114,7 +114,7 @@
     { "title": "Standard patterns", "names": ["pd", "pD", "pR", "pmonthDay", "pyearMonth"] }
   ],
   "IotaTime.Pattern.LocalTime": [
-    { "title": "Pattern state", "names": ["TimeFields", "TimeFields.(.parsedHour)", "TimeFields.parsedHour", "TimeFields.(.parsedMinute)", "TimeFields.parsedMinute", "TimeFields.(.parsedSecond)", "TimeFields.parsedSecond", "TimeFields.(.parsedNanosecond)", "TimeFields.parsedNanosecond"] },
+    { "title": "Pattern state", "names": ["TimeFields"] },
     { "title": "24-hour fields", "names": ["phour", "pHH", "pminute", "pmm", "psecond", "pss"] },
     { "title": "12-hour fields", "names": ["phh", "phhSpace", "pp", "ppp", "pPeriod", "ppp'"] },
     { "title": "Fractional seconds", "names": ["isValidFractionWidth", "pfrac"] },

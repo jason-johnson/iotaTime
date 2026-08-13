@@ -85,14 +85,22 @@ if (!/<pre><code(?: class="[^"]+")?>[\s\S]*?<\/code><\/pre>/.test(patternPage)) 
   throw new Error("IotaTime.Pattern.html has no fenced cookbook code block");
 }
 for (const name of [
-  "Pattern.(.initialState)",
-  "Pattern.(.finish)",
-  "Pattern.(.parsePart)",
-  "Pattern.(.formatPart)",
-  "LiteralPattern.(.literalText)",
+  "PatternRep",
+  "LiteralPatternRep",
+  "MkPattern",
+  "MkLiteralPattern",
+  "initialState",
+  "finish",
+  "parsePart",
+  "formatPart",
+  "literalText",
+  "patternInitialState",
+  "patternFinish",
+  "patternParsePart",
+  "patternFormatPart",
 ]) {
-  if (patternPage.includes(`id="IotaTime.Pattern.${name}"`)) {
-    throw new Error(`IotaTime.Pattern.html exposes duplicate projection ${name}`);
+  if (patternPage.includes(`IotaTime.Pattern.${name}`)) {
+    throw new Error(`IotaTime.Pattern.html exposes internal ${name}`);
   }
 }
 

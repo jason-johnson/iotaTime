@@ -186,15 +186,15 @@ initialDateTimeFields : {calendar : Type} ->
                         {auto patterned : CalendarPattern calendar} ->
                         DateTimeFields
 initialDateTimeFields {calendar} = MkDateTimeFields
-  (pyyyy {calendar}).initialState pHH.initialState
+  (patternInitialState (pyyyy {calendar})) (patternInitialState pHH)
 
 finishDateTime : {calendar : Type} ->
                  {auto patterned : CalendarPattern calendar} ->
                  DateTimeFields ->
                  Either PatternError (CalendarDateTime calendar)
 finishDateTime {calendar} fields = do
-  date <- (pyyyy {calendar}).finish fields.parsedDateFields
-  time <- pHH.finish fields.parsedTimeFields
+  date <- patternFinish (pyyyy {calendar}) fields.parsedDateFields
+  time <- patternFinish pHH fields.parsedTimeFields
   Right (on time date)
 
 liftDateUpdate : (DateFields -> DateFields) ->
@@ -214,8 +214,8 @@ liftDatePattern : {calendar : Type} ->
 liftDatePattern {calendar} pattern = MkPattern
   (initialDateTimeFields {calendar})
   (finishDateTime {calendar})
-  (map (map liftDateUpdate) pattern.parsePart)
-  (pattern.formatPart . datePart)
+  (map (map liftDateUpdate) (patternParsePart pattern))
+  (patternFormatPart pattern . datePart)
 
 liftTimePattern : {calendar : Type} ->
                   {auto patterned : CalendarPattern calendar} ->
@@ -224,8 +224,8 @@ liftTimePattern : {calendar : Type} ->
 liftTimePattern {calendar} pattern = MkPattern
   (initialDateTimeFields {calendar})
   (finishDateTime {calendar})
-  (map (map liftTimeUpdate) pattern.parsePart)
-  (pattern.formatPart . localTimeOfDay)
+  (map (map liftTimeUpdate) (patternParsePart pattern))
+  (patternFormatPart pattern . localTimeOfDay)
 
 dateTimeConversion : {calendar : Type} ->
                      {auto patterned : CalendarPattern calendar} ->

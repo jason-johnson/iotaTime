@@ -158,7 +158,7 @@ verifiedCalendarDayNamePattern {calendar} @{patterned} names = MkPattern
   initialDateFields
   finishDate
   (namedUpdatePart (indexedFinNames names) setWeekdayField)
-  (calendarDayNamePattern {calendar} @{patterned} names).formatPart
+  (patternFormatPart (calendarDayNamePattern {calendar} @{patterned} names))
 
 englishMonthNames : Vect 12 String
 englishMonthNames = map show gregorianMonths

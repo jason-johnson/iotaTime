@@ -15,7 +15,7 @@ pInstantNanoseconds : Pattern Integer Instant
 pInstantNanoseconds = MkPattern
   0
   (Right . fromNanosecondsSinceEpoch)
-  pSignedInteger.parsePart
+  (patternParsePart pSignedInteger)
   (show . toNanosecondsSinceEpoch)
 
 finishCalendarDays : {calendar : Type} -> {auto cal : Calendar calendar} ->
@@ -35,7 +35,7 @@ pCalendarDays : {calendar : Type} -> {auto cal : Calendar calendar} ->
 pCalendarDays {calendar} @{cal} = MkPattern
   0
   (finishCalendarDays {calendar} @{cal})
-  pSignedInteger.parsePart
+  (patternParsePart pSignedInteger)
   (show . toDaysFor {calendar} @{cal})
 
 isZoneTokenCharacter : Char -> Bool

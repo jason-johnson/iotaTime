@@ -84,6 +84,17 @@ if (!patternPage.includes('class="module-cookbook"')) {
 if (!/<pre><code(?: class="[^"]+")?>[\s\S]*?<\/code><\/pre>/.test(patternPage)) {
   throw new Error("IotaTime.Pattern.html has no fenced cookbook code block");
 }
+for (const name of [
+  "Pattern.(.initialState)",
+  "Pattern.(.finish)",
+  "Pattern.(.parsePart)",
+  "Pattern.(.formatPart)",
+  "LiteralPattern.(.literalText)",
+]) {
+  if (patternPage.includes(`id="IotaTime.Pattern.${name}"`)) {
+    throw new Error(`IotaTime.Pattern.html exposes duplicate projection ${name}`);
+  }
+}
 
 const durationPage = await readFile(
   path.join(outputDirectory, "docs", "IotaTime.Duration.html"),

@@ -3,7 +3,8 @@
     { "title": "Custom providers", "names": ["TimeZoneProvider", "timeZoneProvider", "TimeZoneCachePolicy", "timeZoneCachePolicy", "defaultTimeZoneCachePolicy", "cachedTimeZoneProvider", "utcWith", "timeZoneWith", "localZoneWith", "availableZonesWith", "metadataWith"] }
   ],
   "IotaTime.Pattern": [
-    { "title": "Core types", "names": ["Pattern", "PatternError", "LiteralPattern", "PatternParser", "Pattern.(.initialState)", "Pattern.initialState", "Pattern.(.finish)", "Pattern.finish", "Pattern.(.parsePart)", "Pattern.parsePart", "Pattern.(.formatPart)", "Pattern.formatPart", "LiteralPattern.(.literalText)", "LiteralPattern.literalText"] },
+    { "hidden": true, "names": ["Pattern.(.initialState)", "Pattern.(.finish)", "Pattern.(.parsePart)", "Pattern.(.formatPart)", "LiteralPattern.(.literalText)"] },
+    { "title": "Core types", "names": ["Pattern", "PatternError", "LiteralPattern", "PatternParser", "Pattern.initialState", "Pattern.finish", "Pattern.parsePart", "Pattern.formatPart", "LiteralPattern.literalText"] },
     { "title": "Parsing and formatting", "names": ["parse", "parseWith", "format", "pSignedInteger"] },
     { "title": "Composition", "names": ["string", "char", "(<%)"] }
   ],

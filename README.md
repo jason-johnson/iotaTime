@@ -272,8 +272,13 @@ future : UnboundedInterval
 future = unboundedInterval (Just 0) Nothing
 ```
 
+Every `UnboundedInterval` stores erased evidence that its finite endpoints are
+ordered. `unboundedIntervalIsValid` exposes that evidence to proof-level
+callers, including values produced by runtime refinement and set operations.
+
 `toUnboundedInterval` embeds every bounded interval, while
-`toBoundedInterval` succeeds only when both bounds are finite. The prefixed
+`toBoundedInterval` succeeds only when both bounds are finite and reuses the
+stored ordering proof. The prefixed
 membership, relationship, intersection, and connected-union operations retain
 the bounded API's semantics. `unboundedDuration` likewise returns a duration
 only for two finite endpoints.

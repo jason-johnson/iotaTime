@@ -33,6 +33,11 @@ untilTen = unboundedInterval Nothing (Just 10)
 finiteUnbounded : UnboundedInterval
 finiteUnbounded = unboundedInterval (Just 0) (Just 10)
 
+0 finiteUnboundedIsValid : So (isValidUnboundedInterval
+  (unboundedStart Test.Interval.finiteUnbounded)
+  (unboundedEnd Test.Interval.finiteUnbounded))
+finiteUnboundedIsValid = unboundedIntervalIsValid finiteUnbounded
+
 emptyUnbounded : UnboundedInterval
 emptyUnbounded = unboundedInterval (Just 0) (Just 0)
 

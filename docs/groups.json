@@ -36,7 +36,7 @@
     { "title": "Validity predicate and proof", "names": ["isValidInterval", "intervalIsValid"] },
     { "title": "Endpoints and membership", "names": ["start", "end", "contains", "isEmpty", "duration"] },
     { "title": "Relationships and set operations", "names": ["overlaps", "isAdjacent", "intersection", "union"] },
-    { "title": "Unbounded construction and conversion", "names": ["UnboundedInterval", "isValidUnboundedInterval", "isValidUnboundedNanosecondInterval", "unboundedInterval", "refineUnboundedInterval", "toUnboundedInterval", "toBoundedInterval"] },
+    { "title": "Unbounded construction and conversion", "names": ["UnboundedInterval", "isValidUnboundedInterval", "isValidUnboundedNanosecondInterval", "unboundedInterval", "refineUnboundedInterval", "unboundedIntervalIsValid", "toUnboundedInterval", "toBoundedInterval"] },
     { "title": "Unbounded endpoints and membership", "names": ["unboundedStart", "unboundedEnd", "unboundedContains", "unboundedIsEmpty", "unboundedDuration"] },
     { "title": "Unbounded relationships and set operations", "names": ["unboundedOverlaps", "unboundedIsAdjacent", "unboundedIntersection", "unboundedUnion"] }
   ],

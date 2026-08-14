@@ -132,20 +132,11 @@ Show IntervalRep where
 ||| A half-open timeline interval whose start, end, or both may be unbounded.
 ||| `Nothing` denotes negative infinity for the start and positive infinity for
 ||| the end.
-export
-record UnboundedIntervalRep where
-  constructor MkUnboundedInterval
-  storedUnboundedStart : Maybe Instant
-  storedUnboundedEnd : Maybe Instant
-
-public export
-UnboundedInterval : Type
-UnboundedInterval = UnboundedIntervalRep
-
 ||| Decide whether optional endpoints are ordered as a valid interval.
 public export
 isValidUnboundedInterval : Maybe Instant -> Maybe Instant -> Bool
-isValidUnboundedInterval (Just start) (Just end) = start <= end
+isValidUnboundedInterval (Just start) (Just end) =
+  isValidInterval start end
 isValidUnboundedInterval _ _ = True
 
 public export
@@ -153,49 +144,78 @@ isValidUnboundedNanosecondInterval : Maybe Integer -> Maybe Integer -> Bool
 isValidUnboundedNanosecondInterval (Just start) (Just end) = start <= end
 isValidUnboundedNanosecondInterval _ _ = True
 
+export
+record UnboundedIntervalRep where
+  constructor MkUnboundedInterval
+  storedUnboundedStart : Maybe Instant
+  storedUnboundedEnd : Maybe Instant
+  0 valid : So
+    (isValidUnboundedInterval storedUnboundedStart storedUnboundedEnd)
+
+public export
+UnboundedInterval : Type
+UnboundedInterval = UnboundedIntervalRep
+
 ||| Construct a statically validated interval with optional endpoints.
 public export
 unboundedInterval : (startNanoseconds, endNanoseconds : Maybe Integer) ->
                     {auto 0 valid : So (isValidUnboundedNanosecondInterval
                       startNanoseconds endNanoseconds)} ->
                     UnboundedInterval
-unboundedInterval startNanoseconds endNanoseconds = MkUnboundedInterval
-  (map fromNanosecondsSinceEpoch startNanoseconds)
-  (map fromNanosecondsSinceEpoch endNanoseconds)
+unboundedInterval Nothing Nothing = MkUnboundedInterval Nothing Nothing Oh
+unboundedInterval Nothing (Just end) = MkUnboundedInterval Nothing
+  (Just (fromNanosecondsSinceEpoch end)) Oh
+unboundedInterval (Just start) Nothing = MkUnboundedInterval
+  (Just (fromNanosecondsSinceEpoch start)) Nothing Oh
+unboundedInterval (Just start) (Just end) @{valid} = MkUnboundedInterval
+  (Just (fromNanosecondsSinceEpoch start))
+  (Just (fromNanosecondsSinceEpoch end))
+  (rewrite instantNanosecondsRoundTrip start in
+   rewrite instantNanosecondsRoundTrip end in valid)
 
 ||| Validate optional endpoints learned at runtime.
 public export
 refineUnboundedInterval : (start, end : Maybe Instant) ->
                           Either IntervalError UnboundedInterval
-refineUnboundedInterval start end =
-  case choose (isValidUnboundedInterval start end) of
-    Left _ => Right (MkUnboundedInterval start end)
-    Right _ => case (start, end) of
-      (Just actualStart, Just actualEnd) =>
-        Left (ReversedInterval actualStart actualEnd)
-      _ => Right (MkUnboundedInterval start end)
+refineUnboundedInterval (Just start) (Just end) =
+  case choose (isValidUnboundedInterval (Just start) (Just end)) of
+    Left valid => Right (MkUnboundedInterval (Just start) (Just end) valid)
+    Right _ => Left (ReversedInterval start end)
+refineUnboundedInterval Nothing Nothing =
+  Right (MkUnboundedInterval Nothing Nothing Oh)
+refineUnboundedInterval Nothing (Just end) =
+  Right (MkUnboundedInterval Nothing (Just end) Oh)
+refineUnboundedInterval (Just start) Nothing =
+  Right (MkUnboundedInterval (Just start) Nothing Oh)
 
 public export
 unboundedStart : UnboundedInterval -> Maybe Instant
-unboundedStart (MkUnboundedInterval value _) = value
+unboundedStart (MkUnboundedInterval value _ _) = value
 
 public export
 unboundedEnd : UnboundedInterval -> Maybe Instant
-unboundedEnd (MkUnboundedInterval _ value) = value
+unboundedEnd (MkUnboundedInterval _ value _) = value
+
+||| Every unbounded interval carries erased evidence that its finite endpoints
+||| are ordered.
+public export
+0 unboundedIntervalIsValid : (value : UnboundedInterval) ->
+  So (isValidUnboundedInterval
+    (unboundedStart value) (unboundedEnd value))
+unboundedIntervalIsValid (MkUnboundedInterval _ _ valid) = valid
 
 ||| Treat a bounded interval as an interval with two finite bounds.
 public export
 toUnboundedInterval : Interval -> UnboundedInterval
 toUnboundedInterval value = MkUnboundedInterval (Just (start value))
-  (Just (end value))
+  (Just (end value)) (intervalIsValid value)
 
 ||| Recover a bounded interval only when both endpoints are finite.
 public export
 toBoundedInterval : UnboundedInterval -> Maybe Interval
-toBoundedInterval (MkUnboundedInterval (Just start) (Just end)) =
-  case choose (isValidInterval start end) of
-    Left valid => Just (MkInterval start end valid)
-    Right _ => Nothing
+toBoundedInterval
+  (MkUnboundedInterval (Just start) (Just end) valid) =
+    Just (MkInterval start end valid)
 toBoundedInterval _ = Nothing
 
 ||| Test membership using half-open endpoint semantics at every finite bound.
@@ -211,7 +231,7 @@ unboundedContains value instant =
 ||| Whether the interval contains no instants.
 public export
 unboundedIsEmpty : UnboundedInterval -> Bool
-unboundedIsEmpty (MkUnboundedInterval (Just start) (Just end)) = start == end
+unboundedIsEmpty (MkUnboundedInterval (Just start) (Just end) _) = start == end
 unboundedIsEmpty _ = False
 
 endAfterStart : Maybe Instant -> Maybe Instant -> Bool
@@ -264,9 +284,11 @@ unboundedIntersection : UnboundedInterval -> UnboundedInterval ->
                         Maybe UnboundedInterval
 unboundedIntersection left right =
   if unboundedOverlaps left right
-    then Just (MkUnboundedInterval
+    then case refineUnboundedInterval
       (laterStart (unboundedStart left) (unboundedStart right))
-      (earlierEnd (unboundedEnd left) (unboundedEnd right)))
+      (earlierEnd (unboundedEnd left) (unboundedEnd right)) of
+        Left _ => Nothing
+        Right value => Just value
     else Nothing
 
 ||| Return the smallest interval containing both inputs when their union is
@@ -280,15 +302,17 @@ unboundedUnion left right =
     else if unboundedIsEmpty right
       then Just left
       else if unboundedOverlaps left right || unboundedIsAdjacent left right
-        then Just (MkUnboundedInterval
+        then case refineUnboundedInterval
           (earlierStart (unboundedStart left) (unboundedStart right))
-          (laterEnd (unboundedEnd left) (unboundedEnd right)))
+          (laterEnd (unboundedEnd left) (unboundedEnd right)) of
+            Left _ => Nothing
+            Right value => Just value
         else Nothing
 
 ||| Return the duration when both endpoints are finite.
 public export
 unboundedDuration : UnboundedInterval -> Maybe Duration
-unboundedDuration (MkUnboundedInterval (Just start) (Just end)) =
+unboundedDuration (MkUnboundedInterval (Just start) (Just end) _) =
   Just (difference end start)
 unboundedDuration _ = Nothing
 

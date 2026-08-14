@@ -73,6 +73,14 @@ boundedWindow = interval 0 5400000000000
 runtimeWindow : Either IntervalError Interval
 runtimeWindow = refineInterval start finish
 
+futureWindow : UnboundedInterval
+futureWindow = unboundedInterval (Just 0) Nothing
+
+0 futureWindowIsValid : So (isValidUnboundedInterval
+  (unboundedStart GuideExamples.futureWindow)
+  (unboundedEnd GuideExamples.futureWindow))
+futureWindowIsValid = unboundedIntervalIsValid futureWindow
+
 windowContainsStart : Bool
 windowContainsStart = contains boundedWindow start
 

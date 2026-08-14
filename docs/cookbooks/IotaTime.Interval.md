@@ -23,4 +23,24 @@ runtimeWindow : Either IntervalError Interval
 runtimeWindow = refineInterval start finish
 ```
 
+### Carry validity through unbounded intervals
+
+`UnboundedInterval` uses `Nothing` for an infinite endpoint and stores erased
+evidence that any two finite endpoints are ordered. Static optional nanosecond
+bounds use `unboundedInterval`; runtime `Instant` bounds use
+`refineUnboundedInterval`.
+
+```idris
+futureWindow : UnboundedInterval
+futureWindow = unboundedInterval (Just 0) Nothing
+
+0 futureWindowIsValid : So (isValidUnboundedInterval
+	(unboundedStart GuideExamples.futureWindow)
+	(unboundedEnd GuideExamples.futureWindow))
+futureWindowIsValid = unboundedIntervalIsValid futureWindow
+```
+
+`toBoundedInterval` reuses this evidence when both endpoints are finite rather
+than validating their order again.
+
 These declarations are compiled from `examples/GuideExamples.idr`.

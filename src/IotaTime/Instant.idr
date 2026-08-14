@@ -88,6 +88,12 @@ toNanosecondsSinceUnixEpoch : Instant -> Integer
 toNanosecondsSinceUnixEpoch value =
   value.storedNanoseconds + unixEpochOffsetNanoseconds
 
+||| Read an instant as whole seconds relative to the Unix epoch, truncated toward negative infinity.
+public export
+toSecondsSinceUnixEpoch : Instant -> Integer
+toSecondsSinceUnixEpoch value =
+  toNanosecondsSinceUnixEpoch value `div` nanosecondsPerSecond
+
 ||| Add a fixed duration to an instant.
 export
 addDuration : Instant -> Duration -> Instant

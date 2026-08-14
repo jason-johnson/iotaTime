@@ -132,9 +132,10 @@
   ],
   "IotaTime.Calendar.Iso": [
     { "hidden": true, "names": ["daysFromCivil", "weekDateDays"] },
-    { "title": "ISO week-date rules", "names": ["isValidWeekDate"] },
+    { "title": "ISO week-date rules", "names": ["hasFiftyThreeWeeks", "weeksInIsoYear", "isValidIsoWeekNumber", "isValidWeekDate"] },
     { "title": "ISO week-date construction", "names": ["fromWeekDate"] },
-    { "title": "Runtime refinement", "names": ["IsoWeekDateError", "refineWeekDate"] }
+    { "title": "Arithmetic coordinates", "names": ["isValidArithmeticWeekDate", "arithmeticFromWeekDate"] },
+    { "title": "Runtime refinement", "names": ["IsoWeekDateError", "refineWeekDate", "refineArithmeticWeekDate"] }
   ],
   "IotaTime.Calendar.Coptic": [
     { "hidden": true, "names": ["epochDay", "weekDateDays"] },

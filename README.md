@@ -487,7 +487,16 @@ isoNewYear = IotaTime.Calendar.Iso.fromWeekDate 1 Monday 2020
 -- December 30, 2019
 ```
 
-`fromWeekDate` requires erased evidence of `isValidWeekDate`. `refineWeekDate` validates runtime values and returns `Either IsoWeekDateError (CalendarDate Gregorian)`. Arithmetic week zero and negative week numbers remain supported when their resulting dates are within the Gregorian range.
+`fromWeekDate` requires erased evidence of `isValidWeekDate`: the week must be
+at least 1 and no greater than the requested ISO year's actual 52- or 53-week
+count. `hasFiftyThreeWeeks`, `weeksInIsoYear`, and `isValidIsoWeekNumber`
+expose that rule. `refineWeekDate` validates runtime values and returns
+`Either IsoWeekDateError (CalendarDate Gregorian)`.
+
+Unrestricted coordinates are deliberately separate. Use
+`arithmeticFromWeekDate` or `refineArithmeticWeekDate` when week zero,
+negative weeks, or weeks beyond the requested ISO year are intentional and the
+resulting Gregorian date remains representable.
 
 ## Julian calendar API
 

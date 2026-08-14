@@ -29,7 +29,9 @@ Features present in HodaTime that iotaTime should support.
   hashing contracts.
 - [x] Expose ISO week-date construction through `IotaTime.Calendar.Iso`.
   It is deliberately not re-exported by the `IotaTime` umbrella because its
-  `fromWeekDate` name conflicts with the Gregorian operation.
+  `fromWeekDate` name conflicts with the Gregorian operation. Standards-valid
+  construction proves the week belongs to the requested 52- or 53-week ISO
+  year; unrestricted arithmetic coordinates use explicitly named operations.
 - [x] Support HodaTime's complete `DayNth` selection surface, from
   `FourthToLast` through `Fifth`, across every built-in calendar.
 - [x] Promote `OffsetDateTime` instant, offset, and calendar conversions.

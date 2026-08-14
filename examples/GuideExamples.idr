@@ -1,12 +1,23 @@
 module GuideExamples
 
 import IotaTime
+import IotaTime.Calendar.Iso
 
 leapDay : CalendarDate Gregorian
 leapDay = calendarDate 29 February 2020
 
 runtimeLeapDay : Either GregorianDateError (CalendarDate Gregorian)
 runtimeLeapDay = refineDate 29 February 2020
+
+isoWeekFiftyThree : CalendarDate Gregorian
+isoWeekFiftyThree = IotaTime.Calendar.Iso.fromWeekDate 53 Sunday 2020
+
+runtimeIsoWeek : Either IsoWeekDateError (CalendarDate Gregorian)
+runtimeIsoWeek = IotaTime.Calendar.Iso.refineWeekDate 53 Monday 2021
+
+arithmeticIsoWeekZero : Either IsoWeekDateError (CalendarDate Gregorian)
+arithmeticIsoWeekZero =
+  IotaTime.Calendar.Iso.refineArithmeticWeekDate 0 Monday 2000
 
 gregorianCutoverInput : Either GregorianDateError (CalendarDate Gregorian)
 gregorianCutoverInput = IotaTime.Calendar.Gregorian.refineDate

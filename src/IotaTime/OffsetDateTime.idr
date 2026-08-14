@@ -123,10 +123,10 @@ localNanoseconds value =
 
 localTimeFromNanoseconds : Integer -> LocalTime
 localTimeFromNanoseconds value = localTime
-  (hourFromInteger (value `div` (3600 * nanosecondsPerSecond)))
-  (minuteFromInteger (value `div` (60 * nanosecondsPerSecond) `mod` 60))
-  (secondFromInteger (value `div` nanosecondsPerSecond `mod` 60))
-  (nanosecondFromInteger (value `mod` nanosecondsPerSecond))
+  (either (const 0) id (refineHour (value `div` (3600 * nanosecondsPerSecond))))
+  (either (const 0) id (refineMinute (value `div` (60 * nanosecondsPerSecond) `mod` 60)))
+  (either (const 0) id (refineSecond (value `div` nanosecondsPerSecond `mod` 60)))
+  (either (const 0) id (refineNanosecond (value `mod` nanosecondsPerSecond)))
 
 ||| Resolve an offset date-time to its unique point on the global timeline.
 public export
@@ -143,10 +143,9 @@ public export
   HasCalendarBridge (CalendarDate calendar @{cal}) =>
   Eq (CalendarDate calendar @{cal}) =>
   Ord (OffsetDateTimeRep calendar cal) where
-  compare left right = case compare
-    (toInstant left) (toInstant right) of
-      EQ => compare left.offsetValue right.offsetValue
-      ordering => ordering
+  compare left right =
+    compare (toInstant left) (toInstant right) <+>
+    compare left.offsetValue right.offsetValue
 
 public export
 {calendar : Type} -> {cal : Calendar calendar} ->
@@ -204,7 +203,6 @@ withCalendar : {source : Type} -> {target : Type} ->
                OffsetDateTime source @{sourceCal} ->
                Either CalendarConversionError (OffsetDateTime target @{targetCal})
 withCalendar @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value =
-  case IotaTime.CalendarDateTime.withCalendar
-    @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value.localValue of
-      Left error => Left error
-      Right converted => Right (MkOffsetDateTime converted value.offsetValue)
+  map (\converted => MkOffsetDateTime converted value.offsetValue)
+    (IotaTime.CalendarDateTime.withCalendar
+      @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value.localValue)

@@ -40,23 +40,27 @@ localTime valueHour valueMinute valueSecond valueNanosecond = MkLocalTime
 ||| Extract the hour in the range 0-23.
 public export
 hour : LocalTime -> Hour
-hour value = hourFromInteger (value.nanosSinceMidnight `div` (3600 * nanosPerSecond))
+-- The refined value is always in range for a valid time; the fallback is unreachable.
+hour value = either (const 0) id
+  (refineHour (value.nanosSinceMidnight `div` (3600 * nanosPerSecond)))
 
 ||| Extract the minute in the range 0-59.
 public export
 minute : LocalTime -> Minute
-minute value = minuteFromInteger
-  (value.nanosSinceMidnight `div` (60 * nanosPerSecond) `mod` 60)
+minute value = either (const 0) id
+  (refineMinute (value.nanosSinceMidnight `div` (60 * nanosPerSecond) `mod` 60))
 
 ||| Extract the second in the range 0-59.
 public export
 second : LocalTime -> Second
-second value = secondFromInteger (value.nanosSinceMidnight `div` nanosPerSecond `mod` 60)
+second value = either (const 0) id
+  (refineSecond (value.nanosSinceMidnight `div` nanosPerSecond `mod` 60))
 
 ||| Extract the nanosecond within the current second.
 public export
 nanosecond : LocalTime -> Nanosecond
-nanosecond value = nanosecondFromInteger (value.nanosSinceMidnight `mod` nanosPerSecond)
+nanosecond value = either (const 0) id
+  (refineNanosecond (value.nanosSinceMidnight `mod` nanosPerSecond))
 
 public export
 Show LocalTime where

@@ -15,27 +15,24 @@ import System
 import System.Directory
 import System.Info
 import Data.List
+import Data.Either
 
 %default total
-
-mapLeft : (left -> mapped) -> Either left right -> Either mapped right
-mapLeft convert (Left error) = Left (convert error)
-mapLeft convert (Right value) = Right value
 
 timeZoneFromTzif : String -> TzifData -> Either TzdbError TimeZone
 timeZoneFromTzif valueId decoded = case decoded.posixFooter of
   Nothing => finiteZone
   Just "" => finiteZone
   Just footer => do
-    parsed <- mapLeft TzdbPosixError (parsePosixZone footer)
+    parsed <- mapFst TzdbPosixError (parsePosixZone footer)
     case parsed of
       PosixFixed _ => finiteZone
-      PosixRecurring recurrence => mapLeft TzdbZoneError
+      PosixRecurring recurrence => mapFst TzdbZoneError
         (refineRecurringTimeZone valueId decoded.initialTransition
           decoded.transitions recurrence)
   where
     finiteZone : Either TzdbError TimeZone
-    finiteZone = mapLeft TzdbZoneError
+    finiteZone = mapFst TzdbZoneError
       (refineTimeZone valueId decoded.initialTransition decoded.transitions)
 
 bufferBytes : Buffer -> IO (List Bits8)
@@ -57,7 +54,7 @@ loadTzifFile path = do
     Left error => pure (Left (TzdbFileError (show error)))
     Right buffer => do
       bytes <- bufferBytes buffer
-      pure (mapLeft TzdbParseError (parseTzif bytes))
+      pure (mapFst TzdbParseError (parseTzif bytes))
 
 loadTimeZoneFile : String -> String -> IO (Either TzdbError TimeZone)
 loadTimeZoneFile valueId path = do

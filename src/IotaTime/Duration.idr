@@ -111,6 +111,41 @@ public export
 toDurationNanoseconds : Duration -> Integer
 toDurationNanoseconds = storedNanoseconds
 
+||| Return the number of whole microseconds in a duration.
+public export
+toMicroseconds : Duration -> Integer
+toMicroseconds value = toDurationNanoseconds value `div` 1000
+
+||| Return the number of whole milliseconds in a duration.
+public export
+toMilliseconds : Duration -> Integer
+toMilliseconds value = toMicroseconds value `div` 1000
+
+||| Return the number of whole seconds in a duration, truncated toward negative infinity.
+public export
+toSeconds : Duration -> Integer
+toSeconds value = toMilliseconds value `div` 1000
+
+||| Return the number of whole fixed 60-second minutes in a duration.
+public export
+toMinutes : Duration -> Integer
+toMinutes value = toSeconds value `div` 60
+
+||| Return the number of whole fixed 60-minute hours in a duration.
+public export
+toHours : Duration -> Integer
+toHours value = toMinutes value `div` 60
+
+||| Return the number of whole fixed 24-hour days in a duration.
+public export
+toStandardDays : Duration -> Integer
+toStandardDays value = toHours value `div` 24
+
+||| Return the number of whole fixed seven-day weeks in a duration.
+public export
+toStandardWeeks : Duration -> Integer
+toStandardWeeks value = toStandardDays value `div` 7
+
 ||| The duration containing no elapsed time.
 export
 zeroDuration : Duration

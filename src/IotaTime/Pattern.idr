@@ -176,16 +176,13 @@ public export
 parse : Pattern state value -> String -> Either PatternError value
 parse pattern = parseWith pattern pattern.initialState
 
-isPatternDecimalDigit : Char -> Bool
-isPatternDecimalDigit value = value >= '0' && value <= '9'
-
 patternDigitValue : Char -> Integer
 patternDigitValue value = cast value - cast '0'
 
 readUnsignedInteger : Integer -> Nat -> List Char ->
                       Maybe (Integer, Nat)
 readUnsignedInteger found count (value :: remaining) =
-  if isPatternDecimalDigit value
+  if isDigit value
     then readUnsignedInteger
       (found * 10 + patternDigitValue value) (S count) remaining
     else if count == 0 then Nothing else Just (found, count)

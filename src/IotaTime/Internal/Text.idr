@@ -1,18 +1,12 @@
 module IotaTime.Internal.Text
 
-%default total
+import Data.String
 
-repeatCharacter : Char -> Nat -> String
-repeatCharacter _ Z = ""
-repeatCharacter value (S count) = strCons value (repeatCharacter value count)
+%default total
 
 export
 padIntegerWith : Char -> Nat -> Integer -> String
-padIntegerWith fill width value =
-  let shown = show value
-      currentWidth = length (unpack shown)
-   in if currentWidth >= width then shown
-      else repeatCharacter fill (width `minus` currentWidth) ++ shown
+padIntegerWith fill width value = padLeft width fill (show value)
 
 export
 zeroPadInteger : Nat -> Integer -> String

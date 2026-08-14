@@ -31,10 +31,9 @@ inZone : {calendar : Type} -> {auto cal : Calendar calendar} ->
          TimeZone -> Instant ->
          Either CalendarConversionError (ZonedDateTime calendar @{cal})
 inZone valueZone valueInstant =
-  case IotaTime.OffsetDateTime.fromInstant
-    (zoneOffsetAt valueZone valueInstant) valueInstant of
-      Left error => Left error
-      Right value => Right (MkZonedDateTime value valueZone)
+  map (\value => MkZonedDateTime value valueZone)
+    (IotaTime.OffsetDateTime.fromInstant
+      (zoneOffsetAt valueZone valueInstant) valueInstant)
 
 ||| HodaTime-compatible instant-first constructor.
 public export
@@ -130,12 +129,11 @@ public export
   HasCalendarBridge (CalendarDate calendar @{cal}) =>
   Eq (CalendarDate calendar @{cal}) =>
   Ord (ZonedDateTimeRep calendar cal) where
-  compare left right = case compare
-    (zonedInstant left) (zonedInstant right) of
-      EQ => compare
-        (IotaTime.TimeZone.Core.zoneId left.zonedZone)
-        (IotaTime.TimeZone.Core.zoneId right.zonedZone)
-      ordering => ordering
+  compare left right =
+    compare (zonedInstant left) (zonedInstant right) <+>
+    compare
+      (IotaTime.TimeZone.Core.zoneId left.zonedZone)
+      (IotaTime.TimeZone.Core.zoneId right.zonedZone)
 
 public export
 {calendar : Type} -> {cal : Calendar calendar} ->
@@ -188,9 +186,7 @@ attachZone valueZone value = MkZonedDateTime value valueZone
 attachAll : {calendar : Type} -> {auto cal : Calendar calendar} ->
             TimeZone -> List (OffsetDateTime calendar @{cal}) ->
             List (ZonedDateTime calendar @{cal})
-attachAll valueZone [] = []
-attachAll valueZone (value :: rest) =
-  attachZone valueZone value :: attachAll valueZone rest
+attachAll valueZone = map (attachZone valueZone)
 
 ||| Resolve a local date-time without choosing silently between skipped or
 ||| ambiguous mappings.

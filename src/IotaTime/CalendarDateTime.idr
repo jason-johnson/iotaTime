@@ -109,9 +109,8 @@ withCalendar : {source : Type} -> {target : Type} ->
                CalendarDateTime source @{sourceCal} ->
                Either CalendarConversionError (CalendarDateTime target @{targetCal})
 withCalendar @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value =
-  case IotaTime.Calendar.withCalendar @{sourceRep} @{targetRep} value.date of
-    Left error => Left error
-    Right convertedDate => Right (MkCalendarDateTime convertedDate value.time)
+  map (\convertedDate => MkCalendarDateTime convertedDate value.time)
+    (IotaTime.Calendar.withCalendar @{sourceRep} @{targetRep} value.date)
 
 public export
 implementation {calendar : Type} -> {cal : Calendar calendar} ->

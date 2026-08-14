@@ -101,20 +101,12 @@ isAdjacent left right =
 ||| The later start bound selected for an intersection.
 public export
 intersectionStart : Interval -> Interval -> Instant
-intersectionStart left right =
-  if toNanosecondsSinceEpoch (start left) >=
-      toNanosecondsSinceEpoch (start right)
-    then start left
-    else start right
+intersectionStart left right = max (start left) (start right)
 
 ||| The earlier end bound selected for an intersection.
 public export
 intersectionEnd : Interval -> Interval -> Instant
-intersectionEnd left right =
-  if toNanosecondsSinceEpoch (end left) <=
-      toNanosecondsSinceEpoch (end right)
-    then end left
-    else end right
+intersectionEnd left right = min (end left) (end right)
 
 ||| Whether two intervals have a valid, non-empty intersection.
 public export
@@ -182,9 +174,8 @@ unionEnd left right =
 
 ||| Whether the union of two intervals is connected.
 connectedRelationship : Interval -> Interval -> Bool
-connectedRelationship left right = if isEmpty left then True
-  else if isEmpty right then True
-  else overlaps left right || isAdjacent left right
+connectedRelationship left right =
+  isEmpty left || isEmpty right || overlaps left right || isAdjacent left right
 
 public export
 isConnected : Interval -> Interval -> Bool
@@ -463,9 +454,8 @@ unboundedUnionEnd left right =
 unboundedConnectedRelationship : UnboundedInterval ->
                                  UnboundedInterval -> Bool
 unboundedConnectedRelationship left right =
-  if unboundedIsEmpty left then True
-  else if unboundedIsEmpty right then True
-  else unboundedOverlaps left right || unboundedIsAdjacent left right
+  unboundedIsEmpty left || unboundedIsEmpty right ||
+  unboundedOverlaps left right || unboundedIsAdjacent left right
 
 public export
 unboundedIsConnected : UnboundedInterval -> UnboundedInterval -> Bool

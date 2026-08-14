@@ -86,6 +86,11 @@ Features implemented in iotaTime that would strengthen HodaTime.
   exception-based `currentLocale` and `localeByName` operations.
 - [ ] Add arbitrary-precision exact nanosecond observations and round-trip
   laws, and expose public period-component observations.
+- [ ] Add whole-unit `Duration` readers (`toMicroseconds`, `toMilliseconds`,
+  `toSeconds`, `toMinutes`, `toHours`, `toStandardDays`, `toStandardWeeks`)
+  that complement its constructors, plus a seconds-based
+  `Instant.toSecondsSinceUnixEpoch`. HodaTime's `Duration` exposes only
+  constructors, so an amount built from hours cannot be read back in hours.
 - [ ] Correct HodaTime `localTime` validation so seconds and nanoseconds reject
   values outside their documented ranges, with boundary tests for every
   component.

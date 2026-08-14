@@ -8,21 +8,18 @@ import IotaTime.Pattern
 
 %default total
 
-isDecimalDigit : Char -> Bool
-isDecimalDigit value = value >= '0' && value <= '9'
-
 digitValue : Char -> Integer
 digitValue value = cast value - cast '0'
 
 readDayDigits : Integer -> List Char ->
                 Maybe (Integer, Nat, List Char)
-readDayDigits value (digit :: rest) = if isDecimalDigit digit
+readDayDigits value (digit :: rest) = if isDigit digit
   then readMore (value * 10 + digitValue digit) 1 rest
   else Nothing
   where
     readMore : Integer -> Nat -> List Char ->
                Maybe (Integer, Nat, List Char)
-    readMore value count (digit :: rest) = if isDecimalDigit digit
+    readMore value count (digit :: rest) = if isDigit digit
       then readMore (value * 10 + digitValue digit) (S count) rest
       else Just (value, count, digit :: rest)
     readMore value count [] = Just (value, count, [])
@@ -30,7 +27,7 @@ readDayDigits value [] = Nothing
 
 readTwoDigits : List Char -> Maybe (Integer, List Char)
 readTwoDigits (tens :: units :: rest) =
-  if isDecimalDigit tens && isDecimalDigit units
+  if isDigit tens && isDigit units
     then Just (digitValue tens * 10 + digitValue units, rest)
     else Nothing
 readTwoDigits _ = Nothing
@@ -40,7 +37,7 @@ readNineDigits = go 9 0
   where
     go : Nat -> Integer -> List Char -> Maybe (Integer, List Char)
     go Z value rest = Just (value, rest)
-    go (S count) value (digit :: rest) = if isDecimalDigit digit
+    go (S count) value (digit :: rest) = if isDigit digit
       then go count (value * 10 + digitValue digit) rest
       else Nothing
     go (S count) value [] = Nothing

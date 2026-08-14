@@ -6,6 +6,8 @@ import Data.So
 
 %default total
 
+-- Kept inline (not delegated to Internal.Gregorian) so ISO week-date `So`
+-- proofs reduce definitionally across module boundaries.
 public export
 daysFromCivil : Year -> Integer -> Integer -> Integer
 daysFromCivil valueYear valueMonth valueDay =

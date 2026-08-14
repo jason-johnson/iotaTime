@@ -18,11 +18,11 @@
 <p>iotaTime is a proof-oriented Idris 2 port of HodaTime (which, itself, was a Haskell port of Nodatime, which was a Csharp port of Java&#39;s famous Jodatime). It separates values that are merely <em>labels</em> from values that identify a point on the global timeline, and it moves calendar and clock invariants into types wherever Idris can prove them.</p>
 <p>A statically known valid date needs no runtime check:</p>
 <pre><code class="language-idris">leapDay : CalendarDate Gregorian
-leapDay = calendarDate 29 February 2020
+leapDay = IotaTime.Calendar.Gregorian.calendarDate 29 February 2020
 </code></pre>
 <p>The corresponding invalid declaration does not compile because Idris cannot produce <code>So False</code>:</p>
 <pre><code class="language-idris">invalid : CalendarDate Gregorian
-invalid = calendarDate 29 February 2021
+invalid = IotaTime.Calendar.Gregorian.calendarDate 29 February 2021
 </code></pre>
 <p>Values learned from text, files, the operating system, or users remain fallible. Runtime refiners return <code>Either Error ValidValue</code>, after which normal operations preserve the invariant.</p>
 <h2>Core concepts</h2>
@@ -63,7 +63,7 @@ invalid = calendarDate 29 February 2021
 <td>Civil time anchored by one fixed UTC offset.</td>
 </tr>
 <tr>
-<td><a href="docs/IotaTime.DateTimeZone.html"><code>TimeZone</code></a></td>
+<td><a href="docs/IotaTime.TimeZone.html"><code>TimeZone</code></a></td>
 <td>The historical and future offset rules for a place.</td>
 </tr>
 <tr>
@@ -87,7 +87,7 @@ invalid = calendarDate 29 February 2021
 import IotaTime
 
 meetingDate : CalendarDate Gregorian
-meetingDate = calendarDate 23 April 2024
+meetingDate = IotaTime.Calendar.Gregorian.calendarDate 23 April 2024
 
 meetingTime : LocalTime
 meetingTime = localTime 9 0 0 0
@@ -116,7 +116,7 @@ main = do
 </code></pre>
 <p>In April, the two lines describe the same instant as 09:00 in Zürich and 03:00 in New York. The conversion is explicit:</p>
 <ol>
-<li><code>calendarDate</code> and <code>localTime</code> construct valid civil values.</li>
+<li><code>IotaTime.Calendar.Gregorian.calendarDate</code> and <code>localTime</code> construct valid civil values.</li>
 <li><code>at</code> combines them without pretending they identify an instant.</li>
 <li><code>fromCalendarDateTimeStrictly</code> supplies Zürich&#39;s rules and refuses to guess for skipped or ambiguous local times.</li>
 <li><code>toInstant</code> crosses into physical time.</li>
@@ -138,12 +138,12 @@ checked = difference finish start
 </code></pre>
 <p><code>fromStandardDays 1</code> means exactly 24 hours. It is intentionally different from <code>days 1</code>, which is a calendar-relative <a href="docs/IotaTime.Period.html"><code>Period</code></a>. Across daylight saving, “24 hours later” and “the same local time tomorrow” may be different instants.</p>
 <h2>Civil time and periods</h2>
-<p>Date and clock components are opaque refined values. Valid literals elaborate directly; runtime integers use refiners such as <code>refineGregorianDate</code> and <code>refineLocalTime</code>.</p>
+<p>Date and clock components are opaque refined values. Valid literals elaborate directly; runtime integers use refiners such as <code>IotaTime.Calendar.Gregorian.refineDate</code> and <code>refineLocalTime</code>.</p>
 <pre><code class="language-idris">late : LocalTime
 late = localTime 23 30 0 0
 
 endOfMonth : CalendarDateTime Gregorian
-endOfMonth = at (calendarDate 31 January 2000) late
+endOfMonth = at (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) late
 
 advanced : CalendarDateTime Gregorian
 advanced = applyPeriod (months 1 &lt;+&gt; hours 2) endOfMonth
@@ -161,7 +161,7 @@ advanced = applyPeriod (months 1 &lt;+&gt; hours 2) endOfMonth
 <h2>Calendars</h2>
 <p>The calendar is part of the date type. <code>CalendarDate Gregorian</code>, <code>CalendarDate Julian</code>, and <code>CalendarDate HebrewCivil</code> cannot be mixed accidentally.</p>
 <pre><code class="language-idris">gregorianChristmas : CalendarDate Gregorian
-gregorianChristmas = calendarDate 25 December 2024
+gregorianChristmas = IotaTime.Calendar.Gregorian.calendarDate 25 December 2024
 
 julianChristmas : Either CalendarConversionError (CalendarDate Julian)
 julianChristmas =
@@ -172,7 +172,8 @@ julianChristmas =
 <h2>Typed parsing and formatting</h2>
 <p>A <a href="docs/IotaTime.Pattern.html"><code>Pattern</code></a> carries a parser and formatter together. Standard patterns cover common layouts:</p>
 <pre><code class="language-idris">text : String
-text = format (pR {calendar = Gregorian}) (calendarDate 3 March 2020)
+text = format (pR {calendar = Gregorian})
+  (IotaTime.Calendar.Gregorian.calendarDate 3 March 2020)
 
 parsed : Either PatternError (CalendarDate Gregorian)
 parsed = parse (pR {calendar = Gregorian}) &quot;2020-03-03&quot;
@@ -191,7 +192,7 @@ custom =
   (Pattern DateFields (CalendarDate Gregorian))
 germanDate = localeDatePattern deDE
 </code></pre>
-<p><code>localeDatePattern</code>, <code>localeTimePattern</code>, and <code>localeDateTimePattern</code> compile OS-style <code>strftime</code> layouts into typed patterns. Locale date layouts remain Gregorian because native locale snapshots expose exactly twelve Gregorian month names.</p>
+<p><code>localeDatePattern</code>, <code>localeTimePattern</code>, and <code>localeDateTimePattern</code> compile the OS layout hidden inside an opaque <code>Locale</code> into typed patterns. Applications can load a locale at runtime, but cannot supply arbitrary layout strings. Locale date layouts remain Gregorian because native locale snapshots expose exactly twelve Gregorian month names.</p>
 <h2>Where to go next</h2>
 <ul>
 <li>Browse the <a href="index.html">API index</a> for all modules.</li>

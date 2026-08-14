@@ -26,10 +26,6 @@ public export
 hourValue : Hour -> Integer
 hourValue (MkHour value) = value
 
-export
-hourFromInteger : Integer -> Hour
-hourFromInteger = MkHour
-
 public export
 Eq Hour where
   left == right = hourValue left == hourValue right
@@ -70,10 +66,6 @@ namespace Minute
 public export
 minuteValue : Minute -> Integer
 minuteValue (MkMinute value) = value
-
-export
-minuteFromInteger : Integer -> Minute
-minuteFromInteger = MkMinute
 
 public export
 Eq Minute where
@@ -116,10 +108,6 @@ public export
 secondValue : Second -> Integer
 secondValue (MkSecond value) = value
 
-export
-secondFromInteger : Integer -> Second
-secondFromInteger = MkSecond
-
 public export
 Eq Second where
   left == right = secondValue left == secondValue right
@@ -161,10 +149,6 @@ namespace Nanosecond
 public export
 nanosecondValue : Nanosecond -> Integer
 nanosecondValue (MkNanosecond value) = value
-
-export
-nanosecondFromInteger : Integer -> Nanosecond
-nanosecondFromInteger = MkNanosecond
 
 public export
 Eq Nanosecond where

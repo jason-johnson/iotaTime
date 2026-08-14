@@ -123,10 +123,10 @@ localNanoseconds value =
 
 localTimeFromNanoseconds : Integer -> LocalTime
 localTimeFromNanoseconds value = localTime
-  (hourFromInteger (value `div` (3600 * nanosecondsPerSecond)))
-  (minuteFromInteger (value `div` (60 * nanosecondsPerSecond) `mod` 60))
-  (secondFromInteger (value `div` nanosecondsPerSecond `mod` 60))
-  (nanosecondFromInteger (value `mod` nanosecondsPerSecond))
+  (either (const 0) id (refineHour (value `div` (3600 * nanosecondsPerSecond))))
+  (either (const 0) id (refineMinute (value `div` (60 * nanosecondsPerSecond) `mod` 60)))
+  (either (const 0) id (refineSecond (value `div` nanosecondsPerSecond `mod` 60)))
+  (either (const 0) id (refineNanosecond (value `mod` nanosecondsPerSecond)))
 
 ||| Resolve an offset date-time to its unique point on the global timeline.
 public export

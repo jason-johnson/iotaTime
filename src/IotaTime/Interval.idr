@@ -76,47 +76,145 @@ contains value instant = start value <= instant && instant < end value
 ||| Whether the interval contains no instants.
 public export
 isEmpty : Interval -> Bool
-isEmpty value = start value == end value
+isEmpty value =
+  toNanosecondsSinceEpoch (start value) ==
+  toNanosecondsSinceEpoch (end value)
 
 ||| Whether two half-open intervals share at least one instant.
 public export
 overlaps : Interval -> Interval -> Bool
 overlaps left right = not (isEmpty left) && not (isEmpty right) &&
-  start left < end right && start right < end left
+  toNanosecondsSinceEpoch (start left) <
+    toNanosecondsSinceEpoch (end right) &&
+  toNanosecondsSinceEpoch (start right) <
+    toNanosecondsSinceEpoch (end left)
 
 ||| Whether two non-overlapping intervals touch at one endpoint.
 public export
 isAdjacent : Interval -> Interval -> Bool
-isAdjacent left right = end left == start right || end right == start left
+isAdjacent left right =
+  toNanosecondsSinceEpoch (end left) ==
+    toNanosecondsSinceEpoch (start right) ||
+  toNanosecondsSinceEpoch (end right) ==
+    toNanosecondsSinceEpoch (start left)
 
-||| Return the non-empty intersection of two intervals.
+||| The later start bound selected for an intersection.
 public export
-intersection : Interval -> Interval -> Maybe Interval
-intersection left right =
-  let overlapStart = max (start left) (start right)
-      overlapEnd = min (end left) (end right)
-   in case choose (isValidInterval overlapStart overlapEnd) of
-        Left valid => if overlapStart < overlapEnd
-          then Just (MkInterval overlapStart overlapEnd valid)
-          else Nothing
-        Right _ => Nothing
+intersectionStart : Interval -> Interval -> Instant
+intersectionStart left right =
+  if toNanosecondsSinceEpoch (start left) >=
+      toNanosecondsSinceEpoch (start right)
+    then start left
+    else start right
+
+||| The earlier end bound selected for an intersection.
+public export
+intersectionEnd : Interval -> Interval -> Instant
+intersectionEnd left right =
+  if toNanosecondsSinceEpoch (end left) <=
+      toNanosecondsSinceEpoch (end right)
+    then end left
+    else end right
+
+||| Whether two intervals have a valid, non-empty intersection.
+public export
+hasNonEmptyIntersection : Interval -> Interval -> Bool
+hasNonEmptyIntersection left right =
+  isValidInterval (intersectionStart left right) (intersectionEnd left right) &&
+  toNanosecondsSinceEpoch (intersectionStart left right) <
+    toNanosecondsSinceEpoch (intersectionEnd left right)
+
+0 andLeft : (left, right : Bool) -> So (left && right) -> So left
+andLeft True True Oh = Oh
+
+0 andRight : (left, right : Bool) -> So (left && right) -> So right
+andRight True True Oh = Oh
+
+||| Return the non-empty intersection when its existence is statically known.
+public export
+intersection : (left, right : Interval) ->
+               {auto 0 intersects : So
+                 (hasNonEmptyIntersection left right)} ->
+               Interval
+intersection left right @{intersects} = MkInterval
+  (intersectionStart left right)
+  (intersectionEnd left right)
+  (andLeft
+    (isValidInterval
+      (intersectionStart left right) (intersectionEnd left right))
+    (toNanosecondsSinceEpoch (intersectionStart left right) <
+      toNanosecondsSinceEpoch (intersectionEnd left right))
+    intersects)
+
+public export
+data IntersectionError = NoNonEmptyIntersection
+
+||| Return the non-empty intersection of intervals learned at runtime.
+public export
+refineIntersection : (left, right : Interval) ->
+                     Either IntersectionError Interval
+refineIntersection left right =
+  case choose (hasNonEmptyIntersection left right) of
+    Left intersects => Right (intersection left right @{intersects})
+    Right _ => Left NoNonEmptyIntersection
+
+||| The start bound selected for a connected union.
+public export
+unionStart : Interval -> Interval -> Instant
+unionStart left right =
+  if isEmpty left then start right
+  else if isEmpty right then start left
+  else if toNanosecondsSinceEpoch (start left) <=
+      toNanosecondsSinceEpoch (start right)
+    then start left
+    else start right
+
+||| The end bound selected for a connected union.
+public export
+unionEnd : Interval -> Interval -> Instant
+unionEnd left right =
+  if isEmpty left then end right
+  else if isEmpty right then end left
+  else if toNanosecondsSinceEpoch (end left) >=
+      toNanosecondsSinceEpoch (end right)
+    then end left
+    else end right
+
+||| Whether the union of two intervals is connected.
+connectedRelationship : Interval -> Interval -> Bool
+connectedRelationship left right = if isEmpty left then True
+  else if isEmpty right then True
+  else overlaps left right || isAdjacent left right
+
+public export
+isConnected : Interval -> Interval -> Bool
+isConnected left right = connectedRelationship left right &&
+  isValidInterval (unionStart left right) (unionEnd left right)
 
 ||| Return the smallest interval containing both inputs when their union is
-||| connected. Empty intervals are absorbed by the other input.
+||| statically known to be connected. Empty intervals are absorbed by the
+||| other input.
 public export
-union : Interval -> Interval -> Maybe Interval
-union left right =
-  if isEmpty left
-    then Just right
-    else if isEmpty right
-      then Just left
-      else if overlaps left right || isAdjacent left right
-        then let unionStart = min (start left) (start right)
-                 unionEnd = max (end left) (end right)
-              in case choose (isValidInterval unionStart unionEnd) of
-                   Left valid => Just (MkInterval unionStart unionEnd valid)
-                   Right _ => Nothing
-        else Nothing
+union : (left, right : Interval) ->
+        {auto 0 connected : So (isConnected left right)} ->
+        Interval
+union left right @{connected} = MkInterval
+  (unionStart left right)
+  (unionEnd left right)
+  (andRight
+    (connectedRelationship left right)
+    (isValidInterval (unionStart left right) (unionEnd left right))
+    connected)
+
+public export
+data UnionError = DisconnectedIntervals
+
+||| Return the connected union of intervals learned at runtime.
+public export
+refineUnion : (left, right : Interval) -> Either UnionError Interval
+refineUnion left right = case choose (isConnected left right) of
+  Left connected => Right (union left right @{connected})
+  Right _ => Left DisconnectedIntervals
 
 ||| Return the nonnegative fixed duration between the endpoints.
 public export
@@ -231,83 +329,174 @@ unboundedContains value instant =
 ||| Whether the interval contains no instants.
 public export
 unboundedIsEmpty : UnboundedInterval -> Bool
-unboundedIsEmpty (MkUnboundedInterval (Just start) (Just end) _) = start == end
+unboundedIsEmpty (MkUnboundedInterval (Just start) (Just end) _) =
+  toNanosecondsSinceEpoch start == toNanosecondsSinceEpoch end
 unboundedIsEmpty _ = False
 
-endAfterStart : Maybe Instant -> Maybe Instant -> Bool
-endAfterStart Nothing _ = True
-endAfterStart _ Nothing = True
-endAfterStart (Just end) (Just start) = start < end
+||| Whether an optional end lies after an optional start, treating `Nothing`
+||| as the appropriate infinity.
+public export
+unboundedEndAfterStart : Maybe Instant -> Maybe Instant -> Bool
+unboundedEndAfterStart Nothing _ = True
+unboundedEndAfterStart _ Nothing = True
+unboundedEndAfterStart (Just end) (Just start) =
+  toNanosecondsSinceEpoch start < toNanosecondsSinceEpoch end
 
 ||| Whether two unbounded intervals share at least one instant.
 public export
 unboundedOverlaps : UnboundedInterval -> UnboundedInterval -> Bool
 unboundedOverlaps left right =
   not (unboundedIsEmpty left) && not (unboundedIsEmpty right) &&
-  endAfterStart (unboundedEnd left) (unboundedStart right) &&
-  endAfterStart (unboundedEnd right) (unboundedStart left)
+  unboundedEndAfterStart (unboundedEnd left) (unboundedStart right) &&
+  unboundedEndAfterStart (unboundedEnd right) (unboundedStart left)
 
-finiteBoundsEqual : Maybe Instant -> Maybe Instant -> Bool
-finiteBoundsEqual (Just left) (Just right) = left == right
-finiteBoundsEqual _ _ = False
+||| Whether two optional bounds are finite and equal.
+public export
+finiteUnboundedBoundsEqual : Maybe Instant -> Maybe Instant -> Bool
+finiteUnboundedBoundsEqual (Just left) (Just right) =
+  toNanosecondsSinceEpoch left == toNanosecondsSinceEpoch right
+finiteUnboundedBoundsEqual _ _ = False
 
 ||| Whether two non-overlapping intervals touch at one finite endpoint.
 public export
 unboundedIsAdjacent : UnboundedInterval -> UnboundedInterval -> Bool
 unboundedIsAdjacent left right =
-  finiteBoundsEqual (unboundedEnd left) (unboundedStart right) ||
-  finiteBoundsEqual (unboundedEnd right) (unboundedStart left)
+  finiteUnboundedBoundsEqual (unboundedEnd left) (unboundedStart right) ||
+  finiteUnboundedBoundsEqual (unboundedEnd right) (unboundedStart left)
 
 laterStart : Maybe Instant -> Maybe Instant -> Maybe Instant
 laterStart Nothing right = right
 laterStart left Nothing = left
-laterStart (Just left) (Just right) = Just (max left right)
+laterStart (Just left) (Just right) = Just
+  (if toNanosecondsSinceEpoch left >= toNanosecondsSinceEpoch right
+    then left else right)
 
 earlierEnd : Maybe Instant -> Maybe Instant -> Maybe Instant
 earlierEnd Nothing right = right
 earlierEnd left Nothing = left
-earlierEnd (Just left) (Just right) = Just (min left right)
+earlierEnd (Just left) (Just right) = Just
+  (if toNanosecondsSinceEpoch left <= toNanosecondsSinceEpoch right
+    then left else right)
 
 earlierStart : Maybe Instant -> Maybe Instant -> Maybe Instant
 earlierStart Nothing _ = Nothing
 earlierStart _ Nothing = Nothing
-earlierStart (Just left) (Just right) = Just (min left right)
+earlierStart (Just left) (Just right) = Just
+  (if toNanosecondsSinceEpoch left <= toNanosecondsSinceEpoch right
+    then left else right)
 
 laterEnd : Maybe Instant -> Maybe Instant -> Maybe Instant
 laterEnd Nothing _ = Nothing
 laterEnd _ Nothing = Nothing
-laterEnd (Just left) (Just right) = Just (max left right)
+laterEnd (Just left) (Just right) = Just
+  (if toNanosecondsSinceEpoch left >= toNanosecondsSinceEpoch right
+    then left else right)
 
-||| Return the non-empty intersection of two intervals.
+||| The later optional start bound selected for an intersection.
 public export
-unboundedIntersection : UnboundedInterval -> UnboundedInterval ->
-                        Maybe UnboundedInterval
-unboundedIntersection left right =
-  if unboundedOverlaps left right
-    then case refineUnboundedInterval
-      (laterStart (unboundedStart left) (unboundedStart right))
-      (earlierEnd (unboundedEnd left) (unboundedEnd right)) of
-        Left _ => Nothing
-        Right value => Just value
-    else Nothing
+unboundedIntersectionStart : UnboundedInterval -> UnboundedInterval ->
+                             Maybe Instant
+unboundedIntersectionStart left right =
+  laterStart (unboundedStart left) (unboundedStart right)
+
+||| The earlier optional end bound selected for an intersection.
+public export
+unboundedIntersectionEnd : UnboundedInterval -> UnboundedInterval ->
+                           Maybe Instant
+unboundedIntersectionEnd left right =
+  earlierEnd (unboundedEnd left) (unboundedEnd right)
+
+||| Whether two unbounded intervals have a valid, non-empty intersection.
+public export
+hasNonEmptyUnboundedIntersection : UnboundedInterval ->
+                                   UnboundedInterval -> Bool
+hasNonEmptyUnboundedIntersection left right =
+  isValidUnboundedInterval
+    (unboundedIntersectionStart left right)
+    (unboundedIntersectionEnd left right) &&
+  unboundedOverlaps left right
+
+||| Return the non-empty intersection when its existence is statically known.
+public export
+unboundedIntersection : (left, right : UnboundedInterval) ->
+  {auto 0 intersects : So
+    (hasNonEmptyUnboundedIntersection left right)} ->
+  UnboundedInterval
+unboundedIntersection left right @{intersects} = MkUnboundedInterval
+  (unboundedIntersectionStart left right)
+  (unboundedIntersectionEnd left right)
+  (andLeft
+    (isValidUnboundedInterval
+      (unboundedIntersectionStart left right)
+      (unboundedIntersectionEnd left right))
+    (unboundedOverlaps left right)
+    intersects)
+
+||| Return the non-empty intersection of unbounded intervals learned at
+||| runtime.
+public export
+refineUnboundedIntersection : (left, right : UnboundedInterval) ->
+  Either IntersectionError UnboundedInterval
+refineUnboundedIntersection left right =
+  case choose (hasNonEmptyUnboundedIntersection left right) of
+    Left intersects =>
+      Right (unboundedIntersection left right @{intersects})
+    Right _ => Left NoNonEmptyIntersection
+
+||| The optional start bound selected for a connected union.
+public export
+unboundedUnionStart : UnboundedInterval -> UnboundedInterval -> Maybe Instant
+unboundedUnionStart left right =
+  if unboundedIsEmpty left then unboundedStart right
+  else if unboundedIsEmpty right then unboundedStart left
+  else earlierStart (unboundedStart left) (unboundedStart right)
+
+||| The optional end bound selected for a connected union.
+public export
+unboundedUnionEnd : UnboundedInterval -> UnboundedInterval -> Maybe Instant
+unboundedUnionEnd left right =
+  if unboundedIsEmpty left then unboundedEnd right
+  else if unboundedIsEmpty right then unboundedEnd left
+  else laterEnd (unboundedEnd left) (unboundedEnd right)
+
+||| Whether the union of two unbounded intervals is connected.
+unboundedConnectedRelationship : UnboundedInterval ->
+                                 UnboundedInterval -> Bool
+unboundedConnectedRelationship left right =
+  if unboundedIsEmpty left then True
+  else if unboundedIsEmpty right then True
+  else unboundedOverlaps left right || unboundedIsAdjacent left right
+
+public export
+unboundedIsConnected : UnboundedInterval -> UnboundedInterval -> Bool
+unboundedIsConnected left right = unboundedConnectedRelationship left right &&
+  isValidUnboundedInterval
+    (unboundedUnionStart left right) (unboundedUnionEnd left right)
 
 ||| Return the smallest interval containing both inputs when their union is
-||| connected. Empty intervals are absorbed by the other input.
+||| statically known to be connected. Empty intervals are absorbed by the
+||| other input.
 public export
-unboundedUnion : UnboundedInterval -> UnboundedInterval ->
-                 Maybe UnboundedInterval
-unboundedUnion left right =
-  if unboundedIsEmpty left
-    then Just right
-    else if unboundedIsEmpty right
-      then Just left
-      else if unboundedOverlaps left right || unboundedIsAdjacent left right
-        then case refineUnboundedInterval
-          (earlierStart (unboundedStart left) (unboundedStart right))
-          (laterEnd (unboundedEnd left) (unboundedEnd right)) of
-            Left _ => Nothing
-            Right value => Just value
-        else Nothing
+unboundedUnion : (left, right : UnboundedInterval) ->
+  {auto 0 connected : So (unboundedIsConnected left right)} ->
+  UnboundedInterval
+unboundedUnion left right @{connected} = MkUnboundedInterval
+  (unboundedUnionStart left right)
+  (unboundedUnionEnd left right)
+  (andRight
+    (unboundedConnectedRelationship left right)
+    (isValidUnboundedInterval
+      (unboundedUnionStart left right) (unboundedUnionEnd left right))
+    connected)
+
+||| Return the connected union of unbounded intervals learned at runtime.
+public export
+refineUnboundedUnion : (left, right : UnboundedInterval) ->
+  Either UnionError UnboundedInterval
+refineUnboundedUnion left right =
+  case choose (unboundedIsConnected left right) of
+    Left connected => Right (unboundedUnion left right @{connected})
+    Right _ => Left DisconnectedIntervals
 
 ||| Return the duration when both endpoints are finite.
 public export

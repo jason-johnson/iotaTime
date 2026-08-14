@@ -35,10 +35,13 @@
     { "title": "Runtime validation", "names": ["IntervalError", "refineInterval"] },
     { "title": "Validity predicate and proof", "names": ["isValidInterval", "intervalIsValid"] },
     { "title": "Endpoints and membership", "names": ["start", "end", "contains", "isEmpty", "duration"] },
-    { "title": "Relationships and set operations", "names": ["overlaps", "isAdjacent", "intersection", "union"] },
+    { "title": "Relationships and candidate bounds", "names": ["overlaps", "isAdjacent", "hasNonEmptyIntersection", "isConnected", "intersectionStart", "intersectionEnd", "unionStart", "unionEnd"] },
+    { "title": "Proof-directed set operations", "names": ["intersection", "union"] },
+    { "title": "Runtime set operations", "names": ["IntersectionError", "NoNonEmptyIntersection", "refineIntersection", "UnionError", "DisconnectedIntervals", "refineUnion"] },
     { "title": "Unbounded construction and conversion", "names": ["UnboundedInterval", "isValidUnboundedInterval", "isValidUnboundedNanosecondInterval", "unboundedInterval", "refineUnboundedInterval", "unboundedIntervalIsValid", "toUnboundedInterval", "toBoundedInterval"] },
     { "title": "Unbounded endpoints and membership", "names": ["unboundedStart", "unboundedEnd", "unboundedContains", "unboundedIsEmpty", "unboundedDuration"] },
-    { "title": "Unbounded relationships and set operations", "names": ["unboundedOverlaps", "unboundedIsAdjacent", "unboundedIntersection", "unboundedUnion"] }
+    { "title": "Unbounded relationships and candidate bounds", "names": ["unboundedEndAfterStart", "finiteUnboundedBoundsEqual", "unboundedOverlaps", "unboundedIsAdjacent", "hasNonEmptyUnboundedIntersection", "unboundedIsConnected", "unboundedIntersectionStart", "unboundedIntersectionEnd", "unboundedUnionStart", "unboundedUnionEnd"] },
+    { "title": "Unbounded set operations", "names": ["unboundedIntersection", "refineUnboundedIntersection", "unboundedUnion", "refineUnboundedUnion"] }
   ],
   "IotaTime.Offset": [
     { "title": "Type and static construction", "names": ["Offset", "fromSeconds", "fromMinutes", "fromHours"] },

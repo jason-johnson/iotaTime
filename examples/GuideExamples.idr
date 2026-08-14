@@ -84,6 +84,22 @@ boundedWindow = interval 0 5400000000000
 runtimeWindow : Either IntervalError Interval
 runtimeWindow = refineInterval start finish
 
+proofDirectedIntersection : (left, right : Interval) ->
+  {auto 0 intersects : So (hasNonEmptyIntersection left right)} -> Interval
+proofDirectedIntersection = intersection
+
+proofDirectedUnion : (left, right : Interval) ->
+  {auto 0 connected : So (isConnected left right)} ->
+  Interval
+proofDirectedUnion = IotaTime.Interval.union
+
+runtimeIntersection : Either IntersectionError Interval
+runtimeIntersection = refineIntersection
+  (interval 0 10) (interval 5 15)
+
+runtimeUnion : Either UnionError Interval
+runtimeUnion = refineUnion (interval 0 10) (interval 11 20)
+
 futureWindow : UnboundedInterval
 futureWindow = unboundedInterval (Just 0) Nothing
 

@@ -259,7 +259,13 @@ Each `Interval` stores its endpoint-order evidence erased at runtime.
 
 Static construction accepts scalar endpoints because `Instant` is intentionally opaque: Idris cannot reduce two arbitrary `Instant` values to synthesize their ordering proof outside the implementation module. Runtime refinement preserves that opacity without casts or unchecked constructors.
 
-`isEmpty`, `overlaps`, and `isAdjacent` expose half-open range relationships. `intersection` returns only a non-empty shared range, so adjacent intervals have no intersection. `union` returns the smallest connected interval for overlapping or adjacent inputs, absorbs empty intervals, and returns `Nothing` for separated ranges.
+`isEmpty`, `overlaps`, and `isAdjacent` expose half-open range relationships.
+Proof-directed `intersection` and `union` return `Interval` directly when the
+caller supplies erased evidence of a non-empty intersection or connectedness.
+For values learned at runtime, `refineIntersection` returns
+`Either IntersectionError Interval`, while `refineUnion` returns
+`Either UnionError Interval`. Their distinct error types expose only the one
+failure each operation can produce.
 
 `UnboundedInterval` extends the same half-open model with an optional start,
 end, or both. `Nothing` denotes negative infinity in `unboundedStart` and
@@ -278,8 +284,7 @@ callers, including values produced by runtime refinement and set operations.
 
 `toUnboundedInterval` embeds every bounded interval, while
 `toBoundedInterval` succeeds only when both bounds are finite and reuses the
-stored ordering proof. The prefixed
-membership, relationship, intersection, and connected-union operations retain
+stored ordering proof. The prefixed membership and relationship operations retain
 the bounded API's semantics. `unboundedDuration` likewise returns a duration
 only for two finite endpoints.
 

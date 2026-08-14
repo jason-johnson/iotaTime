@@ -47,7 +47,8 @@ Features implemented in iotaTime that would strengthen HodaTime.
   explicit day-only differences and largest-first years/months/days
   decomposition with non-overshooting, clamped month arithmetic.
 - [ ] Add validated half-open intervals plus emptiness, overlap, adjacency,
-  intersection, and connected union operations.
+  proof-directed intersection and connected union operations, with separate
+  typed runtime failures when the required relationship is not known.
 - [ ] Add unbounded half-open intervals with optional endpoints, bounded
   conversions, relationships, set operations, and finite duration queries.
 - [ ] Add a civil-epoch tabular Islamic variant while retaining leap-pattern

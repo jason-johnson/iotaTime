@@ -25,13 +25,6 @@ data PosixZone
 Parser : Type -> Type
 Parser value = List Char -> Either PosixTzError (value, List Char)
 
-isIdentifierLetter : Char -> Bool
-isIdentifierLetter value =
-  (value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z')
-
-isDecimalDigit : Char -> Bool
-isDecimalDigit value = value >= '0' && value <= '9'
-
 parseIdentifier : Parser String
 parseIdentifier ('<' :: rest) =
   let (name, remaining) = span (/= '>') rest
@@ -41,14 +34,14 @@ parseIdentifier ('<' :: rest) =
           else Right (pack name, after)
         _ => Left (ExpectedCharacter '>')
 parseIdentifier input =
-  let (name, remaining) = span isIdentifierLetter input
+  let (name, remaining) = span isAlpha input
    in if length name >= 3
         then Right (pack name, remaining)
         else Left ExpectedIdentifier
 
 parseDigits : Parser Integer
 parseDigits input =
-  let (digits, remaining) = span isDecimalDigit input
+  let (digits, remaining) = span isDigit input
    in if null digits
         then Left ExpectedNumber
         else Right (foldl (\value, digit =>

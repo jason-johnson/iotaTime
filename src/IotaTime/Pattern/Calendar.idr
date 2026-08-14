@@ -76,42 +76,13 @@ gregorianMonthNames =
   ]
 
 monthIndex12 : Integer -> Fin 12
-monthIndex12 1 = 0
-monthIndex12 2 = 1
-monthIndex12 3 = 2
-monthIndex12 4 = 3
-monthIndex12 5 = 4
-monthIndex12 6 = 5
-monthIndex12 7 = 6
-monthIndex12 8 = 7
-monthIndex12 9 = 8
-monthIndex12 10 = 9
-monthIndex12 11 = 10
-monthIndex12 _ = 11
+monthIndex12 value = restrict 11 (value - 1)
 
 monthIndex13 : Integer -> Fin 13
-monthIndex13 1 = 0
-monthIndex13 2 = 1
-monthIndex13 3 = 2
-monthIndex13 4 = 3
-monthIndex13 5 = 4
-monthIndex13 6 = 5
-monthIndex13 7 = 6
-monthIndex13 8 = 7
-monthIndex13 9 = 8
-monthIndex13 10 = 9
-monthIndex13 11 = 10
-monthIndex13 12 = 11
-monthIndex13 _ = 12
+monthIndex13 value = restrict 12 (value - 1)
 
 weekdayIndex7 : Integer -> Fin 7
-weekdayIndex7 0 = 0
-weekdayIndex7 1 = 1
-weekdayIndex7 2 = 2
-weekdayIndex7 3 = 3
-weekdayIndex7 4 = 4
-weekdayIndex7 5 = 5
-weekdayIndex7 _ = 6
+weekdayIndex7 value = restrict 6 value
 
 gregorianMonth : Integer -> Month
 gregorianMonth 1 = January

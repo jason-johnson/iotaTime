@@ -150,9 +150,6 @@ HasCalendarBridge GregorianDate where
   fromBridgeDays days @{valid} = checkedGregorianDate days valid
   bridgeCalendarName = "Gregorian"
 
-clampToGregorian : Integer -> Integer
-clampToGregorian = max epochDay
-
 makeDate : Year -> Month -> DayOfMonth -> GregorianDate
 makeDate valueYear valueMonth valueDay =
   makeGregorianDate (daysFromCivil valueYear valueMonth valueDay)

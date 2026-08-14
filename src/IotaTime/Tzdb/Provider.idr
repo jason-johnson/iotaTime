@@ -4,6 +4,7 @@ import IotaTime.TimeZone.Core
 import IotaTime.TimeZone.Error
 import IotaTime.Tzdb.Metadata
 import Data.IORef
+import Data.List
 import System.Concurrency
 
 %default total
@@ -74,11 +75,6 @@ export
 defaultTimeZoneCachePolicy : TimeZoneCachePolicyRep
 defaultTimeZoneCachePolicy = MkTimeZoneCachePolicy True True True False
 
-findNamedZone : String -> List (String, TimeZone) -> Maybe TimeZone
-findNamedZone name [] = Nothing
-findNamedZone name ((cachedName, zone) :: rest) =
-  if name == cachedName then Just zone else findNamedZone name rest
-
 withMutex : Mutex -> IO value -> IO value
 withMutex mutex action = do
   mutexAcquire mutex
@@ -107,7 +103,7 @@ cachedNamedZone : Bool -> Mutex -> IORef (List (String, TimeZone)) ->
 cachedNamedZone False mutex reference load name = load name
 cachedNamedZone True mutex reference load name = withMutex mutex $ do
   cached <- readIORef reference
-  case findNamedZone name cached of
+  case lookup name cached of
     Just zone => pure (Right zone)
     Nothing => do
       loaded <- load name

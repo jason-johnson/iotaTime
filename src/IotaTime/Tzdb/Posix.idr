@@ -2,6 +2,7 @@ module IotaTime.Tzdb.Posix
 
 import public IotaTime.TimeZone.Core
 import Data.List
+import Data.Either
 
 %default total
 
@@ -31,31 +32,23 @@ isIdentifierLetter value =
 isDecimalDigit : Char -> Bool
 isDecimalDigit value = value >= '0' && value <= '9'
 
-spanChars : (Char -> Bool) -> List Char -> (List Char, List Char)
-spanChars predicate [] = ([], [])
-spanChars predicate values@(value :: rest) =
-  if predicate value
-    then let (matching, remaining) = spanChars predicate rest
-          in (value :: matching, remaining)
-    else ([], values)
-
 parseIdentifier : Parser String
 parseIdentifier ('<' :: rest) =
-  let (name, remaining) = spanChars (/= '>') rest
+  let (name, remaining) = span (/= '>') rest
    in case remaining of
         '>' :: after => if null name
           then Left ExpectedIdentifier
           else Right (pack name, after)
         _ => Left (ExpectedCharacter '>')
 parseIdentifier input =
-  let (name, remaining) = spanChars isIdentifierLetter input
+  let (name, remaining) = span isIdentifierLetter input
    in if length name >= 3
         then Right (pack name, remaining)
         else Left ExpectedIdentifier
 
 parseDigits : Parser Integer
 parseDigits input =
-  let (digits, remaining) = spanChars isDecimalDigit input
+  let (digits, remaining) = span isDecimalDigit input
    in if null digits
         then Left ExpectedNumber
         else Right (foldl (\value, digit =>
@@ -107,11 +100,6 @@ parseRuleTime ('/' :: rest) = do
   Right ((seconds, mode), remaining)
 parseRuleTime input = Right ((7200, WallTime), input)
 
-mapRuleError : Either RecurrenceRuleError RecurrenceRule ->
-               Either PosixTzError RecurrenceRule
-mapRuleError (Left error) = Left (PosixRuleOutOfRange error)
-mapRuleError (Right value) = Right value
-
 parseMonthRule : Parser RecurrenceRule
 parseMonthRule input = do
   (month, afterMonth) <- parseDigits input
@@ -120,14 +108,14 @@ parseMonthRule input = do
   afterSecondDot <- expect '.' afterWeek
   (weekday, afterWeekday) <- parseDigits afterSecondDot
   ((seconds, mode), remaining) <- parseRuleTime afterWeekday
-  rule <- mapRuleError (monthWeekDayRule month week weekday seconds mode)
+  rule <- mapFst PosixRuleOutOfRange (monthWeekDayRule month week weekday seconds mode)
   Right (rule, remaining)
 
 parseJulianRule : Bool -> Parser RecurrenceRule
 parseJulianRule withoutLeap input = do
   (day, afterDay) <- parseDigits input
   ((seconds, mode), remaining) <- parseRuleTime afterDay
-  rule <- mapRuleError (if withoutLeap
+  rule <- mapFst PosixRuleOutOfRange (if withoutLeap
     then julianWithoutLeapRule day seconds mode
     else julianWithLeapRule day seconds mode)
   Right (rule, remaining)

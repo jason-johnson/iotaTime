@@ -1,6 +1,9 @@
 module IotaTime.Period
 
 import IotaTime.Internal.ApplyPeriod
+import Derive.Prelude
+
+%language ElabReflection
 
 %default total
 
@@ -50,20 +53,7 @@ export
 periodNanoseconds : Period target -> Integer
 periodNanoseconds (MkPeriod _ _ _ _ _ _ _ value) = value
 
-public export
-Eq (Period target) where
-  MkPeriod leftYears leftMonths leftWeeks leftDays
-    leftHours leftMinutes leftSeconds leftNanoseconds ==
-    MkPeriod rightYears rightMonths rightWeeks rightDays
-      rightHours rightMinutes rightSeconds rightNanoseconds =
-        leftYears == rightYears &&
-        leftMonths == rightMonths &&
-        leftWeeks == rightWeeks &&
-        leftDays == rightDays &&
-        leftHours == rightHours &&
-        leftMinutes == rightMinutes &&
-        leftSeconds == rightSeconds &&
-        leftNanoseconds == rightNanoseconds
+%runElab derive `{Period} [Eq]
 
 public export
 Show (Period target) where

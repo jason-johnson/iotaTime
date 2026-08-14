@@ -143,10 +143,9 @@ public export
   HasCalendarBridge (CalendarDate calendar @{cal}) =>
   Eq (CalendarDate calendar @{cal}) =>
   Ord (OffsetDateTimeRep calendar cal) where
-  compare left right = case compare
-    (toInstant left) (toInstant right) of
-      EQ => compare left.offsetValue right.offsetValue
-      ordering => ordering
+  compare left right =
+    compare (toInstant left) (toInstant right) <+>
+    compare left.offsetValue right.offsetValue
 
 public export
 {calendar : Type} -> {cal : Calendar calendar} ->
@@ -204,7 +203,6 @@ withCalendar : {source : Type} -> {target : Type} ->
                OffsetDateTime source @{sourceCal} ->
                Either CalendarConversionError (OffsetDateTime target @{targetCal})
 withCalendar @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value =
-  case IotaTime.CalendarDateTime.withCalendar
-    @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value.localValue of
-      Left error => Left error
-      Right converted => Right (MkOffsetDateTime converted value.offsetValue)
+  map (\converted => MkOffsetDateTime converted value.offsetValue)
+    (IotaTime.CalendarDateTime.withCalendar
+      @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value.localValue)

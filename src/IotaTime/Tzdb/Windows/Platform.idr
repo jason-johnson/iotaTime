@@ -7,6 +7,7 @@ import IotaTime.Tzdb.Provider
 import IotaTime.Tzdb.Windows
 import IotaTime.Tzdb.Windows.Types
 import Data.List
+import Data.Either
 
 %default total
 
@@ -24,10 +25,6 @@ prim__windowsIanaToWindows : String -> PrimIO AnyPtr
 
 %foreign "C:iotatime_windows_windows_to_iana, libiotatime_windows"
 prim__windowsWindowsToIana : String -> PrimIO AnyPtr
-
-mapLeft : (left -> mapped) -> Either left right -> Either mapped right
-mapLeft convert (Left error) = Left (convert error)
-mapLeft convert (Right value) = Right value
 
 convertZoneId : (String -> PrimIO AnyPtr) -> String -> IO (Maybe String)
 convertZoneId convert value = do
@@ -61,7 +58,7 @@ windowsRegistrySnapshot : WindowsRegistrySource ->
                           IO (Either TzdbError WindowsRegistrySnapshot)
 windowsRegistrySnapshot source = do
   loaded <- source.sourceRegistrySnapshot
-  pure (mapLeft WindowsRegistrySourceError loaded)
+  pure (mapFst WindowsRegistrySourceError loaded)
 
 windowsRegistryZones : WindowsRegistrySource ->
                        IO (Either TzdbError (List WindowsRegistryZone))
@@ -87,7 +84,7 @@ windowsRegistryNamedZone source name = do
     registry <- case findWindowsZone registryName zones of
       Nothing => Left (WindowsZoneNotFound name)
       Just value => Right value
-    mapLeft TzdbWindowsError (windowsRegistryTimeZoneAs name registry)
+    mapFst TzdbWindowsError (windowsRegistryTimeZoneAs name registry)
 
 windowsRegistryLocalZone : WindowsRegistrySource ->
                            IO (Either TzdbError TimeZone)
@@ -105,7 +102,7 @@ windowsRegistryLocalZone source = do
           snapshot.snapshotZones of
             Nothing => Left (WindowsZoneNotFound snapshot.snapshotLocalZoneId)
             Just value => Right value
-        mapLeft TzdbWindowsError (windowsRegistryTimeZoneAs valueId registry)
+        mapFst TzdbWindowsError (windowsRegistryTimeZoneAs valueId registry)
 
 windowsRegistryAvailableZones : WindowsRegistrySource ->
                                 IO (Either TzdbError (List String))

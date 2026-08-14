@@ -35,7 +35,7 @@ Almost everything follows from the difference between **physical time** and **ci
 | [`LocalTime`](docs/IotaTime.LocalTime.html) | A wall-clock time with no date or zone. |
 | [`CalendarDateTime`](docs/IotaTime.CalendarDateTime.html) | A date and local time, still not tied to the timeline. |
 | [`OffsetDateTime`](docs/IotaTime.OffsetDateTime.html) | Civil time anchored by one fixed UTC offset. |
-| [`TimeZone`](docs/IotaTime.DateTimeZone.html) | The historical and future offset rules for a place. |
+| [`TimeZone`](docs/IotaTime.TimeZone.html) | The historical and future offset rules for a place. |
 | [`ZonedDateTime`](docs/IotaTime.ZonedDateTime.html) | Civil time resolved in a zone and therefore tied to an instant. |
 | [`Period`](docs/IotaTime.Period.html) | A calendar-relative amount whose type records required capabilities. |
 | [`Pattern`](docs/IotaTime.Pattern.html) | One typed description used for both parsing and formatting. |
@@ -188,7 +188,7 @@ germanDate : Either StrftimeError
 germanDate = localeDatePattern deDE
 ```
 
-`localeDatePattern`, `localeTimePattern`, and `localeDateTimePattern` compile OS-style `strftime` layouts into typed patterns. Locale date layouts remain Gregorian because native locale snapshots expose exactly twelve Gregorian month names.
+`localeDatePattern`, `localeTimePattern`, and `localeDateTimePattern` compile the OS layout hidden inside an opaque `Locale` into typed patterns. Applications can load a locale at runtime, but cannot supply arbitrary layout strings. Locale date layouts remain Gregorian because native locale snapshots expose exactly twelve Gregorian month names.
 
 ## Where to go next
 

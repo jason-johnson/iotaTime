@@ -1,12 +1,67 @@
 module GuideExamples
 
 import IotaTime
+import IotaTime.Calendar.Iso
 
 leapDay : CalendarDate Gregorian
 leapDay = calendarDate 29 February 2020
 
 runtimeLeapDay : Either GregorianDateError (CalendarDate Gregorian)
 runtimeLeapDay = refineDate 29 February 2020
+
+isoWeekFiftyThree : CalendarDate Gregorian
+isoWeekFiftyThree = IotaTime.Calendar.Iso.fromWeekDate 53 Sunday 2020
+
+runtimeIsoWeek : Either IsoWeekDateError (CalendarDate Gregorian)
+runtimeIsoWeek = IotaTime.Calendar.Iso.refineWeekDate 53 Monday 2021
+
+arithmeticIsoWeekZero : Either IsoWeekDateError (CalendarDate Gregorian)
+arithmeticIsoWeekZero =
+  IotaTime.Calendar.Iso.refineArithmeticWeekDate 0 Monday 2000
+
+gregorianCutoverInput : Either GregorianDateError (CalendarDate Gregorian)
+gregorianCutoverInput = IotaTime.Calendar.Gregorian.refineDate
+  14 October 1582
+
+copticNewYear : CalendarDate Coptic
+copticNewYear = IotaTime.Calendar.Coptic.calendarDate
+  1 CopticMonths.Thout 1738
+
+copticEpagomenalInput : Either CopticDateError (CalendarDate Coptic)
+copticEpagomenalInput = IotaTime.Calendar.Coptic.refineDate
+  6 CopticMonths.PiKogiEnavot 1732
+
+islamicNewYear : CalendarDate IslamicBcl
+islamicNewYear = IotaTime.Calendar.Islamic.calendarDate
+  1 IslamicMonths.Muharram 1443
+
+civilIslamicNewYear : CalendarDate CivilIslamicBcl
+civilIslamicNewYear = IotaTime.Calendar.Islamic.civilCalendarDate
+  1 IslamicMonths.Muharram 1443
+
+base15IslamicNewYear : CalendarDate IslamicBase15
+base15IslamicNewYear = IotaTime.Calendar.Islamic.calendarDate'
+  {pattern = Base15} 1 IslamicMonths.Muharram 1443
+
+julianLeapDay1900 : CalendarDate Julian
+julianLeapDay1900 = IotaTime.Calendar.Julian.calendarDate
+  29 JulianMonths.February 1900
+
+julianLeapDayAsGregorian : Either CalendarConversionError
+  (CalendarDate Gregorian)
+julianLeapDayAsGregorian = withCalendar julianLeapDay1900
+
+hebrewPassover : CalendarDate HebrewCivil
+hebrewPassover = IotaTime.Calendar.Hebrew.calendarDate
+  15 5784 HebrewMonths.Nisan
+
+scripturalHebrewPassover : CalendarDate HebrewScriptural
+scripturalHebrewPassover = IotaTime.Calendar.Hebrew.calendarDate'
+  {numbering = Scriptural} 15 5784 HebrewMonths.Nisan
+
+hebrewLeapMonthInput : Either HebrewDateError (CalendarDate HebrewCivil)
+hebrewLeapMonthInput = IotaTime.Calendar.Hebrew.refineDate
+  1 AdarIName 5786
 
 start : Instant
 start = fromSecondsSinceUnixEpoch 0
@@ -28,6 +83,30 @@ boundedWindow = interval 0 5400000000000
 
 runtimeWindow : Either IntervalError Interval
 runtimeWindow = refineInterval start finish
+
+proofDirectedIntersection : (left, right : Interval) ->
+  {auto 0 intersects : So (hasNonEmptyIntersection left right)} -> Interval
+proofDirectedIntersection = intersection
+
+proofDirectedUnion : (left, right : Interval) ->
+  {auto 0 connected : So (isConnected left right)} ->
+  Interval
+proofDirectedUnion = IotaTime.Interval.union
+
+runtimeIntersection : Either IntersectionError Interval
+runtimeIntersection = refineIntersection
+  (interval 0 10) (interval 5 15)
+
+runtimeUnion : Either UnionError Interval
+runtimeUnion = refineUnion (interval 0 10) (interval 11 20)
+
+futureWindow : UnboundedInterval
+futureWindow = unboundedInterval (Just 0) Nothing
+
+0 futureWindowIsValid : So (isValidUnboundedInterval
+  (unboundedStart GuideExamples.futureWindow)
+  (unboundedEnd GuideExamples.futureWindow))
+futureWindowIsValid = unboundedIntervalIsValid futureWindow
 
 windowContainsStart : Bool
 windowContainsStart = contains boundedWindow start
@@ -63,18 +142,22 @@ fixedOffsetInstant = toInstant fixedOffsetDateTime
 displayAtUtc : Either CalendarConversionError (OffsetDateTime Gregorian)
 displayAtUtc = withOffset (fromHours 0) fixedOffsetDateTime
 
+differenceStart : CalendarDate Gregorian
+differenceStart = calendarDate 31 January 2025
+
+differenceEnd : CalendarDate Gregorian
+differenceEnd = calendarDate 30 March 2025
+
 calendarDifference : Period (CalendarDate Gregorian)
-calendarDifference = between {calendar = Gregorian}
-  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+calendarDifference = IotaTime.Calendar.between differenceStart differenceEnd
 
 exactDayDifference : Period (CalendarDate Gregorian)
-exactDayDifference = betweenDays {calendar = Gregorian}
-  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+exactDayDifference = betweenDays differenceStart differenceEnd
 
 explicitDayDifference : Period (CalendarDate Gregorian)
-explicitDayDifference = betweenWith {calendar = Gregorian}
+explicitDayDifference = betweenWith
   (MkDateDifferencePolicy DaysOnly ClampToMonth)
-  (calendarDate 31 January 2025) (calendarDate 30 March 2025)
+  differenceStart differenceEnd
 
 gregorianChristmas : CalendarDate Gregorian
 gregorianChristmas = calendarDate 25 December 2024
@@ -177,3 +260,43 @@ parseQuotedWindowsZone provider resolver =
 germanDate : Either StrftimeError
   (Pattern DateFields (CalendarDate Gregorian))
 germanDate = localeDatePattern deDE
+
+formattedGermanDate : Either StrftimeError String
+formattedGermanDate = map
+  (\pattern => format pattern (calendarDate 15 March 2020))
+  germanDate
+
+germanDateTime : Either StrftimeError
+  (Pattern DateTimeFields (CalendarDateTime Gregorian))
+germanDateTime = localeDateTimePattern deDE
+
+parseSeededDateTime :
+  Pattern DateTimeFields (CalendarDateTime Gregorian) ->
+  String -> Either PatternError (CalendarDateTime Gregorian)
+parseSeededDateTime pattern source = parseWith pattern
+  (dateTimeFields
+    (dateFields 2024 1 1)
+    (timeFields 0 0 35 123456789))
+  source
+
+parseLocalizedZoned :
+  (String -> IO (Either providerError TimeZone)) ->
+  (CalendarDateTime Gregorian -> TimeZone ->
+    Either resolutionError (ZonedDateTime Gregorian)) ->
+  IO (Either (ZonedPatternError providerError resolutionError)
+    (ZonedDateTime Gregorian))
+parseLocalizedZoned provider resolver =
+  parseZonedDateTime provider resolver enUS
+    "Sun 15 Mar 2020 01:24:35 PM UTC"
+
+germanLocale : Locale
+germanLocale = deDE
+
+germanLocaleId : String
+germanLocaleId = localeId germanLocale
+
+configuredLocale : IO (Either LocaleError Locale)
+configuredLocale = currentLocale
+
+posixLocale : IO (Either LocaleError Locale)
+posixLocale = localeByName "C"

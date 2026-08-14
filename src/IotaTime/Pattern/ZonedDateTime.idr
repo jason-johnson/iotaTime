@@ -2,7 +2,7 @@ module IotaTime.Pattern.ZonedDateTime
 
 import IotaTime.Calendar.Gregorian
 import IotaTime.CalendarDateTime
-import IotaTime.DateTimeZone
+import IotaTime.TimeZone
 import IotaTime.Pattern
 import IotaTime.Pattern.Calendar
 import IotaTime.Pattern.CalendarDate

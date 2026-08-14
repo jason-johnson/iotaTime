@@ -4,11 +4,42 @@ import IotaTime
 import Test.Support
 
 ymd : CalendarDate Gregorian -> (Year, Month, DayOfMonth)
-ymd date = case yearMonthDay {calendar = Gregorian} date of
+ymd date = case yearMonthDay date of
     (valueYear ** (valueMonth, valueDay)) => (valueYear, valueMonth, valueDay)
 
 weekday : CalendarDate Gregorian -> DayOfWeek
-weekday = dayOfWeek {calendar = Gregorian}
+weekday date = dayOfWeek date
+
+record PeriodOrderProbe where
+    constructor MkPeriodOrderProbe
+    trace : String
+
+HasCalendar PeriodOrderProbe where
+    calendarCapability = ()
+
+shiftProbe : String -> Integer -> PeriodOrderProbe -> PeriodOrderProbe
+shiftProbe label amount probe =
+    { trace := probe.trace ++ label ++ show amount } probe
+
+probePeriod : Period PeriodOrderProbe
+probePeriod = years 1 <+> months 2 <+> weeks 3 <+> days 4
+
+periodOrderProbe : PeriodOrderProbe
+periodOrderProbe = applyDatePeriodWith
+    (shiftProbe "Y") (shiftProbe "M") (shiftProbe "D")
+    probePeriod
+    (MkPeriodOrderProbe "")
+
+secondTuesday : {date : Type} -> CalendarNavigation date => date -> date
+secondTuesday = next 2 Tuesday
+
+gregorianSecondTuesday : CalendarDate Gregorian
+gregorianSecondTuesday = secondTuesday
+    (IotaTime.Calendar.Gregorian.calendarDate 1 January 2000)
+
+julianSecondTuesday : CalendarDate Julian
+julianSecondTuesday = secondTuesday
+    (IotaTime.Calendar.Julian.calendarDate 1 JulianMonths.January 2000)
 
 isLeft : Either left right -> Bool
 isLeft (Left _) = True
@@ -31,7 +62,7 @@ rawDayRoundTrips : Bool
 rawDayRoundTrips = all
     (\value => case IotaTime.Calendar.Gregorian.refineDays value of
         Left _ => False
-        Right date => toDays {calendar = Gregorian} date == value)
+        Right date => toDays date == value)
     rawDaySamples
 
 civilRoundTrips : Integer -> Integer -> Bool
@@ -46,7 +77,7 @@ civilRoundTrips current final =
                      in case IotaTime.Calendar.Gregorian.refineDate valueDay valueMonth valueYear of
                             Left _ => False
                             Right rebuilt =>
-                                if toDays {calendar = Gregorian} rebuilt == current
+                                if toDays rebuilt == current
                                     then civilRoundTrips (current + 1) final
                                     else False
 
@@ -62,6 +93,22 @@ gregorianCases =
                     "calendarDate 1 March 2000")
     , MkRuntimeCase "weekday occurrence values compare and display"
         (First == First && First /= Last && show Fifth == "Fifth")
+    , MkRuntimeCase "weekday numbers round-trip and wrap"
+        (weekdayFromNumber (weekdayNumber Sunday) == Sunday &&
+         weekdayFromNumber (weekdayNumber Saturday) == Saturday &&
+         weekdayFromNumber 7 == Sunday &&
+         weekdayFromNumber (-1) == Saturday)
+    , MkRuntimeCase "shared weekday navigation offsets preserve occurrence semantics"
+        (nextWeekdayOffset 1 Monday Monday == 7 &&
+         nextWeekdayOffset 1 Monday Tuesday == 1 &&
+         nextWeekdayOffset 0 Wednesday Monday == -2 &&
+         nextWeekdayOffset (-1) Wednesday Monday == -9 &&
+         previousWeekdayOffset 1 Monday Monday == -7 &&
+         previousWeekdayOffset 1 Wednesday Monday == -2 &&
+         previousWeekdayOffset 0 Monday Wednesday == 2 &&
+         previousWeekdayOffset (-1) Monday Wednesday == 9)
+    , MkRuntimeCase "shared date-period application preserves component order"
+        (periodOrderProbe.trace == "Y1M2D21D4")
     , MkRuntimeCase "shared nth-weekday arithmetic covers every selector"
         (nthWeekdayDayNumber FourthToLast 31 2 3 == 7 &&
          nthWeekdayDayNumber ThirdToLast 31 2 3 == 14 &&
@@ -73,17 +120,17 @@ gregorianCases =
          nthWeekdayDayNumber Fourth 31 2 3 == 24 &&
          nthWeekdayDayNumber Fifth 31 2 3 == 31)
     , MkRuntimeCase "flat day conversion round-trips"
-            (toDays {calendar = Gregorian} (IotaTime.Calendar.Gregorian.fromDays 42) == 42)
+            (toDays (IotaTime.Calendar.Gregorian.fromDays 42) == 42)
         , MkRuntimeCase "valid day conversion round-trips from the Gregorian boundary"
             rawDayRoundTrips
         , MkRuntimeCase "civil conversion round-trips every valid day through February 2400"
             validCivilRoundTrips
         , MkRuntimeCase "day getter views the typed day of month"
-            (day {calendar = Gregorian} (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) == 31)
+            (day (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) == 31)
         , MkRuntimeCase "month getter views the typed Gregorian month"
-            (month {calendar = Gregorian} (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) == January)
+            (month (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) == January)
         , MkRuntimeCase "year getter views the typed year"
-            (year {calendar = Gregorian} (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) == 2000)
+            (year (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000) == 2000)
     , MkRuntimeCase "Gregorian changeover is the first valid date"
             (ymd (IotaTime.Calendar.Gregorian.calendarDate 15 October 1582) == (1582, October, 15))
         , MkRuntimeCase "dynamic date before Gregorian changeover is rejected"
@@ -167,19 +214,19 @@ gregorianCases =
         , MkRuntimeCase "equal Gregorian civil dates compare equal"
             (IotaTime.Calendar.Gregorian.calendarDate 1 March 2000 == IotaTime.Calendar.Gregorian.calendarDate 1 March 2000)
         , MkRuntimeCase "next Monday selects the following matching day"
-            (ymd (next {calendar = Gregorian} 1 Monday (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000)) ==
+            (ymd (next 1 Monday (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000)) ==
                 (2000, February, 7))
         , MkRuntimeCase "next zero selects the previous matching day"
-            (ymd (next {calendar = Gregorian} 0 Monday (IotaTime.Calendar.Gregorian.calendarDate 2 February 2000)) ==
+            (ymd (next 0 Monday (IotaTime.Calendar.Gregorian.calendarDate 2 February 2000)) ==
                 (2000, January, 31))
         , MkRuntimeCase "next negative one moves one match further backward"
-            (ymd (next {calendar = Gregorian} (-1) Monday (IotaTime.Calendar.Gregorian.calendarDate 2 February 2000)) ==
+            (ymd (next (-1) Monday (IotaTime.Calendar.Gregorian.calendarDate 2 February 2000)) ==
                 (2000, January, 24))
         , MkRuntimeCase "previous Monday selects the preceding matching day"
-            (ymd (previous {calendar = Gregorian} 1 Monday (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000)) ==
+            (ymd (previous 1 Monday (IotaTime.Calendar.Gregorian.calendarDate 31 January 2000)) ==
                 (2000, January, 24))
         , MkRuntimeCase "previous clamps at the Gregorian changeover"
-            (previous {calendar = Gregorian} 1 Thursday (IotaTime.Calendar.Gregorian.calendarDate 15 October 1582) ==
+            (previous 1 Thursday (IotaTime.Calendar.Gregorian.calendarDate 15 October 1582) ==
                 IotaTime.Calendar.Gregorian.calendarDate 15 October 1582)
         , MkRuntimeCase "third Monday of January 2000"
                         (ymd (IotaTime.Calendar.Gregorian.fromNthDay

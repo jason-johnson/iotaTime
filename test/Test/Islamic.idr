@@ -1,6 +1,7 @@
 module Test.Islamic
 
 import IotaTime
+import IotaTime.Calendar
 import IotaTime.Calendar.Islamic
 import Test.Support
 
@@ -11,7 +12,7 @@ isLeft (Right _) = False
 iymd : {pattern : IslamicLeapPattern} ->
        KnownIslamicLeapPattern pattern =>
        CalendarDate (Islamic pattern) -> (Year, IslamicMonth, DayOfMonth)
-iymd date = case yearMonthDay {calendar = Islamic pattern} date of
+iymd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) =>
     (valueYear, valueMonth, valueDay)
 
@@ -19,7 +20,7 @@ ciymd : {pattern : IslamicLeapPattern} ->
         KnownIslamicLeapPattern pattern =>
         CalendarDate (CivilIslamic pattern) ->
         (Year, IslamicMonth, DayOfMonth)
-ciymd date = case yearMonthDay {calendar = CivilIslamic pattern} date of
+ciymd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) =>
     (valueYear, valueMonth, valueDay)
 
@@ -34,7 +35,7 @@ islamicRoundTrips current final =
          in case IotaTime.Calendar.Islamic.refineDate valueDay valueMonth valueYear of
               Left _ => False
               Right rebuilt =>
-                toDays {calendar = Islamic Base16} rebuilt == current &&
+                toDays rebuilt == current &&
                 islamicRoundTrips (current + 1) final
 
 civilIslamicRoundTrips : Integer -> Integer -> Bool
@@ -48,7 +49,7 @@ civilIslamicRoundTrips current final =
          in case IotaTime.Calendar.Islamic.refineCivilDate valueDay valueMonth valueYear of
               Left _ => False
               Right rebuilt =>
-                toDays {calendar = CivilIslamic Base16} rebuilt == current &&
+                toDays rebuilt == current &&
                 civilIslamicRoundTrips (current + 1) final
 
 timeComponents : LocalTime -> (Hour, Minute, Second, Nanosecond)
@@ -79,14 +80,14 @@ islamicCases =
   , MkRuntimeCase "Islamic conversion round-trips two 30-year cycles"
       (islamicRoundTrips (-503166) (-481904))
   , MkRuntimeCase "Islamic epoch matches Julian July 15 622"
-      (calendarDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Muharram 1) ==
-       calendarDays (IotaTime.Calendar.Julian.calendarDate 15 JulianMonths.July 622))
+      (toBridgeDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Muharram 1) ==
+       toBridgeDays (IotaTime.Calendar.Julian.calendarDate 15 JulianMonths.July 622))
   , MkRuntimeCase "1 Muharram 1443 is Gregorian August 9 2021"
-      (calendarDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Muharram 1443) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 9 August 2021))
+      (toBridgeDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Muharram 1443) ==
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 9 August 2021))
   , MkRuntimeCase "1 Ramadan 1443 is Gregorian April 2 2022"
-      (calendarDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Ramadan 1443) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 2 April 2022))
+      (toBridgeDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Ramadan 1443) ==
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 2 April 2022))
   , MkRuntimeCase "generic conversion reaches 1 Muharram 1443"
       (case modernAnchor of
         Left _ => False
@@ -133,21 +134,21 @@ islamicCases =
         (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Ramadan 1)) ==
         (1, IslamicMonths.Muharram, 1))
   , MkRuntimeCase "Islamic epoch weekday is Thursday"
-      (dayOfWeek {calendar = Islamic Base16}
+      (dayOfWeek
         (IotaTime.Calendar.Islamic.calendarDate' {pattern = Base16}
-          1 IslamicMonths.Muharram 1) == IslamicWeekdays.Thursday)
+          1 IslamicMonths.Muharram 1) == Thursday)
   , MkRuntimeCase "first Monday of Muharram 1443"
-      (dayOfWeek {calendar = Islamic Base16}
-        (IotaTime.Calendar.Islamic.fromNthDay First IslamicWeekdays.Monday
-          IslamicMonths.Muharram 1443) == IslamicWeekdays.Monday)
+      (dayOfWeek
+        (IotaTime.Calendar.Islamic.fromNthDay First Monday
+          IslamicMonths.Muharram 1443) == Monday)
   , MkRuntimeCase "Islamic week one starts on Saturday"
-      (dayOfWeek {calendar = Islamic Base16}
+      (dayOfWeek
         (IotaTime.Calendar.Islamic.fromWeekDate
-          1 IslamicWeekdays.Saturday 1443) ==
-        IslamicWeekdays.Saturday)
+          1 Saturday 1443) ==
+        Saturday)
   , MkRuntimeCase "Islamic week dates reject days before the epoch"
       (isLeft (IotaTime.Calendar.Islamic.refineWeekDate
-        (-1000000) IslamicWeekdays.Saturday 1443))
+        (-1000000) Saturday 1443))
   , MkRuntimeCase "Islamic CalendarDateTime accepts mixed periods"
       (iymd (datePart mixedIslamicResult) ==
         (1443, IslamicMonths.Muharram, 1) &&
@@ -156,14 +157,14 @@ islamicCases =
       (ciymd (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1) ==
         (1, IslamicMonths.Muharram, 1))
   , MkRuntimeCase "civil Islamic epoch matches Julian July 16 622"
-      (calendarDays (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1) ==
-        calendarDays (IotaTime.Calendar.Julian.calendarDate 16 JulianMonths.July 622))
+      (toBridgeDays (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1) ==
+        toBridgeDays (IotaTime.Calendar.Julian.calendarDate 16 JulianMonths.July 622))
   , MkRuntimeCase "civil dates are one timeline day after astronomical dates"
-      (calendarDays (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1443) ==
-        calendarDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Muharram 1443) + 1)
+      (toBridgeDays (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1443) ==
+        toBridgeDays (IotaTime.Calendar.Islamic.calendarDate 1 IslamicMonths.Muharram 1443) + 1)
   , MkRuntimeCase "civil 1 Muharram 1443 is Gregorian August 10 2021"
-      (calendarDays (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1443) ==
-        calendarDays (IotaTime.Calendar.Gregorian.calendarDate 10 August 2021))
+      (toBridgeDays (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1443) ==
+        toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 10 August 2021))
   , MkRuntimeCase "civil Islamic conversion round-trips two 30-year cycles"
       (civilIslamicRoundTrips (-503165) (-481903))
   , MkRuntimeCase "generic conversion reaches civil 1 Muharram 1443"
@@ -172,9 +173,9 @@ islamicCases =
         Right date => ciymd date ==
           (1443, IslamicMonths.Muharram, 1))
   , MkRuntimeCase "civil epoch weekday is Friday"
-      (dayOfWeek {calendar = CivilIslamic Base16}
+      (dayOfWeek
         (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1) ==
-          IslamicWeekdays.Friday)
+          Friday)
   , MkRuntimeCase "civil date show names its constructor"
       (show (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1) ==
         "civilCalendarDate' 1 Muharram 1")
@@ -189,16 +190,16 @@ islamicCases =
         (IotaTime.Calendar.Islamic.civilCalendarDate 1 IslamicMonths.Muharram 1)) ==
           (1, IslamicMonths.Muharram, 1))
   , MkRuntimeCase "civil nth-weekday construction uses civil weekdays"
-      (dayOfWeek {calendar = CivilIslamic Base16}
-        (IotaTime.Calendar.Islamic.civilFromNthDay First IslamicWeekdays.Monday
-          IslamicMonths.Muharram 1443) == IslamicWeekdays.Monday)
+      (dayOfWeek
+        (IotaTime.Calendar.Islamic.civilFromNthDay First Monday
+          IslamicMonths.Muharram 1443) == Monday)
   , MkRuntimeCase "civil week one starts on Saturday"
-      (dayOfWeek {calendar = CivilIslamic Base16}
-        (civilFromWeekDate 1 IslamicWeekdays.Saturday 1443) ==
-          IslamicWeekdays.Saturday)
+      (dayOfWeek
+        (civilFromWeekDate 1 Saturday 1443) ==
+          Saturday)
   , MkRuntimeCase "civil Islamic week dates reject days before the epoch"
       (isLeft (refineCivilWeekDate
-        (-1000000) IslamicWeekdays.Saturday 1443))
+        (-1000000) Saturday 1443))
   , MkRuntimeCase "civil day-count refinement rejects astronomical epoch"
       (case IotaTime.Calendar.Islamic.refineCivilDays (-503166) of
         Left (InvalidIslamicDayCount (-503166)) => True

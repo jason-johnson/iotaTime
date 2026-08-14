@@ -1,30 +1,16 @@
 module IotaTime.Tzdb.Provider
 
-import public IotaTime.DateTimeZone
-import public IotaTime.Tzdb.Metadata
-import IotaTime.Tzdb.Posix
-import IotaTime.Tzdb.Tzif
-import IotaTime.Tzdb.Windows.Types
+import IotaTime.TimeZone.Core
+import IotaTime.TimeZone.Error
+import IotaTime.Tzdb.Metadata
 import Data.IORef
 import System.Concurrency
 
 %default total
 
-public export
-data TzdbError
-  = TzdbFileError String
-  | TzdbParseError TzifError
-  | TzdbPosixError PosixTzError
-  | TzdbZoneError DateTimeZoneError
-  | TzdbWindowsError WindowsRegistryError
-  | WindowsRegistrySourceError String
-  | WindowsZoneNotFound String
-  | InvalidZoneName String
-  | UnsupportedPlatform String
-
 ||| Platform-specific time-zone discovery behind one shared contract.
-public export
-record TimeZoneProvider where
+export
+record TimeZoneProviderRep where
   constructor MkTimeZoneProvider
   providerUtc : IO (Either TzdbError TimeZone)
   providerTimeZone : String -> IO (Either TzdbError TimeZone)
@@ -32,21 +18,60 @@ record TimeZoneProvider where
   providerAvailableZones : IO (Either TzdbError (List String))
   providerMetadata : IO (Either TzdbError TzdbMetadata)
 
+export
+timeZoneProvider : IO (Either TzdbError TimeZone) ->
+                   (String -> IO (Either TzdbError TimeZone)) ->
+                   IO (Either TzdbError TimeZone) ->
+                   IO (Either TzdbError (List String)) ->
+                   IO (Either TzdbError TzdbMetadata) ->
+                   TimeZoneProviderRep
+timeZoneProvider = MkTimeZoneProvider
+
+export
+runProviderUtc : TimeZoneProviderRep -> IO (Either TzdbError TimeZone)
+runProviderUtc (MkTimeZoneProvider action _ _ _ _) = action
+
+export
+runProviderTimeZone : TimeZoneProviderRep -> String ->
+                      IO (Either TzdbError TimeZone)
+runProviderTimeZone (MkTimeZoneProvider _ action _ _ _) = action
+
+export
+runProviderLocalZone : TimeZoneProviderRep -> IO (Either TzdbError TimeZone)
+runProviderLocalZone (MkTimeZoneProvider _ _ action _ _) = action
+
+export
+runProviderAvailableZones : TimeZoneProviderRep ->
+                            IO (Either TzdbError (List String))
+runProviderAvailableZones (MkTimeZoneProvider _ _ _ action _) = action
+
+export
+runProviderMetadata : TimeZoneProviderRep -> IO (Either TzdbError TzdbMetadata)
+runProviderMetadata (MkTimeZoneProvider _ _ _ _ action) = action
+
 ||| Selects which successful provider queries are retained in memory.
 ||| Failures are always retried. Local-zone caching is independent because the
 ||| host's local-zone configuration may change while a process is running.
-public export
-record TimeZoneCachePolicy where
+export
+record TimeZoneCachePolicyRep where
   constructor MkTimeZoneCachePolicy
   cacheNamedZones : Bool
   cacheAvailableZones : Bool
   cacheMetadata : Bool
   cacheLocalZone : Bool
 
+export
+timeZoneCachePolicy : (cacheNamedZones : Bool) ->
+                      (cacheAvailableZones : Bool) ->
+                      (cacheMetadata : Bool) ->
+                      (cacheLocalZone : Bool) ->
+                      TimeZoneCachePolicyRep
+timeZoneCachePolicy = MkTimeZoneCachePolicy
+
 ||| Cache named zones, discovery, and metadata while continuing to observe
 ||| changes to the host's local-zone configuration.
-public export
-defaultTimeZoneCachePolicy : TimeZoneCachePolicy
+export
+defaultTimeZoneCachePolicy : TimeZoneCachePolicyRep
 defaultTimeZoneCachePolicy = MkTimeZoneCachePolicy True True True False
 
 findNamedZone : String -> List (String, TimeZone) -> Maybe TimeZone
@@ -94,9 +119,9 @@ cachedNamedZone True mutex reference load name = withMutex mutex $ do
 
 ||| Wrap a provider in caller-owned, opt-in successful-result caches.
 ||| Construct a new wrapper to refresh all cached values.
-public export
-cachedTimeZoneProvider : TimeZoneCachePolicy -> TimeZoneProvider ->
-                         IO TimeZoneProvider
+export
+cachedTimeZoneProvider : TimeZoneCachePolicyRep -> TimeZoneProviderRep ->
+                         IO TimeZoneProviderRep
 cachedTimeZoneProvider policy provider = do
   namedLock <- makeMutex
   availableLock <- makeMutex

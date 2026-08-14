@@ -73,6 +73,10 @@ offsetCases =
   , MkRuntimeCase "offset subtraction clamps at positive bound"
             (minusClamped (IotaTime.Offset.fromHours 17)
                 (IotaTime.Offset.fromHours (-2)) == IotaTime.Offset.fromHours 18)
+  , MkRuntimeCase "offset negation reverses direction"
+            (negateOffset positiveOffset == negativeOffset &&
+                negateOffset negativeOffset == positiveOffset &&
+                negateOffset empty == empty)
   , MkRuntimeCase "offset ordering follows total seconds"
             (IotaTime.Offset.fromMinutes (-30) < empty &&
                 empty < IotaTime.Offset.fromMinutes 30)

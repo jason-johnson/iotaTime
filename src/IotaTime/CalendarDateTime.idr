@@ -1,6 +1,7 @@
 module IotaTime.CalendarDateTime
 
 import IotaTime.Calendar
+import IotaTime.Internal.ApplyPeriod
 import IotaTime.LocalTime
 import IotaTime.Period
 
@@ -73,14 +74,38 @@ localTimeOfDay : {calendar : Type} -> {auto cal : Calendar calendar} ->
                  CalendarDateTime calendar @{cal} -> LocalTime
 localTimeOfDay = time
 
-||| Convert the date component to another calendar while preserving the local
-||| time of day and absolute day.
+||| Extracting the date after construction returns the supplied date.
+public export
+atDatePart : {calendar : Type} -> {auto cal : Calendar calendar} ->
+             (valueDate : CalendarDate calendar @{cal}) ->
+             (valueTime : LocalTime) ->
+             datePart @{cal} (at @{cal} valueDate valueTime) = valueDate
+atDatePart _ _ = Refl
+
+||| Extracting the local time after construction returns the supplied time.
+public export
+atLocalTimeOfDay : {calendar : Type} -> {auto cal : Calendar calendar} ->
+                   (valueDate : CalendarDate calendar @{cal}) ->
+                   (valueTime : LocalTime) ->
+                   localTimeOfDay @{cal} (at @{cal} valueDate valueTime) = valueTime
+atLocalTimeOfDay _ _ = Refl
+
+||| Reconstructing a calendar date-time from its projections is exact.
+public export
+calendarDateTimeRoundTrip :
+  {calendar : Type} -> {auto cal : Calendar calendar} ->
+  (value : CalendarDateTime calendar @{cal}) ->
+  at @{cal} (datePart @{cal} value) (localTimeOfDay @{cal} value) = value
+calendarDateTimeRoundTrip (MkCalendarDateTime _ _) = Refl
+
+||| Convert the date component to another calendar through their shared bridge
+||| day while preserving the local time of day.
 public export
 withCalendar : {source : Type} -> {target : Type} ->
                {auto sourceCal : Calendar source} ->
                {auto targetCal : Calendar target} ->
-               {auto sourceRep : HasCalendarDate (CalendarDate source @{sourceCal})} ->
-               {auto targetRep : HasCalendarDate (CalendarDate target @{targetCal})} ->
+               {auto sourceRep : HasCalendarBridge (CalendarDate source @{sourceCal})} ->
+               {auto targetRep : HasCalendarBridge (CalendarDate target @{targetCal})} ->
                CalendarDateTime source @{sourceCal} ->
                Either CalendarConversionError (CalendarDateTime target @{targetCal})
 withCalendar @{sourceCal} @{targetCal} @{sourceRep} @{targetRep} value =
@@ -100,6 +125,11 @@ implementation {calendar : Type} -> {cal : Calendar calendar} ->
 
 public export
 implementation {calendar : Type} -> {cal : Calendar calendar} ->
+  PeriodTarget (CalendarDateTime calendar @{cal}) where
+  periodTarget = ()
+
+public export
+implementation {calendar : Type} -> {cal : Calendar calendar} ->
   ApplyPeriod (CalendarDateTime calendar @{cal}) where
   applyPeriod period value =
     let dateAfterPeriod = applyCalendarPeriod @{cal} period value.date
@@ -114,5 +144,5 @@ between : {calendar : Type} -> {auto cal : Calendar calendar} ->
           (end : CalendarDateTime calendar @{cal}) ->
           Period (CalendarDateTime calendar @{cal})
 between @{cal} start end = nanoseconds
-  ((toDays @{cal} end.date - toDays @{cal} start.date) * nanosecondsPerDay +
+  ((toDaysFor @{cal} end.date - toDaysFor @{cal} start.date) * nanosecondsPerDay +
    toNanosecondsSinceMidnight end.time - toNanosecondsSinceMidnight start.time)

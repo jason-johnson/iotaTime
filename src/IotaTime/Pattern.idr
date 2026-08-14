@@ -24,19 +24,46 @@ PatternParser = Parser.Parser
 |||
 ||| `state` accumulates fields during parsing. `finish` validates that state and
 ||| constructs the value, while `formatPart` projects text from an existing value.
-public export
-record Pattern state value where
+export
+record PatternRep state value where
   constructor MkPattern
   initialState : state
   finish : state -> Either PatternError value
   parsePart : PatternParser (Either PatternError (state -> state))
   formatPart : value -> String
 
-||| Literal text that can be appended to a pattern with `<%`.
+||| An opaque bidirectional textual representation of a value.
 public export
-record LiteralPattern where
+Pattern : Type -> Type -> Type
+Pattern = PatternRep
+
+export
+patternInitialState : Pattern state value -> state
+patternInitialState = initialState
+
+export
+patternFinish : Pattern state value -> state -> Either PatternError value
+patternFinish = finish
+
+export
+patternParsePart : Pattern state value ->
+                   PatternParser (Either PatternError (state -> state))
+patternParsePart = parsePart
+
+export
+patternFormatPart : Pattern state value -> value -> String
+patternFormatPart = formatPart
+
+||| Literal text that can be appended to a pattern with `<%`.
+export
+record LiteralPatternRep where
   constructor MkLiteralPattern
   literalText : String
+
+||| Opaque literal text that can be appended to a pattern with `<%`.
+public export
+LiteralPattern : Type
+LiteralPattern = LiteralPatternRep
 
 public export
 string : String -> LiteralPattern

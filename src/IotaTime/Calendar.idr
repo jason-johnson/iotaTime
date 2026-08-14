@@ -8,6 +8,83 @@ import Derive.Prelude
 
 %default total
 
+||| A weekday in the standard seven-day civil week shared by all iotaTime
+||| calendars.
+public export
+data DayOfWeek
+  = Sunday | Monday | Tuesday | Wednesday | Thursday | Friday | Saturday
+
+||| Zero-based weekday position from Sunday through Saturday.
+public export
+weekdayNumber : DayOfWeek -> Integer
+weekdayNumber Sunday = 0
+weekdayNumber Monday = 1
+weekdayNumber Tuesday = 2
+weekdayNumber Wednesday = 3
+weekdayNumber Thursday = 4
+weekdayNumber Friday = 5
+weekdayNumber Saturday = 6
+
+||| Number of days in the standard civil week modeled by iotaTime calendars.
+public export
+daysPerWeek : Integer
+daysPerWeek = 7
+
+||| Convert an integer weekday position to the corresponding weekday,
+||| wrapping values outside the standard zero-through-six range.
+public export
+weekdayFromNumber : Integer -> DayOfWeek
+weekdayFromNumber value = case value `mod` 7 of
+  0 => Sunday
+  1 => Monday
+  2 => Tuesday
+  3 => Wednesday
+  4 => Thursday
+  5 => Friday
+  _ => Saturday
+
+||| Signed day offset to the requested following weekday occurrence.
+export
+nextWeekdayOffset : Integer -> DayOfWeek -> DayOfWeek -> Integer
+nextWeekdayOffset count current target =
+  let currentNumber = weekdayNumber current
+      targetNumber = weekdayNumber target
+      weeks = if targetNumber > currentNumber then count - 1 else count
+   in daysPerWeek * weeks + targetNumber - currentNumber
+
+||| Signed day offset to the requested preceding weekday occurrence.
+export
+previousWeekdayOffset : Integer -> DayOfWeek -> DayOfWeek -> Integer
+previousWeekdayOffset count current target =
+  let currentNumber = weekdayNumber current
+      targetNumber = weekdayNumber target
+      weeks = if targetNumber < currentNumber then count - 1 else count
+   in -(daysPerWeek * weeks + currentNumber - targetNumber)
+
+||| Apply calendar period components from largest to smallest, preserving a
+||| separate shift for weeks before the final day shift.
+export
+applyDatePeriodWith :
+  (shiftYears : Integer -> date -> date) ->
+  (shiftMonths : Integer -> date -> date) ->
+  (shiftDays : Integer -> date -> date) ->
+  Period target -> date -> date
+applyDatePeriodWith shiftYears shiftMonths shiftDays period =
+    shiftDays (periodDays period)
+  . shiftDays (daysPerWeek * periodWeeks period)
+  . shiftMonths (periodMonths period)
+  . shiftYears (periodYears period)
+
+public export
+Eq DayOfWeek where
+  left == right = weekdayNumber left == weekdayNumber right
+
+public export
+Ord DayOfWeek where
+  compare left right = compare (weekdayNumber left) (weekdayNumber right)
+
+%runElab derive `{DayOfWeek} [Show]
+
 ||| Selects an occurrence of a weekday within a month.
 public export
 data DayNth
@@ -22,11 +99,6 @@ data DayNth
   | Fifth
 
 %runElab derive `{DayNth} [Eq, Show]
-
-||| Number of days in the standard civil week modeled by iotaTime calendars.
-public export
-daysPerWeek : Integer
-daysPerWeek = 7
 
 ||| Compute the raw day-of-month candidate for a weekday occurrence.
 ||| Calendar implementations remain responsible for validating the candidate
@@ -54,7 +126,7 @@ nthWeekdayDayNumber Fifth _ firstOffset _ =
   1 + 4 * daysPerWeek + firstOffset
 
 ||| A calendar conversion failed because the target calendar cannot represent
-||| the source date's absolute day count.
+||| the source date's bridge day.
 public export
 data CalendarConversionError = TargetCalendarOutOfRange String Integer
 
@@ -85,11 +157,15 @@ public export
 interface Calendar calendar where
   DateRep : Type
   MonthRep : Year -> Type
-  WeekdayRep : Type
 
   isValidDays : Integer -> Bool
   fromDays : (days : Integer) -> {auto 0 valid : So (isValidDays days)} -> DateRep
-  toDays : DateRep -> Integer
+  toDaysFor : DateRep -> Integer
+  0 toDaysValid : (date : DateRep) -> So (isValidDays (toDaysFor date))
+  0 toFromDays : (days : Integer) -> (0 valid : So (isValidDays days)) ->
+                 toDaysFor (fromDays days {valid}) = days
+  0 fromToDays : (date : DateRep) ->
+                 fromDays (toDaysFor date) {valid = toDaysValid date} = date
   calendarName : String
 
   year' : DateRep -> Year
@@ -100,42 +176,64 @@ interface Calendar calendar where
   applyCalendarPeriod' : Period target -> DateRep -> DateRep
   shiftCalendarDays' : Integer -> DateRep -> DateRep
 
-  dayOfWeek : DateRep -> WeekdayRep
-  next : Integer -> WeekdayRep -> DateRep -> DateRep
-  previous : Integer -> WeekdayRep -> DateRep -> DateRep
+  dayOfWeekFor : DateRep -> DayOfWeek
+  nextFor : Integer -> DayOfWeek -> DateRep -> DateRep
+  previousFor : Integer -> DayOfWeek -> DateRep -> DateRep
 
 ||| The opaque date representation selected by a calendar implementation.
 public export
 CalendarDate : (calendar : Type) -> {auto cal : Calendar calendar} -> Type
 CalendarDate calendar @{cal} = DateRep @{cal}
 
-||| A date-like value that can participate in absolute-day calendar conversion.
+||| Internal normalization implemented by iotaTime's built-in calendars for
+||| cross-calendar and instant conversion. Calendar-local APIs use
+||| `Calendar.toDaysFor` instead.
+export
+interface HasCalendarBridge date where
+  toBridgeDays : date -> Integer
+  acceptsBridgeDays : Integer -> Bool
+  fromBridgeDays : (days : Integer) ->
+                         {auto 0 valid : So (acceptsBridgeDays days)} -> date
+  bridgeCalendarName : String
+
+||| Calendar operations determined by a concrete date representation.
+||| This lets value-oriented APIs infer the calendar from their first date
+||| argument instead of requiring a repeated `{calendar = ...}` annotation.
 public export
-interface HasCalendarDate date where
-  calendarDays : date -> Integer
-  acceptsCalendarDays : Integer -> Bool
-  calendarDateFromDays : (days : Integer) ->
-                         {auto 0 valid : So (acceptsCalendarDays days)} -> date
-  calendarDateName : String
+interface HasCalendarBridge date => CalendarValue date where
+  CalendarMonth : Year -> Type
+  calendarValueToDays : date -> Integer
+  calendarValueYear : date -> Year
+  calendarValueMonthDay : (value : date) ->
+    (CalendarMonth (calendarValueYear value), DayOfMonth)
+  calendarValueDayOfWeek : date -> DayOfWeek
+  calendarValueBetweenWith :
+    DateDifferencePolicy -> date -> date -> Period date
+
+||| Weekday navigation selected by the concrete date representation.
+public export
+interface CalendarValue date => CalendarNavigation date where
+  calendarValueNext : Integer -> DayOfWeek -> date -> date
+  calendarValuePrevious : Integer -> DayOfWeek -> date -> date
 
 ||| Extract the calendar year from a date.
 public export
-year : {calendar : Type} -> {auto cal : Calendar calendar} ->
+yearFor : {calendar : Type} -> {auto cal : Calendar calendar} ->
   CalendarDate calendar @{cal} -> Year
-year @{cal} = year' @{cal}
+yearFor @{cal} = year' @{cal}
 
 ||| Extract the year-indexed calendar month from a date.
 public export
-month : {calendar : Type} -> {auto cal : Calendar calendar} ->
+monthFor : {calendar : Type} -> {auto cal : Calendar calendar} ->
   (date : CalendarDate calendar @{cal}) ->
-  MonthRep @{cal} (year {calendar} @{cal} date)
-month @{cal} = month' @{cal}
+  MonthRep @{cal} (yearFor {calendar} @{cal} date)
+monthFor @{cal} = month' @{cal}
 
 ||| Extract the day of month from a date.
 public export
-day : {calendar : Type} -> {auto cal : Calendar calendar} ->
+dayFor : {calendar : Type} -> {auto cal : Calendar calendar} ->
   CalendarDate calendar @{cal} -> DayOfMonth
-day @{cal} = day' @{cal}
+dayFor @{cal} = day' @{cal}
 
 export
 applyCalendarPeriod : {calendar : Type} -> {auto cal : Calendar calendar} ->
@@ -150,23 +248,23 @@ shiftCalendarDays @{cal} = shiftCalendarDays' @{cal}
 
 ||| Compute the exact signed day period from `start` to `end`.
 public export
-betweenDays : {calendar : Type} -> {auto cal : Calendar calendar} ->
+betweenDaysFor : {calendar : Type} -> {auto cal : Calendar calendar} ->
               {auto target : HasCalendar (CalendarDate calendar @{cal})} ->
               (start : CalendarDate calendar @{cal}) ->
               (end : CalendarDate calendar @{cal}) ->
               Period (CalendarDate calendar @{cal})
-betweenDays @{cal} start end = days (toDays @{cal} end - toDays @{cal} start)
+betweenDaysFor @{cal} start end = days (toDaysFor @{cal} end - toDaysFor @{cal} start)
 
 yearsBetween : {calendar : Type} -> {auto cal : Calendar calendar} ->
                {auto target : HasCalendar (CalendarDate calendar @{cal})} ->
                CalendarDate calendar @{cal} -> CalendarDate calendar @{cal} -> Integer
 yearsBetween @{cal} start end =
-  let estimate = yearValue (year @{cal} end) - yearValue (year @{cal} start)
+  let estimate = yearValue (yearFor @{cal} end) - yearValue (yearFor @{cal} start)
       estimatedDate = applyCalendarPeriod @{cal}
         (years {target = CalendarDate calendar @{cal}} estimate) start
-      estimatedDays = toDays @{cal} estimatedDate
-      startDays = toDays @{cal} start
-      endDays = toDays @{cal} end
+      estimatedDays = toDaysFor @{cal} estimatedDate
+      startDays = toDaysFor @{cal} start
+      endDays = toDaysFor @{cal} end
    in if startDays <= endDays
         then if estimatedDays <= endDays then estimate else estimate - 1
         else if estimatedDays >= endDays then estimate else estimate + 1
@@ -175,8 +273,8 @@ monthsBetween : {calendar : Type} -> {auto cal : Calendar calendar} ->
                 {auto target : HasCalendar (CalendarDate calendar @{cal})} ->
                 CalendarDate calendar @{cal} -> CalendarDate calendar @{cal} -> Integer
 monthsBetween @{cal} start end =
-  let startDays = toDays @{cal} start
-      endDays = toDays @{cal} end
+  let startDays = toDaysFor @{cal} start
+      endDays = toDaysFor @{cal} end
       fuel = cast (abs (endDays - startDays) + 1)
    in if startDays <= endDays
         then forward fuel 0
@@ -186,11 +284,11 @@ monthsBetween @{cal} start end =
     forward Z count = count
     forward (S fuel) count =
       let candidate = count + 1
-          candidateDays = toDays @{cal}
+          candidateDays = toDaysFor @{cal}
             (applyCalendarPeriod @{cal}
               (months {target = CalendarDate calendar @{cal}} candidate) start)
-       in if candidateDays <= toDays @{cal} end
-            then if candidateDays == toDays @{cal} end
+       in if candidateDays <= toDaysFor @{cal} end
+            then if candidateDays == toDaysFor @{cal} end
               then candidate
               else forward fuel candidate
             else count
@@ -199,11 +297,11 @@ monthsBetween @{cal} start end =
     backward Z count = count
     backward (S fuel) count =
       let candidate = count - 1
-          candidateDays = toDays @{cal}
+          candidateDays = toDaysFor @{cal}
             (applyCalendarPeriod @{cal}
               (months {target = CalendarDate calendar @{cal}} candidate) start)
-       in if candidateDays >= toDays @{cal} end
-            then if candidateDays == toDays @{cal} end
+       in if candidateDays >= toDaysFor @{cal} end
+            then if candidateDays == toDaysFor @{cal} end
               then candidate
               else backward fuel candidate
             else count
@@ -211,54 +309,135 @@ monthsBetween @{cal} start end =
 ||| Decompose the signed difference from `start` to `end` according to `policy`.
 ||| Calendar units are selected largest-first without passing the endpoint.
 public export
-betweenWith : {calendar : Type} -> {auto cal : Calendar calendar} ->
+betweenWithFor : {calendar : Type} -> {auto cal : Calendar calendar} ->
               {auto target : HasCalendar (CalendarDate calendar @{cal})} ->
               DateDifferencePolicy ->
               (start : CalendarDate calendar @{cal}) ->
               (end : CalendarDate calendar @{cal}) ->
               Period (CalendarDate calendar @{cal})
-betweenWith @{cal} (MkDateDifferencePolicy DaysOnly _) start end =
-  betweenDays @{cal} start end
-betweenWith @{cal} (MkDateDifferencePolicy YearsMonthsDays ClampToMonth) start end =
+betweenWithFor @{cal} (MkDateDifferencePolicy DaysOnly _) start end =
+  betweenDaysFor @{cal} start end
+betweenWithFor @{cal} (MkDateDifferencePolicy YearsMonthsDays ClampToMonth) start end =
   let yearCount = yearsBetween @{cal} start end
       afterYears = applyCalendarPeriod @{cal}
         (years {target = CalendarDate calendar @{cal}} yearCount) start
       monthCount = monthsBetween @{cal} afterYears end
       afterMonths = applyCalendarPeriod @{cal}
         (months {target = CalendarDate calendar @{cal}} monthCount) afterYears
-      dayCount = toDays @{cal} end - toDays @{cal} afterMonths
+      dayCount = toDaysFor @{cal} end - toDaysFor @{cal} afterMonths
    in years {target = CalendarDate calendar @{cal}} yearCount <+>
       months {target = CalendarDate calendar @{cal}} monthCount <+>
       days {target = CalendarDate calendar @{cal}} dayCount
 
 ||| Decompose the signed calendar difference using `nodaTimePolicy`.
 public export
-between : {calendar : Type} -> {auto cal : Calendar calendar} ->
+betweenFor : {calendar : Type} -> {auto cal : Calendar calendar} ->
           {auto target : HasCalendar (CalendarDate calendar @{cal})} ->
           (start : CalendarDate calendar @{cal}) ->
           (end : CalendarDate calendar @{cal}) ->
           Period (CalendarDate calendar @{cal})
-between @{cal} = betweenWith @{cal} nodaTimePolicy
+betweenFor @{cal} = betweenWithFor @{cal} nodaTimePolicy
 
 ||| Decompose a date while preserving the dependency between its year and month.
 public export
-yearMonthDay : {calendar : Type} -> {auto cal : Calendar calendar} ->
+yearMonthDayFor : {calendar : Type} -> {auto cal : Calendar calendar} ->
                (date : CalendarDate calendar @{cal}) ->
                (valueYear : Year ** (MonthRep @{cal} valueYear, DayOfMonth))
-yearMonthDay @{cal} date =
+yearMonthDayFor @{cal} date =
   (year' @{cal} date ** toYmd @{cal} date)
 
-||| Convert a date to another calendar while preserving its absolute day.
+||| Compute the exact signed day period from `start` to `end`.
+public export
+betweenDays : (start : date) -> {auto value : CalendarValue date} ->
+              date -> Period date
+betweenDays start @{value} =
+  calendarValueBetweenWith @{value}
+    (MkDateDifferencePolicy DaysOnly ClampToMonth) start
+
+||| Decompose a difference according to `policy`, inferring the calendar from
+||| the first date argument.
+public export
+betweenWith : DateDifferencePolicy ->
+              (start : date) -> {auto value : CalendarValue date} ->
+              date -> Period date
+betweenWith policy start @{value} =
+  calendarValueBetweenWith @{value} policy start
+
+||| Decompose a signed date difference using `nodaTimePolicy`.
+public export
+between : (start : date) -> {auto value : CalendarValue date} ->
+          date -> Period date
+between = betweenWith nodaTimePolicy
+
+||| Decompose a date while preserving its year-indexed month type.
+public export
+yearMonthDay : (value : date) -> {auto rep : CalendarValue date} ->
+               (valueYear : Year **
+                 (CalendarMonth @{rep} valueYear, DayOfMonth))
+yearMonthDay value @{rep} =
+  (calendarValueYear @{rep} value ** calendarValueMonthDay @{rep} value)
+
+||| Return the calendar-relative day count for a concrete date value.
+public export
+toDays : (value : date) -> {auto rep : CalendarValue date} -> Integer
+toDays value @{rep} = calendarValueToDays @{rep} value
+
+||| Extract the calendar year from a concrete date value.
+public export
+year : (value : date) -> {auto rep : CalendarValue date} -> Year
+year value @{rep} = calendarValueYear @{rep} value
+
+||| Extract the year-indexed calendar month from a concrete date value.
+public export
+month : (value : date) -> {auto rep : CalendarValue date} ->
+  CalendarMonth @{rep} (year value @{rep})
+month value @{rep} = fst (calendarValueMonthDay @{rep} value)
+
+||| Extract the day of month from a concrete date value.
+public export
+day : (value : date) -> {auto rep : CalendarValue date} -> DayOfMonth
+day value @{rep} = snd (calendarValueMonthDay @{rep} value)
+
+||| Combined and projected civil-date observations are definitionally coherent.
+public export
+calendarComponentsCoherent :
+  (value : date) -> {auto rep : CalendarValue date} ->
+  yearMonthDay value @{rep} =
+    (year value @{rep} ** (month value @{rep}, day value @{rep}))
+calendarComponentsCoherent value @{rep} with
+  (calendarValueMonthDay @{rep} value)
+  _ | (_, _) = Refl
+
+||| Extract the weekday from a concrete date value.
+public export
+dayOfWeek : (value : date) -> {auto rep : CalendarValue date} -> DayOfWeek
+dayOfWeek value @{rep} = calendarValueDayOfWeek @{rep} value
+
+||| Find a matching weekday relative to a concrete date value.
+public export
+next : {auto navigation : CalendarNavigation date} ->
+  Integer -> DayOfWeek -> (value : date) -> date
+next count weekday value @{navigation} =
+  calendarValueNext @{navigation} count weekday value
+
+||| Find a preceding matching weekday relative to a concrete date value.
+public export
+previous : {auto navigation : CalendarNavigation date} ->
+           Integer -> DayOfWeek -> (value : date) -> date
+previous count weekday value @{navigation} =
+  calendarValuePrevious @{navigation} count weekday value
+
+||| Convert a date to another calendar through their shared bridge day.
 ||| Returns `TargetCalendarOutOfRange` when the target cannot represent it.
 public export
 withCalendar : {sourceDate : Type} -> {targetDate : Type} ->
-               {auto sourceRep : HasCalendarDate sourceDate} ->
-               {auto targetRep : HasCalendarDate targetDate} ->
+               {auto sourceRep : HasCalendarBridge sourceDate} ->
+               {auto targetRep : HasCalendarBridge targetDate} ->
                sourceDate ->
                Either CalendarConversionError targetDate
 withCalendar @{sourceRep} @{targetRep} date =
-  let valueDays = calendarDays @{sourceRep} date
-   in case choose (acceptsCalendarDays @{targetRep} valueDays) of
-        Left valid => Right (calendarDateFromDays @{targetRep} valueDays @{valid})
+  let valueDays = toBridgeDays @{sourceRep} date
+   in case choose (acceptsBridgeDays @{targetRep} valueDays) of
+        Left valid => Right (fromBridgeDays @{targetRep} valueDays @{valid})
         Right _ => Left
-          (TargetCalendarOutOfRange (calendarDateName @{targetRep}) valueDays)
+          (TargetCalendarOutOfRange (bridgeCalendarName @{targetRep}) valueDays)

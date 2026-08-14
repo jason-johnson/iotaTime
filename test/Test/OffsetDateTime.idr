@@ -9,7 +9,7 @@ gregorianComponents value =
   let local = toCalendarDateTime value
       date = datePart local
       time = localTimeOfDay local
-   in case yearMonthDay {calendar = Gregorian} date of
+  in case yearMonthDay date of
         (valueYear ** (valueMonth, valueDay)) =>
           ((valueYear, valueMonth, valueDay),
            (hour time, minute time, second time, nanosecond time),
@@ -75,7 +75,7 @@ offsetDateTimeCases =
         (fromCalendarDateTimeWithOffset
           (on (localTime 1 30 0 0) (IotaTime.Calendar.Gregorian.calendarDate 1 March 2000))
           (IotaTime.Offset.fromMinutes 90))) ==
-        "fromInstantWithOffset (fromNanosecondsSinceEpoch 0) (offsetFromSeconds 5400)")
+        "fromInstantWithOffset (fromNanosecondsSinceEpoch 0) (fromSeconds 5400)")
   , MkRuntimeCase "withOffset preserves the represented instant"
       (let original = the (OffsetDateTime Gregorian)
             (fromCalendarDateTimeWithOffset

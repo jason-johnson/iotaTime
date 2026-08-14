@@ -53,7 +53,7 @@ zonedClock = MkZonedClock
 public export
 getCurrentZonedDateTime : {calendar : Type} -> {clock : Type} ->
                           {auto cal : Calendar calendar} ->
-                          {auto rep : HasCalendarDate
+                          {auto rep : HasCalendarBridge
                             (CalendarDate calendar @{cal})} ->
                           Clock clock => ZonedClock calendar clock ->
                           IO (Either CalendarConversionError

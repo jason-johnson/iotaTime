@@ -6,21 +6,35 @@ import IotaTime.Pattern
 import IotaTime.Locale
 import IotaTime.Calendar
 import IotaTime.Calendar.Gregorian
+import IotaTime.Internal.Text
 import IotaTime.Pattern.Calendar
 
 %default total
 
 ||| Intermediate fields accumulated while parsing a calendar date.
-public export
-record DateFields where
+export
+record DateFieldsRep where
   constructor MkDateFields
   parsedYear : Integer
   parsedMonth : Integer
   parsedDay : Integer
   {default Nothing parsedWeekday : Maybe (Fin 7)}
 
+||| Opaque intermediate state used by calendar-date patterns.
+public export
+DateFields : Type
+DateFields = DateFieldsRep
+
+||| Seed omitted year, month, and day fields for `parseWith`.
+||| Parsed fields replace the corresponding seed values; final calendar-date
+||| validation still occurs after parsing.
+public export
+dateFields : (year : Integer) -> (month : Integer) -> (day : Integer) ->
+             DateFields
+dateFields year month day = MkDateFields year month day
+
 initialDateFields : DateFields
-initialDateFields = MkDateFields 2000 3 1
+initialDateFields = dateFields 2000 3 1
 
 monthFromInteger : Integer -> Month
 monthFromInteger 1 = January
@@ -49,17 +63,6 @@ finishDate {calendar} @{patterned} fields = do
         then Right date
         else Left (InvalidValue "weekday does not match date")
 
-zeros : Nat -> String
-zeros Z = ""
-zeros (S count) = "0" ++ zeros count
-
-padNumber : Nat -> Integer -> String
-padNumber width value =
-  let shown = show value
-      currentWidth = length (unpack shown)
-   in if currentWidth >= width then shown
-      else zeros (width `minus` currentWidth) ++ shown
-
 dateField : {calendar : Type} ->
             {auto patterned : CalendarPattern calendar} ->
             (CalendarDate calendar -> Integer) ->
@@ -71,7 +74,7 @@ dateField getter setter width maximumWidth minimum maximum = MkPattern
   initialDateFields
   finishDate
   (numberUpdatePart setter width maximumWidth minimum maximum)
-  (padNumber width . getter)
+  (zeroPadInteger width . getter)
 
 setYearField : Integer -> DateFields -> DateFields
 setYearField value fields = { parsedYear := value } fields
@@ -90,7 +93,7 @@ setMonth value fields = { parsedMonth := monthNumber value } fields
 
 calendarYear : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
                CalendarDate calendar -> Integer
-calendarYear date = yearValue (year {calendar} date)
+calendarYear date = yearValue (yearFor {calendar} date)
 
 calendarMonthIndex : {calendar : Type} ->
                      {auto patterned : CalendarPattern calendar} ->
@@ -107,7 +110,7 @@ calendarMonth {calendar} @{patterned} date =
 
 calendarDay : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
               CalendarDate calendar -> Integer
-calendarDay date = dayOfMonthValue (day {calendar} date)
+calendarDay date = dayOfMonthValue (dayFor {calendar} date)
 
 gregorianMonths : Vect 12 Month
 gregorianMonths =
@@ -168,7 +171,7 @@ verifiedCalendarDayNamePattern {calendar} @{patterned} names = MkPattern
   initialDateFields
   finishDate
   (namedUpdatePart (indexedFinNames names) setWeekdayField)
-  (calendarDayNamePattern {calendar} @{patterned} names).formatPart
+  (patternFormatPart (calendarDayNamePattern {calendar} @{patterned} names))
 
 englishMonthNames : Vect 12 String
 englishMonthNames = map show gregorianMonths
@@ -211,7 +214,7 @@ pyy = MkPattern
     (\value, fields =>
       { parsedYear := inferTwoDigitYear fields.parsedYear value } fields)
     2 2 0 99)
-  (padNumber 2 . (`mod` 100) . calendarYear)
+  (zeroPadInteger 2 . (`mod` 100) . calendarYear)
 
 ||| A numeric month field bounded by the selected calendar's month count.
 public export

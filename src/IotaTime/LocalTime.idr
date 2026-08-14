@@ -1,6 +1,7 @@
 module IotaTime.LocalTime
 
 import public IotaTime.Time.Component
+import IotaTime.Internal.ApplyPeriod
 import IotaTime.Period
 
 %default total
@@ -97,6 +98,10 @@ applyTimePeriodWithCarry period value =
 public export
 HasTime LocalTime where
   timeCapability = ()
+
+public export
+PeriodTarget LocalTime where
+  periodTarget = ()
 
 public export
 ApplyPeriod LocalTime where

@@ -111,6 +111,7 @@ function groupModulePage(html, moduleName, configuredGroups, cookbook) {
 
   const assigned = new Set();
   const sections = [];
+  let hiddenEntryCount = 0;
   for (const group of configuredGroups) {
     const names = new Set(group.names);
     const matching = entries.filter(
@@ -118,6 +119,10 @@ function groupModulePage(html, moduleName, configuredGroups, cookbook) {
     );
     if (matching.length === 0) continue;
     matching.forEach((entry) => assigned.add(entry));
+    if (group.hidden === true) {
+      hiddenEntryCount += matching.length;
+      continue;
+    }
     sections.push({ title: group.title, entries: matching });
   }
 
@@ -144,9 +149,10 @@ function groupModulePage(html, moduleName, configuredGroups, cookbook) {
   definitions.replaceWith(renderedSections);
 
   const renderedEntryCount = $("section.api-group > dl.decls > dt").length;
-  if (renderedEntryCount !== entries.length) {
+  if (renderedEntryCount !== entries.length - hiddenEntryCount) {
     throw new Error(
-      `${moduleName}: grouped ${renderedEntryCount} of ${entries.length} definitions`,
+      `${moduleName}: rendered ${renderedEntryCount} of ` +
+      `${entries.length - hiddenEntryCount} visible definitions`,
     );
   }
   return $.html();

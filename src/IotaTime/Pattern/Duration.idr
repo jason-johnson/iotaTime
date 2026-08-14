@@ -3,6 +3,7 @@ module IotaTime.Pattern.Duration
 import Data.String
 import Data.String.Parser
 import IotaTime.Duration
+import IotaTime.Internal.Text
 import IotaTime.Pattern
 
 %default total
@@ -98,17 +99,6 @@ durationParser withFraction = Parser.P (\state =>
     Just parts => pure (Parser.OK (Right (const (partsDuration parts)))
       ({ pos := state.pos + cast parts.consumed } state)))
 
-zeros : Nat -> String
-zeros Z = ""
-zeros (S count) = "0" ++ zeros count
-
-pad : Nat -> Integer -> String
-pad width value =
-  let shown = show value
-      currentWidth = length (unpack shown)
-   in if currentWidth >= width then shown
-      else zeros (width `minus` currentWidth) ++ shown
-
 renderDuration : Bool -> Duration -> String
 renderDuration withFraction value =
   let totalNanoseconds = toDurationNanoseconds value
@@ -121,9 +111,12 @@ renderDuration withFraction value =
       totalHours = totalMinutes `div` 60
       hours = totalHours `mod` 24
       days = totalHours `div` 24
-      fraction = if withFraction then "." ++ pad 9 nanoseconds else ""
+      fraction = if withFraction
+        then "." ++ zeroPadInteger 9 nanoseconds
+        else ""
    in (if totalNanoseconds < 0 then "-" else "") ++ show days ++ ":" ++
-      pad 2 hours ++ ":" ++ pad 2 minutes ++ ":" ++ pad 2 seconds ++ fraction
+      zeroPadInteger 2 hours ++ ":" ++ zeroPadInteger 2 minutes ++ ":" ++
+      zeroPadInteger 2 seconds ++ fraction
 
 durationPattern : Bool -> Pattern Duration Duration
 durationPattern withFraction = MkPattern

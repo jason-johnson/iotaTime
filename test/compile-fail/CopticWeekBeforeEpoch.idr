@@ -5,4 +5,4 @@ import IotaTime
 
 invalid : CalendarDate Coptic
 invalid = IotaTime.Calendar.Coptic.fromWeekDate
-  (-1000000) CopticWeekdays.Sunday 1716
+  (-1000000) Sunday 1716

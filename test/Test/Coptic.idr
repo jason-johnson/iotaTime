@@ -1,11 +1,12 @@
 module Test.Coptic
 
 import IotaTime
+import IotaTime.Calendar
 import IotaTime.Calendar.Coptic
 import Test.Support
 
 cymd : CalendarDate Coptic -> (Year, CopticMonth, DayOfMonth)
-cymd date = case yearMonthDay {calendar = Coptic} date of
+cymd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) =>
     (valueYear, valueMonth, valueDay)
 
@@ -24,7 +25,7 @@ copticRoundTrips current final =
          in case IotaTime.Calendar.Coptic.refineDate valueDay valueMonth valueYear of
               Left _ => False
               Right rebuilt =>
-                toDays {calendar = Coptic} rebuilt == current &&
+                toDays rebuilt == current &&
                 copticRoundTrips (current + 1) final
 
 timeComponents : LocalTime -> (Hour, Minute, Second, Nanosecond)
@@ -50,14 +51,14 @@ copticCases =
   , MkRuntimeCase "Coptic civil conversion round-trips two leap cycles"
       (copticRoundTrips (-626575) (-623653))
   , MkRuntimeCase "Coptic epoch matches Julian August 29 284"
-      (toDays {calendar = Coptic} (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1) ==
-       calendarDays (IotaTime.Calendar.Julian.calendarDate 29 JulianMonths.August 284))
+      (toDays (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1) ==
+       toBridgeDays (IotaTime.Calendar.Julian.calendarDate 29 JulianMonths.August 284))
   , MkRuntimeCase "Nayrouz 1738 is Gregorian September 11 2021"
-      (calendarDays (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1738) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 11 September 2021))
+      (toBridgeDays (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1738) ==
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 11 September 2021))
   , MkRuntimeCase "Nayrouz 1716 is Gregorian September 12 1999"
-      (calendarDays (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1716) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 12 September 1999))
+      (toBridgeDays (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1716) ==
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 12 September 1999))
   , MkRuntimeCase "Gregorian anchor converts through the generic calendar API"
       (case gregorianAnchorAsCoptic of
         Left _ => False
@@ -80,41 +81,41 @@ copticCases =
         (IotaTime.Calendar.Coptic.calendarDate 6 CopticMonths.PiKogiEnavot 1731)) ==
         (1732, CopticMonths.PiKogiEnavot, 5))
   , MkRuntimeCase "Coptic epoch weekday is Friday"
-      (dayOfWeek {calendar = Coptic}
+      (dayOfWeek
         (IotaTime.Calendar.Coptic.calendarDate 1 CopticMonths.Thout 1) ==
-        CopticWeekdays.Friday)
+        Friday)
   , MkRuntimeCase "first Monday of Thout 1716"
-      (dayOfWeek {calendar = Coptic}
-        (IotaTime.Calendar.Coptic.fromNthDay First CopticWeekdays.Monday
-          CopticMonths.Thout 1716) == CopticWeekdays.Monday)
+      (dayOfWeek
+        (IotaTime.Calendar.Coptic.fromNthDay First Monday
+          CopticMonths.Thout 1716) == Monday)
   , MkRuntimeCase "absent epagomenal weekday is rejected"
-      (isLeft (IotaTime.Calendar.Coptic.refineNthDay First CopticWeekdays.Sunday
+      (isLeft (IotaTime.Calendar.Coptic.refineNthDay First Sunday
         CopticMonths.PiKogiEnavot 1732))
   , MkRuntimeCase "absent reverse epagomenal weekdays are rejected"
-      (isLeft (IotaTime.Calendar.Coptic.refineNthDay Last CopticWeekdays.Sunday
+      (isLeft (IotaTime.Calendar.Coptic.refineNthDay Last Sunday
         CopticMonths.PiKogiEnavot 1732) &&
-       isLeft (IotaTime.Calendar.Coptic.refineNthDay SecondToLast CopticWeekdays.Friday
+       isLeft (IotaTime.Calendar.Coptic.refineNthDay SecondToLast Friday
         CopticMonths.PiKogiEnavot 1732) &&
-       isLeft (IotaTime.Calendar.Coptic.refineNthDay ThirdToLast CopticWeekdays.Friday
+       isLeft (IotaTime.Calendar.Coptic.refineNthDay ThirdToLast Friday
         CopticMonths.PiKogiEnavot 1732) &&
-       isLeft (IotaTime.Calendar.Coptic.refineNthDay FourthToLast CopticWeekdays.Friday
+       isLeft (IotaTime.Calendar.Coptic.refineNthDay FourthToLast Friday
         CopticMonths.PiKogiEnavot 1732) &&
-             isLeft (IotaTime.Calendar.Coptic.refineNthDay FourthToLast CopticWeekdays.Friday
+             isLeft (IotaTime.Calendar.Coptic.refineNthDay FourthToLast Friday
         CopticMonths.PiKogiEnavot 1731))
   , MkRuntimeCase "valid reverse epagomenal weekday is preserved"
-      (case IotaTime.Calendar.Coptic.refineNthDay Last CopticWeekdays.Saturday
+      (case IotaTime.Calendar.Coptic.refineNthDay Last Saturday
         CopticMonths.PiKogiEnavot 1732 of
           Left _ => False
           Right date => cymd date ==
             (1732, CopticMonths.PiKogiEnavot, 5))
   , MkRuntimeCase "Coptic week one starts on Sunday"
-      (dayOfWeek {calendar = Coptic}
+      (dayOfWeek
         (IotaTime.Calendar.Coptic.fromWeekDate
-          1 CopticWeekdays.Sunday 1716) ==
-        CopticWeekdays.Sunday)
+          1 Sunday 1716) ==
+        Sunday)
   , MkRuntimeCase "Coptic week dates reject days before the epoch"
       (isLeft (IotaTime.Calendar.Coptic.refineWeekDate
-        (-1000000) CopticWeekdays.Sunday 1716))
+        (-1000000) Sunday 1716))
   , MkRuntimeCase "Coptic CalendarDateTime accepts mixed periods"
       (cymd (datePart mixedCopticResult) ==
         (1733, CopticMonths.Thout, 1) &&

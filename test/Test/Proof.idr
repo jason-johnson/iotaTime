@@ -62,6 +62,20 @@ julianCenturyLeap : IotaTime.Calendar.Julian.isLeapYear 1900 = True
 julianCenturyLeap = Refl
 
 public export
+0 gregorianLocalDaysRoundTrip :
+	IotaTime.Calendar.toDaysFor {calendar = Gregorian}
+		(IotaTime.Calendar.fromDays {calendar = Gregorian} 0) = 0
+gregorianLocalDaysRoundTrip =
+	IotaTime.Calendar.toFromDays {calendar = Gregorian} 0 Oh
+
+public export
+0 julianLocalDaysRoundTrip :
+	IotaTime.Calendar.toDaysFor {calendar = Julian}
+		(IotaTime.Calendar.fromDays {calendar = Julian} 0) = 0
+julianLocalDaysRoundTrip =
+	IotaTime.Calendar.toFromDays {calendar = Julian} 0 Oh
+
+public export
 hebrewLeapCycle : IotaTime.Calendar.Hebrew.isLeapYear 5784 = True
 hebrewLeapCycle = Refl
 

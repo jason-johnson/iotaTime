@@ -254,9 +254,18 @@ window = interval 0 1000000000
 
 For arbitrary `Instant` endpoints learned at runtime, `refineInterval` returns `Either IntervalError Interval`. Empty intervals are valid, contain no instants, and have zero duration. `contains` includes the start and excludes the end; `duration` returns the fixed nonnegative `Duration` between the endpoints.
 
+Each `Interval` stores its endpoint-order evidence erased at runtime.
+`intervalIsValid` exposes that evidence to proof-level callers.
+
 Static construction accepts scalar endpoints because `Instant` is intentionally opaque: Idris cannot reduce two arbitrary `Instant` values to synthesize their ordering proof outside the implementation module. Runtime refinement preserves that opacity without casts or unchecked constructors.
 
-`isEmpty`, `overlaps`, and `isAdjacent` expose half-open range relationships. `intersection` returns only a non-empty shared range, so adjacent intervals have no intersection. `union` returns the smallest connected interval for overlapping or adjacent inputs, absorbs empty intervals, and returns `Nothing` for separated ranges.
+`isEmpty`, `overlaps`, and `isAdjacent` expose half-open range relationships.
+Proof-directed `intersection` and `union` return `Interval` directly when the
+caller supplies erased evidence of a non-empty intersection or connectedness.
+For values learned at runtime, `refineIntersection` returns
+`Either IntersectionError Interval`, while `refineUnion` returns
+`Either UnionError Interval`. Their distinct error types expose only the one
+failure each operation can produce.
 
 `UnboundedInterval` extends the same half-open model with an optional start,
 end, or both. `Nothing` denotes negative infinity in `unboundedStart` and
@@ -269,9 +278,13 @@ future : UnboundedInterval
 future = unboundedInterval (Just 0) Nothing
 ```
 
+Every `UnboundedInterval` stores erased evidence that its finite endpoints are
+ordered. `unboundedIntervalIsValid` exposes that evidence to proof-level
+callers, including values produced by runtime refinement and set operations.
+
 `toUnboundedInterval` embeds every bounded interval, while
-`toBoundedInterval` succeeds only when both bounds are finite. The prefixed
-membership, relationship, intersection, and connected-union operations retain
+`toBoundedInterval` succeeds only when both bounds are finite and reuses the
+stored ordering proof. The prefixed membership and relationship operations retain
 the bounded API's semantics. `unboundedDuration` likewise returns a duration
 only for two finite endpoints.
 
@@ -301,9 +314,9 @@ The HodaTime names `empty`, `fromSeconds`, `fromMinutes`, `fromHours`, `seconds`
 
 ## Date-time zones
 
-`TimeZone` is the HodaTime-compatible name for the opaque in-memory zone model; `DateTimeZone` remains an alias. Applications acquire zones through the platform provider rather than constructing transitions directly. The implementation uses bounds-checked TZif decoding, validated POSIX future rules, and native Windows registry data, but those parsers and assembly types are internal modules rather than supported consumer API.
+`TimeZone` is the HodaTime-compatible name for the opaque in-memory zone model. `IotaTime.TimeZone` owns the platform-loading API, explicit providers, caching, and metadata. The implementation uses bounds-checked TZif decoding, validated POSIX future rules, and native Windows registry data, but the `IotaTime.Tzdb` support modules are not part of the documented consumer API.
 
-On Unix-like systems, the HodaTime-compatible names have typed effect signatures:
+The HodaTime-compatible platform loaders have typed effect signatures:
 
 ```idris
 utc : IO (Either TzdbError TimeZone)
@@ -333,7 +346,7 @@ resolve it, while `availableZones` lists every installed Windows registry ID.
 
 `TZDIR` overrides `/usr/share/zoneinfo`; `TZ` overrides `/etc/localtime` for the local zone. Named zones cannot escape the TZDB root. `availableZones` reports files that successfully decode as TZif rather than relying on filename conventions.
 
-`TimeZoneProvider` isolates platform discovery. The `utcWith`, `timeZoneWith`, `localZoneWith`, `availableZonesWith`, and `metadataWith` variants accept an explicit provider; the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. On Windows, internal registry models decode `REG_TZI_FORMAT`, `SYSTEMTIME`, and Dynamic DST history with typed malformed-data and unknown-zone failures; ICU supplies IANA/Windows identifier conversion.
+The opaque `TimeZoneProvider` isolates platform discovery. Build a custom provider with `timeZoneProvider`; the `utcWith`, `timeZoneWith`, `localZoneWith`, `availableZonesWith`, and `metadataWith` variants accept an explicit provider, while the canonical names use `systemTimeZoneProvider`. Unix filesystem discovery is built in. On Windows, internal registry models decode `REG_TZI_FORMAT`, `SYSTEMTIME`, and Dynamic DST history with typed malformed-data and unknown-zone failures; ICU supplies IANA/Windows identifier conversion.
 
 Provider caching is explicit and caller-owned. `cachedTimeZoneProvider policy provider` returns a new provider with mutex-protected caches for the successful operations selected by `TimeZoneCachePolicy`; failures are retried rather than retained. `defaultTimeZoneCachePolicy` caches named zones, enumeration, and metadata, but leaves the local zone live so changes to `TZ`, `/etc/localtime`, or Windows configuration remain observable. Constructing another wrapper discards the old cache without introducing global mutable state.
 
@@ -370,8 +383,25 @@ date : CalendarDate Gregorian
 date = IotaTime.Calendar.Gregorian.calendarDate 29 February 2000
 
 components : (Year, Month, DayOfMonth)
-components = yearMonthDay {calendar = Gregorian} date
+components = yearMonthDay date
 ```
+
+Value-oriented operations infer the calendar from the concrete date
+representation. Generic implementation code that has a `Calendar calendar`
+dictionary can use the explicit `toDaysFor`, `yearFor`, `monthFor`, `dayFor`,
+`dayOfWeekFor`, `nextFor`, `previousFor`, and `yearMonthDayFor` variants with
+`{calendar}`.
+
+Each built-in concrete date representation implements the internal calendar
+bridge before `CalendarValue`, so every calendar value can participate in
+`withCalendar`. A `CalendarValue` instance supplies one year and one
+year-indexed `(month, day)` decomposition, so the individual accessors cannot
+disagree. `calendarComponentsCoherent` exposes this relationship as an equality
+proof. Calendar-local `toDays` does not need to align across calendars;
+conversion uses each representation's hidden bridge mapping. Custom calendar
+implementations are not a supported public extension point.
+`CalendarNavigation` additionally requires the date representation to implement
+`CalendarValue`.
 
 ### Date components
 
@@ -398,7 +428,7 @@ later = applyPeriod (months 2 <+> days 3) (IotaTime.Calendar.Gregorian.calendarD
 
 Combining periods with `<+>` aggregates corresponding fields before application. Thus `months 1 <+> months 1` is a two-month period and moves January 31 directly to March 31 rather than clamping through February. Date fields apply from largest to smallest: years, months, weeks, then days. Every application returns a valid date; Gregorian results clamp at October 15, 1582.
 
-The target index prevents applying unsupported units to a value. Date units require `HasCalendar target`, time units require `HasTime target`, and mixed periods require both capabilities. For example, `months 2 <+> minutes 20` can target a `CalendarDateTime`, but neither a date-only nor a time-only value. The hidden constructor prevents callers from bypassing those constraints. `ApplyPeriod.applyPeriod` is the sole public application operation.
+The target index prevents applying unsupported units to a value. Date units require `HasCalendar target`, time units require `HasTime target`, and mixed periods require both capabilities. For example, `months 2 <+> minutes 20` can target a `CalendarDateTime`, but neither a date-only nor a time-only value. The hidden constructor prevents callers from bypassing those constraints. `applyPeriod` is the sole public application operation; its implementation dictionary is internal, so clients cannot add application semantics for their own target types through the supported API.
 
 ## Local time and date-time
 
@@ -422,7 +452,7 @@ advanced = applyPeriod (months 1 <+> hours 2) lateDateTime
 
 Time-only periods wrap a `LocalTime` within its 24-hour day. On `CalendarDateTime`, date fields apply first from largest to smallest, then time fields apply and any positive or negative day carry adjusts the resulting date. `CalendarDate` supports only calendar units, `LocalTime` only time units, and `CalendarDateTime` both.
 
-Each of those value kinds provides a module-qualified `between start end`. `IotaTime.Calendar.between` decomposes dates largest-first into years, months, and days, taking the largest component that does not pass the endpoint. Month application uses the calendar's ordinary clamping rule, so 31 January 2025 to 30 March 2025 is one month and 30 days, while an endpoint of 31 March is exactly two months. `IotaTime.Calendar.betweenDays` retains the exact signed day period, and `betweenWith` selects either behavior explicitly. `IotaTime.LocalTime.between` returns the signed same-day nanosecond difference, while `IotaTime.CalendarDateTime.between` combines absolute calendar days with nanosecond-precise local time. In every case, applying the result to `start` yields `end`.
+Each of those value kinds provides a module-qualified `between start end`. `IotaTime.Calendar.between` infers the calendar from the concrete date representation and decomposes dates largest-first into years, months, and days, taking the largest component that does not pass the endpoint. Month application uses the calendar's ordinary clamping rule, so 31 January 2025 to 30 March 2025 is one month and 30 days, while an endpoint of 31 March is exactly two months. `IotaTime.Calendar.betweenDays` retains the exact signed day period, and `betweenWith` selects either behavior explicitly. Generic code with a `Calendar calendar` dictionary can use the explicit `betweenFor`, `betweenDaysFor`, and `betweenWithFor` variants. `IotaTime.LocalTime.between` returns the signed same-day nanosecond difference, while `IotaTime.CalendarDateTime.between` combines absolute calendar days with nanosecond-precise local time. In every case, applying the result to `start` yields `end`.
 
 `on time date` constructs a calendar date-time with time-first argument order. The HodaTime-compatible `at date time` provides date-first order, while `atStartOfDay date` uses midnight.
 
@@ -444,11 +474,11 @@ The public Gregorian operations are:
 - `calendarDate`, `fromNthDay`, `fromWeekDate`, and `fromDays` construct dates under erased validity proofs. Statically invalid calls do not compile.
 - `refineDate`, `refineNthDay`, `refineWeekDate`, and `refineDays` handle values first learned at runtime. They return `Either GregorianDateError (CalendarDate Gregorian)` and are the only fallible construction boundary.
 - `isLeapYear`, `maxDaysInMonth`, and the `isValid...` predicates expose Gregorian rules and decision procedures.
-- `dayOfWeek`, `next`, and `previous` provide calendar-polymorphic weekday navigation. Date-returning operations clamp at October 15, 1582, so they preserve the type's validity invariant without `Maybe`.
+- `dayOfWeek`, `next`, and `previous` provide calendar-polymorphic weekday navigation. They infer the calendar from the concrete weekday and date representations; generic code uses `dayOfWeekFor`, `nextFor`, and `previousFor`. Date-returning operations clamp at October 15, 1582, so they preserve the type's validity invariant without `Maybe`.
 - `yearMonthDay`, `day`, `month`, and `year` expose typed civil components.
 - `years`, `months`, `weeks`, `days`, and `applyPeriod` provide signed calendar-relative arithmetic.
 
-`IotaTime.Calendar.Gregorian.fromDays` and `toDays` convert relative to the March 1, 2000 epoch. Flat days before the public Gregorian boundary cannot be constructed without an impossible proof. The generic `Calendar.fromDays` method carries the same calendar-specific proof requirement, and `Calendar.isValidDays` is the single calendar-dispatched validity predicate rather than being duplicated by each concrete module.
+`IotaTime.Calendar.Gregorian.fromDays` and `toDays` convert relative to the March 1, 2000 epoch. `toDays` infers the calendar from its concrete date, while abstract calendar code uses `toDaysFor {calendar}`. Flat days before the public Gregorian boundary cannot be constructed without an impossible proof. The generic `Calendar.fromDays` method carries the same calendar-specific proof requirement, and `Calendar.isValidDays` is the single calendar-dispatched validity predicate rather than being duplicated by each concrete module.
 
 The negative compiler fixtures under `test/compile-fail/` verify that invalid component literals, forged component/date/period representations, invalid leap days, pre-changeover dates, absent fifth weekdays, pre-changeover flat days, and periods with unsupported target capabilities remain compile errors. Each fixture declares an expected diagnostic fragment so unrelated import or harness failures cannot produce false positives.
 
@@ -462,13 +492,22 @@ isoNewYear = IotaTime.Calendar.Iso.fromWeekDate 1 Monday 2020
 -- December 30, 2019
 ```
 
-`fromWeekDate` requires erased evidence of `isValidWeekDate`. `refineWeekDate` validates runtime values and returns `Either IsoWeekDateError (CalendarDate Gregorian)`. Arithmetic week zero and negative week numbers remain supported when their resulting dates are within the Gregorian range.
+`fromWeekDate` requires erased evidence of `isValidWeekDate`: the week must be
+at least 1 and no greater than the requested ISO year's actual 52- or 53-week
+count. `hasFiftyThreeWeeks`, `weeksInIsoYear`, and `isValidIsoWeekNumber`
+expose that rule. `refineWeekDate` validates runtime values and returns
+`Either IsoWeekDateError (CalendarDate Gregorian)`.
+
+Unrestricted coordinates are deliberately separate. Use
+`arithmeticFromWeekDate` or `refineArithmeticWeekDate` when week zero,
+negative weeks, or weeks beyond the requested ISO year are intentional and the
+resulting Gregorian date remains representable.
 
 ## Julian calendar API
 
 `CalendarDate Julian` uses the proleptic every-fourth-year leap rule from the Julian calendar's introduction on January 1, astronomical year -44 (45 BC). Earlier dates and flat days before `-746631` are rejected. Its calendar-local flat day zero is March 1, 2000 Julian.
 
-Julian components are nominally distinct from Gregorian components. Use `JulianMonth` and `JulianDayOfWeek` as their types, with constructors qualified through `JulianMonths` and `JulianWeekdays`:
+Julian months are nominally distinct from Gregorian months, while every calendar uses the shared `DayOfWeek` type. Qualify Julian month constructors through `JulianMonths` and use the shared weekday constructors directly:
 
 ```idris
 leapDay : CalendarDate Julian
@@ -477,7 +516,7 @@ leapDay = IotaTime.Calendar.Julian.calendarDate
 
 thirdMonday : CalendarDate Julian
 thirdMonday = IotaTime.Calendar.Julian.fromNthDay
-	Third JulianWeekdays.Monday JulianMonths.January 2000
+	Third Monday JulianMonths.January 2000
 ```
 
 The public Julian operations mirror the proof-carrying Gregorian boundary:
@@ -642,9 +681,9 @@ For cross-machine formats, applications can explicitly choose lossless Pattern
 building blocks and agree on them at both ends. `pInstantNanoseconds` represents
 the full arbitrary-precision instant timeline, `pOffsetFull` preserves every
 supported whole-second offset, and `pCalendarDays {calendar = ...}` represents
-an absolute day in the statically selected calendar while validating that
-calendar's range. `pSignedInteger` is available for other arbitrary-precision
-protocol fields.
+a calendar-local day count in the statically selected calendar while validating
+that calendar's range. `pSignedInteger` is available for other
+arbitrary-precision protocol fields.
 
 ```idris
 instantWire : Pattern Integer Instant
@@ -707,27 +746,29 @@ Named locale fields parse case-insensitively. As with the fixed English weekday 
 
 On Unix, `localeByName` reads an installed locale through `newlocale` and `nl_langinfo_l`, while `currentLocale` follows `LC_ALL`, `LC_TIME`, and `LANG` and falls back to the POSIX `C` locale. The per-locale C APIs do not mutate process-global locale state.
 
-On Windows, both functions read through `GetLocaleInfoEx`. Windows date and time picture strings are translated into the supported `strftime` subset, and Monday-first Win32 weekday tables are normalized to the library's Sunday-first order. `C` and `POSIX` names select the Windows invariant locale.
+On Windows, both functions read through `GetLocaleInfoEx`. Windows date and time picture strings are translated internally into the supported locale-layout subset, and Monday-first Win32 weekday tables are normalized to the library's Sunday-first order. `C` and `POSIX` names select the Windows invariant locale.
 
 Both platforms return `IO (Either LocaleError Locale)`, keeping unknown names and platform failures explicit at the native trust boundary. Native snapshots are copied before their handles are freed.
 
-`localeDatePattern` compiles a locale's date layout into a bidirectional Gregorian pattern. `compileDatePattern` accepts an explicit `strftime` layout. Date conversion support includes `%Y`, `%y`, `%m`, `%d`, `%e`, `%B`, `%b`, `%h`, `%A`, and `%a`, plus `%%`, `%n`, `%t`, and the composite `%F` and `%D` layouts. Unsupported conversions return `Left (UnsupportedSpecifier value)` and a trailing bare percent returns `Left DanglingPercent`.
+`localeDatePattern` compiles the date layout hidden inside an opaque `Locale` into a bidirectional pattern. Date conversion support includes `%Y`, `%y`, `%m`, `%d`, `%e`, `%B`, `%b`, `%h`, `%A`, and `%a`, plus `%%`, `%n`, `%t`, and the composite `%F` and `%D` layouts. Unsupported native conversions return `Left (UnsupportedSpecifier value)` and a trailing bare percent returns `Left DanglingPercent`.
 
-`localeTimePattern` similarly compiles a locale's time layout into a bidirectional `LocalTime` pattern, while `compileTimePattern` accepts an explicit layout. Time conversions include `%H`, `%I`, `%l`, `%M`, `%S`, and `%p`; the tokenizer also expands the composite `%T`, `%R`, and `%r` layouts.
+`localeTimePattern` similarly compiles a locale's hidden time layout into a bidirectional `LocalTime` pattern. Time conversions include `%H`, `%I`, `%l`, `%M`, `%S`, and `%p`; the internal tokenizer also expands the composite `%T`, `%R`, and `%r` layouts.
 
-`localeDateTimePattern` compiles the combined locale layout into a Gregorian `CalendarDateTime` pattern, and `compileDateTimePattern` accepts an explicit combined layout. Date and time fields share a `DateTimeFields` accumulator, so their order is independent. Because `CalendarDateTime` represents civil time without a zone, `%Z` and `%z` fields and their preceding layout spaces are deliberately omitted.
+`localeDateTimePattern` compiles the hidden combined locale layout into a `CalendarDateTime` pattern. Date and time fields share a `DateTimeFields` accumulator, so their order is independent. Because `CalendarDateTime` represents civil time without a zone, `%Z` and `%z` fields and their preceding layout spaces are deliberately omitted.
 
-`compileOffsetDateTimePattern` compiles a combined layout containing `%z` into a pure bidirectional `OffsetDateTime` pattern, and `localeOffsetDateTimePattern` applies it to a locale's combined layout. A missing `%z` returns `MissingOffsetSpecifier`.
+`localeOffsetDateTimePattern` compiles a locale's combined layout containing `%z` into a pure bidirectional `OffsetDateTime` pattern. A missing `%z` returns `MissingOffsetSpecifier`.
 
 `parseZonedDateTime` handles locale layouts containing `%Z`. It parses the local fields and one non-whitespace zone token, asks a caller-supplied provider to load that abbreviation, then applies a caller-supplied resolver such as `fromCalendarDateTimeStrictly` or `fromCalendarDateTimeLeniently`. `ZonedPatternError` keeps layout, structural parse, provider, and resolver failures distinct and preserves the caller's error types. A layout without `%Z` returns `MissingZoneSpecifier`.
 
-Machine locale acquisition and locale-driven date, time, and combined date-time patterns are available on Unix and Windows.
+Machine locale acquisition and locale-driven date, time, and combined date-time patterns are available on Unix and Windows. Arbitrary layout strings cannot be supplied through the public API.
 
 Operating-system locale date layouts remain Gregorian because `Locale` intentionally stores complete `Vect 12` Gregorian month tables. Canonical and numeric patterns outside the locale compiler are calendar-polymorphic, including date, local date-time, offset date-time, and zoned date-time patterns.
 
 ## Calendar conversion
 
-`withCalendar` preserves the underlying absolute day and reinterprets it through the target calendar. The expected result type selects the target representation:
+`withCalendar` maps the source date to a shared bridge day and reconstructs the
+corresponding target date. The expected result type selects the target
+representation:
 
 ```idris
 christmasJulian : Either CalendarConversionError (CalendarDate Julian)
@@ -739,4 +780,7 @@ newYearHebrew =
 	IotaTime.Calendar.withCalendar (IotaTime.Calendar.Gregorian.calendarDate 16 September 2023)
 ```
 
-The result is an `Either` because each calendar has a different supported range; `TargetCalendarOutOfRange` reports the target name and absolute day. `IotaTime.CalendarDateTime.withCalendar` applies the same date conversion while preserving the `LocalTime` unchanged.
+The result is an `Either` because each calendar has a different supported range;
+`TargetCalendarOutOfRange` reports the target name and bridge day.
+`IotaTime.CalendarDateTime.withCalendar` applies the same date conversion while
+preserving the `LocalTime` unchanged.

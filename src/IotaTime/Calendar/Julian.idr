@@ -1,5 +1,6 @@
 module IotaTime.Calendar.Julian
 
+import IotaTime.Internal.ApplyPeriod
 import IotaTime.Calendar
 import IotaTime.Period
 import Data.So
@@ -44,30 +45,6 @@ namespace JulianMonths
 
   %runElab derive `{JulianMonth} [Show]
 
-namespace JulianWeekdays
-  public export
-  data JulianDayOfWeek = Sunday | Monday | Tuesday | Wednesday | Thursday | Friday | Saturday
-
-  public export
-  weekdayNumber : JulianDayOfWeek -> Integer
-  weekdayNumber Sunday = 0
-  weekdayNumber Monday = 1
-  weekdayNumber Tuesday = 2
-  weekdayNumber Wednesday = 3
-  weekdayNumber Thursday = 4
-  weekdayNumber Friday = 5
-  weekdayNumber Saturday = 6
-
-  public export
-  Eq JulianDayOfWeek where
-    left == right = weekdayNumber left == weekdayNumber right
-
-  public export
-  Ord JulianDayOfWeek where
-    compare left right = compare (weekdayNumber left) (weekdayNumber right)
-
-  %runElab derive `{JulianDayOfWeek} [Show]
-
 monthFromNumber : Integer -> JulianMonth
 monthFromNumber 1 = JulianMonths.January
 monthFromNumber 2 = JulianMonths.February
@@ -82,20 +59,11 @@ monthFromNumber 10 = JulianMonths.October
 monthFromNumber 11 = JulianMonths.November
 monthFromNumber _ = JulianMonths.December
 
-weekdayFromNumber : Integer -> JulianDayOfWeek
-weekdayFromNumber value = case value `mod` 7 of
-  0 => JulianWeekdays.Sunday
-  1 => JulianWeekdays.Monday
-  2 => JulianWeekdays.Tuesday
-  3 => JulianWeekdays.Wednesday
-  4 => JulianWeekdays.Thursday
-  5 => JulianWeekdays.Friday
-  _ => JulianWeekdays.Saturday
-
 export
 record JulianDate where
   constructor MkJulianDate
   daysSinceEpoch : Integer
+  0 validDays : So (daysSinceEpoch >= -746631)
 
 public export
 Eq JulianDate where
@@ -148,12 +116,16 @@ public export
 epochDay : Integer
 epochDay = -746631
 
-public export
-HasCalendarDate JulianDate where
-  calendarDays date = date.daysSinceEpoch + 13
-  acceptsCalendarDays days = days - 13 >= epochDay
-  calendarDateFromDays days = MkJulianDate (days - 13)
-  calendarDateName = "Julian"
+checkedJulianDate : (days : Integer) ->
+                    (0 valid : So (days >= -746631)) -> JulianDate
+checkedJulianDate days valid = MkJulianDate days valid
+
+export
+HasCalendarBridge JulianDate where
+  toBridgeDays date = date.daysSinceEpoch + 13
+  acceptsBridgeDays days = days - 13 >= epochDay
+  fromBridgeDays days @{valid} = checkedJulianDate (days - 13) valid
+  bridgeCalendarName = "Julian"
 
 public export
 isValidDate : DayOfMonth -> JulianMonth -> Year -> Bool
@@ -164,8 +136,15 @@ isValidDate valueDay valueMonth valueYear =
 clampToJulian : Integer -> Integer
 clampToJulian = max epochDay
 
+makeJulianDate : Integer -> JulianDate
+makeJulianDate days =
+  let clamped = clampToJulian days
+  in case choose (clamped >= -746631) of
+        Left valid => checkedJulianDate clamped valid
+        Right _ => checkedJulianDate epochDay Oh
+
 shiftJulianDays : Integer -> JulianDate -> JulianDate
-shiftJulianDays amount date = MkJulianDate (clampToJulian (date.daysSinceEpoch + amount))
+shiftJulianDays amount date = makeJulianDate (date.daysSinceEpoch + amount)
 
 shiftJulianMonths : Integer -> JulianDate -> JulianDate
 shiftJulianMonths amount date =
@@ -174,49 +153,43 @@ shiftJulianMonths amount date =
       targetYear = yearFromInteger (yearValue valueYear + monthOrdinal `div` 12)
       targetMonth = monthFromNumber (monthOrdinal `mod` 12 + 1)
       targetDay = min valueDay (maxDaysInMonth targetMonth targetYear)
-   in MkJulianDate (clampToJulian (daysFromJulianCivil targetYear targetMonth targetDay))
+  in makeJulianDate (daysFromJulianCivil targetYear targetMonth targetDay)
 
 shiftJulianYears : Integer -> JulianDate -> JulianDate
 shiftJulianYears amount date =
   let (valueYear, valueMonth, valueDay) = julianCivilFromDays date.daysSinceEpoch
       targetYear = yearFromInteger (yearValue valueYear + amount)
       targetDay = min valueDay (maxDaysInMonth valueMonth targetYear)
-   in MkJulianDate (clampToJulian (daysFromJulianCivil targetYear valueMonth targetDay))
+  in makeJulianDate (daysFromJulianCivil targetYear valueMonth targetDay)
 
 applyJulianPeriod : Period target -> JulianDate -> JulianDate
-applyJulianPeriod period =
-    shiftJulianDays (periodDays period)
-  . shiftJulianDays (7 * periodWeeks period)
-  . shiftJulianMonths (periodMonths period)
-  . shiftJulianYears (periodYears period)
+applyJulianPeriod = applyDatePeriodWith
+  shiftJulianYears shiftJulianMonths shiftJulianDays
 
-julianDayOfWeek : JulianDate -> JulianDayOfWeek
+julianDayOfWeek : JulianDate -> DayOfWeek
 julianDayOfWeek date = weekdayFromNumber (date.daysSinceEpoch + 2)
 
-nextJulian : Integer -> JulianDayOfWeek -> JulianDate -> JulianDate
+nextJulian : Integer -> DayOfWeek -> JulianDate -> JulianDate
 nextJulian count target date =
-  let current = JulianWeekdays.weekdayNumber (julianDayOfWeek date)
-      wanted = JulianWeekdays.weekdayNumber target
-      weeks = if wanted > current then count - 1 else count
-   in MkJulianDate (clampToJulian (date.daysSinceEpoch + 7 * weeks + wanted - current))
+  makeJulianDate (date.daysSinceEpoch +
+    nextWeekdayOffset count (julianDayOfWeek date) target)
 
-previousJulian : Integer -> JulianDayOfWeek -> JulianDate -> JulianDate
+previousJulian : Integer -> DayOfWeek -> JulianDate -> JulianDate
 previousJulian count target date =
-  let current = JulianWeekdays.weekdayNumber (julianDayOfWeek date)
-      wanted = JulianWeekdays.weekdayNumber target
-      weeks = if wanted < current then count - 1 else count
-   in MkJulianDate
-        (clampToJulian (date.daysSinceEpoch - (7 * weeks + current - wanted)))
+  makeJulianDate (date.daysSinceEpoch +
+    previousWeekdayOffset count (julianDayOfWeek date) target)
 
 public export
 Calendar Julian where
   DateRep = JulianDate
   MonthRep _ = JulianMonth
-  WeekdayRep = JulianDayOfWeek
 
   isValidDays = (>= epochDay)
-  fromDays days = MkJulianDate days
-  toDays date = date.daysSinceEpoch
+  fromDays days @{valid} = checkedJulianDate days valid
+  toDaysFor date = date.daysSinceEpoch
+  toDaysValid (MkJulianDate _ valid) = valid
+  toFromDays _ _ = Refl
+  fromToDays (MkJulianDate _ _) = Refl
   calendarName = "Julian"
 
   year' date = let (value, _, _) = julianCivilFromDays date.daysSinceEpoch in value
@@ -228,9 +201,9 @@ Calendar Julian where
   applyCalendarPeriod' = applyJulianPeriod
   shiftCalendarDays' = shiftJulianDays
 
-  dayOfWeek = julianDayOfWeek
-  next = nextJulian
-  previous = previousJulian
+  dayOfWeekFor = julianDayOfWeek
+  nextFor = nextJulian
+  previousFor = previousJulian
 
 public export
 Show JulianDate where
@@ -244,8 +217,26 @@ HasCalendar JulianDate where
   calendarCapability = ()
 
 public export
+PeriodTarget JulianDate where
+  periodTarget = ()
+
+public export
 ApplyPeriod JulianDate where
   applyPeriod = applyJulianPeriod
+
+public export
+CalendarValue JulianDate where
+  CalendarMonth _ = JulianMonth
+  calendarValueToDays = toDaysFor {calendar = Julian}
+  calendarValueYear = yearFor {calendar = Julian}
+  calendarValueMonthDay = toYmd {calendar = Julian}
+  calendarValueDayOfWeek = dayOfWeekFor {calendar = Julian}
+  calendarValueBetweenWith = betweenWithFor {calendar = Julian}
+
+public export
+CalendarNavigation JulianDate where
+  calendarValueNext = nextFor {calendar = Julian}
+  calendarValuePrevious = previousFor {calendar = Julian}
 
 ||| Construct a statically validated Julian date.
 public export
@@ -254,15 +245,15 @@ calendarDate : (valueDay : DayOfMonth) -> (valueMonth : JulianMonth) ->
              {auto 0 valid : So (isValidDate valueDay valueMonth valueYear)} ->
              CalendarDate Julian
 calendarDate valueDay valueMonth valueYear =
-  MkJulianDate (daysFromJulianCivil valueYear valueMonth valueDay)
+  makeJulianDate (daysFromJulianCivil valueYear valueMonth valueDay)
 
 ||| Failures produced while refining untrusted Julian date data.
 public export
 data JulianDateError
   = InvalidJulianDate DayOfMonth JulianMonth Year
   | InvalidJulianDayCount Integer
-  | InvalidJulianNthDay DayNth JulianDayOfWeek JulianMonth Year
-  | InvalidJulianWeekDate WeekNumber JulianDayOfWeek Year
+  | InvalidJulianNthDay DayNth DayOfWeek JulianMonth Year
+  | InvalidJulianWeekDate WeekNumber DayOfWeek Year
 
 ||| Validate runtime day, month, and year components as a Julian date.
 public export
@@ -278,7 +269,7 @@ public export
 fromDays : (days : Integer) -> {auto 0 valid : So
   (IotaTime.Calendar.isValidDays {calendar = Julian} days)} ->
                  CalendarDate Julian
-fromDays days = MkJulianDate days
+fromDays days @{valid} = checkedJulianDate days valid
 
 ||| Validate a runtime Julian day count.
 public export
@@ -288,24 +279,23 @@ refineDays days = case choose
   Left valid => Right (fromDays days @{valid})
   Right _ => Left (InvalidJulianDayCount days)
 
-nthJulianDayOfMonth : DayNth -> JulianDayOfWeek -> JulianMonth -> Year -> DayOfMonth
+nthJulianDayOfMonth : DayNth -> DayOfWeek -> JulianMonth -> Year -> DayOfMonth
 nthJulianDayOfMonth nth target valueMonth valueYear =
   let monthLength = maxDaysInMonth valueMonth valueYear
-      firstDate = MkJulianDate (daysFromJulianCivil valueYear valueMonth 1)
+      firstDate = makeJulianDate (daysFromJulianCivil valueYear valueMonth 1)
       firstOffset =
-        (JulianWeekdays.weekdayNumber target -
-         JulianWeekdays.weekdayNumber (julianDayOfWeek firstDate))
+        (weekdayNumber target - weekdayNumber (julianDayOfWeek firstDate))
            `mod` daysPerWeek
-      lastDate = MkJulianDate (daysFromJulianCivil valueYear valueMonth monthLength)
+      lastDate = makeJulianDate (daysFromJulianCivil valueYear valueMonth monthLength)
       lastOffset =
-        (JulianWeekdays.weekdayNumber (julianDayOfWeek lastDate) -
-         JulianWeekdays.weekdayNumber target) `mod` daysPerWeek
+        (weekdayNumber (julianDayOfWeek lastDate) - weekdayNumber target)
+          `mod` daysPerWeek
       dayNumber = nthWeekdayDayNumber nth (dayOfMonthValue monthLength)
         firstOffset lastOffset
    in dayOfMonthFromInteger dayNumber
 
 public export
-isValidNthDay : DayNth -> JulianDayOfWeek -> JulianMonth -> Year -> Bool
+isValidNthDay : DayNth -> DayOfWeek -> JulianMonth -> Year -> Bool
 isValidNthDay nth target valueMonth valueYear =
   if yearValue valueYear > -44
     then case nth of
@@ -317,35 +307,35 @@ isValidNthDay nth target valueMonth valueYear =
 
 ||| Construct the nth requested weekday in a Julian month.
 public export
-fromNthDay : (nth : DayNth) -> (target : JulianDayOfWeek) ->
+fromNthDay : (nth : DayNth) -> (target : DayOfWeek) ->
                    (valueMonth : JulianMonth) -> (valueYear : Year) ->
                    {auto 0 valid : So
                      (isValidNthDay nth target valueMonth valueYear)} ->
                    CalendarDate Julian
 fromNthDay nth target valueMonth valueYear =
-  MkJulianDate
+  makeJulianDate
     (daysFromJulianCivil valueYear valueMonth
       (nthJulianDayOfMonth nth target valueMonth valueYear))
 
 ||| Validate an nth-weekday request for a Julian month.
 public export
-refineNthDay : DayNth -> JulianDayOfWeek -> JulianMonth -> Year ->
+refineNthDay : DayNth -> DayOfWeek -> JulianMonth -> Year ->
                      Either JulianDateError (CalendarDate Julian)
 refineNthDay nth target valueMonth valueYear =
   case choose (isValidNthDay nth target valueMonth valueYear) of
     Left valid => Right (fromNthDay nth target valueMonth valueYear @{valid})
     Right _ => Left (InvalidJulianNthDay nth target valueMonth valueYear)
 
-weekDateDays : WeekNumber -> JulianDayOfWeek -> Year -> Integer
+weekDateDays : WeekNumber -> DayOfWeek -> Year -> Integer
 weekDateDays week target valueYear =
   let firstDay = daysFromJulianCivil valueYear JulianMonths.January 1
       firstWeekStart = firstDay -
-        JulianWeekdays.weekdayNumber (julianDayOfWeek (MkJulianDate firstDay))
+        weekdayNumber (julianDayOfWeek (makeJulianDate firstDay))
    in firstWeekStart + 7 * (weekNumberValue week - 1) +
-      JulianWeekdays.weekdayNumber target
+      weekdayNumber target
 
 public export
-isValidWeekDate : WeekNumber -> JulianDayOfWeek -> Year -> Bool
+isValidWeekDate : WeekNumber -> DayOfWeek -> Year -> Bool
 isValidWeekDate week target valueYear =
   (yearValue valueYear > -44 && weekNumberValue week >= 0) ||
     IotaTime.Calendar.isValidDays {calendar = Julian}
@@ -353,16 +343,16 @@ isValidWeekDate week target valueYear =
 
 ||| Construct a Julian Sunday-based week date under static validity evidence.
 public export
-fromWeekDate : (week : WeekNumber) -> (target : JulianDayOfWeek) ->
+fromWeekDate : (week : WeekNumber) -> (target : DayOfWeek) ->
                (valueYear : Year) ->
                {auto 0 valid : So (isValidWeekDate week target valueYear)} ->
                CalendarDate Julian
 fromWeekDate week target valueYear =
-  MkJulianDate (weekDateDays week target valueYear)
+  makeJulianDate (weekDateDays week target valueYear)
 
 ||| Validate a runtime Julian Sunday-based week date.
 public export
-refineWeekDate : WeekNumber -> JulianDayOfWeek -> Year ->
+refineWeekDate : WeekNumber -> DayOfWeek -> Year ->
                  Either JulianDateError (CalendarDate Julian)
 refineWeekDate week target valueYear =
   case choose (isValidWeekDate week target valueYear) of

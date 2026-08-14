@@ -33,8 +33,22 @@ untilTen = unboundedInterval Nothing (Just 10)
 finiteUnbounded : UnboundedInterval
 finiteUnbounded = unboundedInterval (Just 0) (Just 10)
 
+0 finiteUnboundedIsValid : So (isValidUnboundedInterval
+  (unboundedStart Test.Interval.finiteUnbounded)
+  (unboundedEnd Test.Interval.finiteUnbounded))
+finiteUnboundedIsValid = unboundedIntervalIsValid finiteUnbounded
+
 emptyUnbounded : UnboundedInterval
 emptyUnbounded = unboundedInterval (Just 0) (Just 0)
+
+proofDirectedIntersection : (left, right : Interval) ->
+  {auto 0 intersects : So (hasNonEmptyIntersection left right)} -> Interval
+proofDirectedIntersection = intersection
+
+proofDirectedUnion : (left, right : Interval) ->
+  {auto 0 connected : So (isConnected left right)} ->
+  Interval
+proofDirectedUnion = IotaTime.Interval.union
 
 intervalCases : List RuntimeCase
 intervalCases =
@@ -64,20 +78,30 @@ intervalCases =
     , MkRuntimeCase "adjacent intervals touch without overlapping"
       (isAdjacent leftInterval adjacentInterval &&
       not (isAdjacent leftInterval separateInterval))
-    , MkRuntimeCase "intersection returns the shared non-empty range"
-      (intersection leftInterval overlappingInterval == Just (interval 5 10))
-    , MkRuntimeCase "adjacent intervals have no non-empty intersection"
-      (intersection leftInterval adjacentInterval == Nothing)
-    , MkRuntimeCase "connected union spans overlapping intervals"
-      (IotaTime.Interval.union leftInterval overlappingInterval ==
-      Just (interval 0 15))
-    , MkRuntimeCase "connected union spans adjacent intervals"
-      (IotaTime.Interval.union leftInterval adjacentInterval ==
-      Just (interval 0 20))
-    , MkRuntimeCase "connected union rejects separated intervals"
-      (IotaTime.Interval.union leftInterval separateInterval == Nothing)
-    , MkRuntimeCase "connected union absorbs an empty interval"
-      (IotaTime.Interval.union emptyInterval leftInterval == Just leftInterval)
+    , MkRuntimeCase "runtime intersection returns the shared non-empty range"
+      (case refineIntersection leftInterval overlappingInterval of
+        Right value => value == interval 5 10
+        Left _ => False)
+    , MkRuntimeCase "runtime intersection rejects adjacent intervals"
+      (case refineIntersection leftInterval adjacentInterval of
+        Left NoNonEmptyIntersection => True
+        Right _ => False)
+    , MkRuntimeCase "runtime connected union spans adjacent intervals"
+      (case refineUnion leftInterval adjacentInterval of
+        Right value => value == interval 0 20
+        Left _ => False)
+    , MkRuntimeCase "runtime connected union spans overlapping intervals"
+      (case refineUnion leftInterval overlappingInterval of
+        Right value => value == interval 0 15
+        Left _ => False)
+    , MkRuntimeCase "runtime union rejects separated intervals"
+      (case refineUnion leftInterval separateInterval of
+        Left DisconnectedIntervals => True
+        Right _ => False)
+    , MkRuntimeCase "runtime connected union absorbs an empty interval"
+      (case refineUnion emptyInterval leftInterval of
+        Right value => value == leftInterval
+        Left _ => False)
   , MkRuntimeCase "interval duration is the endpoint difference"
       (duration spanningZero == IotaTime.Duration.fromNanoseconds 20)
   , MkRuntimeCase "empty interval has zero duration"
@@ -124,10 +148,14 @@ intervalCases =
       (toBoundedInterval (toUnboundedInterval leftInterval) ==
         Just leftInterval &&
       toBoundedInterval allTime == Nothing)
-  , MkRuntimeCase "unbounded intersection selects the tighter bounds"
-      (unboundedIntersection fromZero untilTen == Just finiteUnbounded)
-  , MkRuntimeCase "unbounded union extends through infinite bounds"
-      (unboundedUnion fromZero untilTen == Just allTime)
+    , MkRuntimeCase "runtime unbounded intersection selects tighter bounds"
+        (case refineUnboundedIntersection fromZero untilTen of
+          Right value => value == finiteUnbounded
+          Left _ => False)
+    , MkRuntimeCase "runtime unbounded union extends through infinite bounds"
+        (case refineUnboundedUnion fromZero untilTen of
+          Right value => value == allTime
+          Left _ => False)
   , MkRuntimeCase "unbounded adjacency uses finite touching endpoints"
       (let untilZero = unboundedInterval Nothing (Just 0)
         in unboundedIsAdjacent untilZero fromZero &&
@@ -143,8 +171,10 @@ intervalCases =
   , MkRuntimeCase "separated unbounded intervals have no connected union"
       (let untilZero = unboundedInterval Nothing (Just 0)
            afterOne = unboundedInterval (Just 1) Nothing
-        in unboundedIntersection untilZero afterOne == Nothing &&
-          unboundedUnion untilZero afterOne == Nothing)
+    in case (refineUnboundedIntersection untilZero afterOne,
+       refineUnboundedUnion untilZero afterOne) of
+      (Left NoNonEmptyIntersection, Left DisconnectedIntervals) => True
+      _ => False)
   , MkRuntimeCase "unbounded duration exists only for finite endpoints"
       (unboundedDuration finiteUnbounded ==
         Just (IotaTime.Duration.fromNanoseconds 10) &&

@@ -1,6 +1,7 @@
 module Test.TimeZone
 
 import IotaTime
+import IotaTime.Tzdb.Provider
 import IotaTime.Tzdb.Windows.Platform
 import IotaTime.Tzdb.Windows.Types
 import Test.Support
@@ -19,8 +20,8 @@ testDaylightInfo : TransitionInfo
 testDaylightInfo = transitionInfoWithSavings
   (IotaTime.Offset.fromHours 1) (IotaTime.Offset.fromHours 1) "TDT"
 
-testTransitionZone : Either DateTimeZoneError TimeZone
-testTransitionZone = refineDateTimeZone "Test/Transitions" testStandardInfo
+testTransitionZone : Either TimeZoneError TimeZone
+testTransitionZone = refineTimeZone "Test/Transitions" testStandardInfo
   [ (fromNanosecondsSinceEpoch 1000000000, testDaylightInfo)
   , (fromNanosecondsSinceEpoch 2000000000, testStandardInfo)
   ]
@@ -67,18 +68,19 @@ cachePolicyWorks = do
   localCount <- newIORef 0
   availableCount <- newIORef 0
   metadataCount <- newIORef 0
-  let base = MkTimeZoneProvider
-        (pure (Right (fixedDateTimeZone "UTC" zeroOffset)))
+  let base = IotaTime.TimeZone.timeZoneProvider
+        (pure (Right (fixedTimeZone "UTC" empty)))
         (\name => counted namedCount $ pure $
           if name == "Missing"
             then Left (WindowsZoneNotFound name)
-            else Right (fixedDateTimeZone name zeroOffset))
+            else Right (fixedTimeZone name empty))
         (counted localCount $
-          pure (Right (fixedDateTimeZone "Local" zeroOffset)))
+          pure (Right (fixedTimeZone "Local" empty)))
         (counted availableCount $ pure (Right ["Test/A", "Test/B"]))
         (counted metadataCount $
           pure (Right (MkTzdbMetadata (Just "test") [])))
-  cached <- cachedTimeZoneProvider defaultTimeZoneCachePolicy base
+  cached <- IotaTime.TimeZone.cachedTimeZoneProvider
+    IotaTime.TimeZone.defaultTimeZoneCachePolicy base
   firstA <- timeZoneWith cached "Test/A"
   secondA <- timeZoneWith cached "Test/A"
   firstB <- timeZoneWith cached "Test/B"
@@ -90,8 +92,8 @@ cachePolicyWorks = do
   secondAvailable <- availableZonesWith cached
   firstMetadata <- metadataWith cached
   secondMetadata <- metadataWith cached
-  cachedLocal <- cachedTimeZoneProvider
-    (MkTimeZoneCachePolicy False False False True) base
+  cachedLocal <- IotaTime.TimeZone.cachedTimeZoneProvider
+    (IotaTime.TimeZone.timeZoneCachePolicy False False False True) base
   thirdLocal <- localZoneWith cachedLocal
   fourthLocal <- localZoneWith cachedLocal
   namedCalls <- readIORef namedCount
@@ -116,15 +118,15 @@ windowsSnapshotReadsOnce : IO Bool
 windowsSnapshotReadsOnce = do
   sourceCount <- newIORef 0
   let snapshot = MkWindowsRegistrySnapshot "Missing Local" []
-      source = MkWindowsRegistrySource
+      source = windowsRegistrySource
         (counted sourceCount (pure (Right snapshot)))
   loaded <- windowsRegistrySnapshotProvider source
   case loaded of
     Left _ => pure False
     Right provider => do
-      firstAvailable <- availableZonesWith provider
-      secondAvailable <- availableZonesWith provider
-      local <- localZoneWith provider
+      firstAvailable <- runProviderAvailableZones provider
+      secondAvailable <- runProviderAvailableZones provider
+      local <- runProviderLocalZone provider
       reads <- readIORef sourceCount
       pure $
         hasAvailableZones [] firstAvailable &&
@@ -135,7 +137,7 @@ windowsSnapshotReadsOnce = do
 export
 run : IO Bool
 run = do
-  systemUtc <- utc
+  systemUtc <- the (IO (Either TzdbError TimeZone)) utc
   systemNewYork <- timeZone "America/New_York"
   rejectedPath <- timeZone "../etc/passwd"
   systemLocal <- localZone
@@ -154,7 +156,7 @@ run = do
           _ => False)
     , MkRuntimeCase "fixed zone interval is unbounded with zero savings"
         (let interval = zoneIntervalAt
-               (fixedDateTimeZone "Fixed/+02" (IotaTime.Offset.fromHours 2))
+               (fixedTimeZone "Fixed/+02" (IotaTime.Offset.fromHours 2))
                (fromNanosecondsSinceEpoch 0)
           in intervalStart interval == Nothing &&
              intervalEnd interval == Nothing &&

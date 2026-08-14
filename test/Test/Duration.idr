@@ -11,7 +11,9 @@ fiftyNanoseconds = IotaTime.Duration.fromNanoseconds 50
 
 durationCases : List RuntimeCase
 durationCases =
-  [ MkRuntimeCase "HodaTime duration constructors retain module-qualified names"
+  [ MkRuntimeCase "duration show output uses its public constructor"
+      (show fiftyNanoseconds == "fromNanoseconds 50")
+  , MkRuntimeCase "HodaTime duration constructors retain module-qualified names"
       (IotaTime.Duration.fromHours 2 == IotaTime.Duration.fromMinutes 120)
   , MkRuntimeCase "HodaTime duration arithmetic names remain available"
       (IotaTime.Duration.minus

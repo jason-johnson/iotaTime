@@ -22,7 +22,7 @@ record InstantPattern state where
 
 calendarDateTimeToInstant : CalendarDateTime Gregorian -> Instant
 calendarDateTimeToInstant value = IotaTime.OffsetDateTime.toInstant
-  (fromCalendarDateTimeWithOffset value zeroOffset)
+  (fromCalendarDateTimeWithOffset value empty)
 
 ||| Build an Instant pattern from a Gregorian CalendarDateTime pattern.
 public export
@@ -44,7 +44,7 @@ formatInstant : InstantPattern state -> Instant ->
                 Either CalendarConversionError String
 formatInstant pattern value = do
   offsetValue <- IotaTime.OffsetDateTime.fromInstant
-    {calendar = Gregorian} zeroOffset value
+    {calendar = Gregorian} empty value
   Right (IotaTime.Pattern.format pattern.calendarPattern
     (toCalendarDateTime offsetValue))
 

@@ -1,6 +1,7 @@
 module Test.Persian
 
 import IotaTime
+import IotaTime.Calendar
 import IotaTime.Calendar.Persian
 import Test.Support
 
@@ -9,15 +10,14 @@ isLeft (Left _) = True
 isLeft (Right _) = False
 
 pymd : CalendarDate Persian -> (Year, PersianMonth, DayOfMonth)
-pymd date = case yearMonthDay {calendar = Persian} date of
+pymd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) =>
     (valueYear, valueMonth, valueDay)
 
 arithmeticPymd : {rule : PersianArithmeticRule} ->
-  KnownPersianArithmeticRule rule =>
-  CalendarDate (ArithmeticPersian rule) -> (Year, PersianMonth, DayOfMonth)
+  ArithmeticPersianDate rule -> (Year, PersianMonth, DayOfMonth)
 arithmeticPymd {rule} date =
-  case yearMonthDay {calendar = ArithmeticPersian rule} date of
+  case yearMonthDay date of
     (valueYear ** (valueMonth, valueDay)) =>
       (valueYear, valueMonth, valueDay)
 
@@ -32,11 +32,11 @@ persianRoundTrips final current =
          in case IotaTime.Calendar.Persian.refineDate valueDay valueMonth valueYear of
               Left _ => False
               Right rebuilt =>
-                toDays {calendar = Persian} rebuilt == current &&
+                toDays rebuilt == current &&
                 persianRoundTrips final (current + 97)
 
 arithmeticPersianRoundTrips : {rule : PersianArithmeticRule} ->
-  KnownPersianArithmeticRule rule => Integer -> Integer -> Bool
+  Integer -> Integer -> Bool
 arithmeticPersianRoundTrips {rule} final current =
   if current > final
     then True
@@ -48,7 +48,7 @@ arithmeticPersianRoundTrips {rule} final current =
               valueDay valueMonth valueYear of
                 Left _ => False
                 Right rebuilt =>
-                  toDays {calendar = ArithmeticPersian rule} rebuilt == current &&
+                  toDays rebuilt == current &&
                   arithmeticPersianRoundTrips {rule} final (current + 997)
 
 timeComponents : LocalTime -> (Hour, Minute, Second, Nanosecond)
@@ -71,46 +71,46 @@ persianCases =
       (show (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1) ==
         "calendarDate 1 Farvardin 1")
   , MkRuntimeCase "Persian conversion samples the complete supported range"
-      (let first = toDays {calendar = Persian}
+      (let first = toDays
              (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1)
-           final = toDays {calendar = Persian}
+           final = toDays
              (IotaTime.Calendar.Persian.calendarDate 29 PersianMonths.Esfand 1500)
         in persianRoundTrips final first &&
        case IotaTime.Calendar.Persian.refineDays final of
          Right date => pymd date == (1500, PersianMonths.Esfand, 29)
          Left _ => False)
   , MkRuntimeCase "Persian epoch matches Julian March 19 622"
-      (calendarDays (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1) ==
-       calendarDays (IotaTime.Calendar.Julian.calendarDate 19 JulianMonths.March 622))
+      (toBridgeDays (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1) ==
+       toBridgeDays (IotaTime.Calendar.Julian.calendarDate 19 JulianMonths.March 622))
   , MkRuntimeCase "Nowruz 1400 is Gregorian March 21 2021"
-      (calendarDays (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1400) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 21 March 2021))
+      (toBridgeDays (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1400) ==
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 21 March 2021))
   , MkRuntimeCase "Nowruz 1399 is Gregorian March 20 2020"
-      (calendarDays (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1399) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 20 March 2020))
+      (toBridgeDays (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1399) ==
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 20 March 2020))
   , MkRuntimeCase "astronomical Nowruz 1404 is Gregorian March 21 2025"
       (case nowruz1404 of
         Left _ => False
         Right date => pymd date == (1404, PersianMonths.Farvardin, 1))
   , MkRuntimeCase "arithmetic Nowruz 1404 is Gregorian March 20 2025"
-      (calendarDays
+      (toBridgeDays
         (IotaTime.Calendar.Persian.arithmeticCalendarDate 1 PersianMonths.Farvardin 1404) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 20 March 2025))
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 20 March 2025))
   , MkRuntimeCase "simple and Birashk Persian rules remain distinct types"
-      (calendarDays (IotaTime.Calendar.Persian.simpleCalendarDate 1 PersianMonths.Farvardin 1) ==
-       calendarDays (IotaTime.Calendar.Julian.calendarDate 18 JulianMonths.March 622) &&
-       calendarDays (IotaTime.Calendar.Persian.arithmeticCalendarDate 1 PersianMonths.Farvardin 1) ==
-       calendarDays (IotaTime.Calendar.Julian.calendarDate 19 JulianMonths.March 622))
+      (toBridgeDays (IotaTime.Calendar.Persian.simpleCalendarDate 1 PersianMonths.Farvardin 1) ==
+       toBridgeDays (IotaTime.Calendar.Julian.calendarDate 18 JulianMonths.March 622) &&
+       toBridgeDays (IotaTime.Calendar.Persian.arithmeticCalendarDate 1 PersianMonths.Farvardin 1) ==
+       toBridgeDays (IotaTime.Calendar.Julian.calendarDate 19 JulianMonths.March 622))
   , MkRuntimeCase "arithmetic Persian matches Calendrical Calculations fixtures"
-      (calendarDays
+      (toBridgeDays
         (IotaTime.Calendar.Persian.arithmeticCalendarDate 1 PersianMonths.Farvardin 1016) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 21 March 1637) &&
-       calendarDays
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 21 March 1637) &&
+       toBridgeDays
         (IotaTime.Calendar.Persian.arithmeticCalendarDate 1 PersianMonths.Farvardin 1082) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 22 March 1703) &&
-       calendarDays
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 22 March 1703) &&
+       toBridgeDays
         (IotaTime.Calendar.Persian.arithmeticCalendarDate 1 PersianMonths.Farvardin 1796) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 20 March 2417))
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 20 March 2417))
   , MkRuntimeCase "arithmetic Persian supports complete years through 9377"
       (case IotaTime.Calendar.Persian.refineArithmeticDate 29 PersianMonths.Esfand 9377 of
         Left _ => False
@@ -134,11 +134,11 @@ persianCases =
   , MkRuntimeCase "arithmetic Persian patterns round-trip"
       (case parse (pR {calendar = PersianArithmetic}) "1404-01-01" of
         Left _ => False
-        Right date => calendarDays date == calendarDays
+        Right date => toBridgeDays date == toBridgeDays
           (IotaTime.Calendar.Persian.arithmeticCalendarDate 1 PersianMonths.Farvardin 1404))
   , MkRuntimeCase "1 Dey 1348 is Gregorian December 22 1969"
-      (calendarDays (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Dey 1348) ==
-       calendarDays (IotaTime.Calendar.Gregorian.calendarDate 22 December 1969))
+      (toBridgeDays (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Dey 1348) ==
+       toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 22 December 1969))
   , MkRuntimeCase "Farvardin has thirty-one days"
       (pymd (IotaTime.Calendar.Persian.calendarDate 31 PersianMonths.Farvardin 1400) ==
         (1400, PersianMonths.Farvardin, 31))
@@ -173,18 +173,18 @@ persianCases =
         (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1500)) ==
         (1500, PersianMonths.Esfand, 29))
   , MkRuntimeCase "Persian epoch weekday is Friday"
-      (dayOfWeek {calendar = Persian}
+      (dayOfWeek
         (IotaTime.Calendar.Persian.calendarDate 1 PersianMonths.Farvardin 1) ==
-        PersianWeekdays.Friday)
+        Friday)
   , MkRuntimeCase "first Monday of Farvardin 1400"
-      (dayOfWeek {calendar = Persian}
-        (IotaTime.Calendar.Persian.fromNthDay First PersianWeekdays.Monday
-          PersianMonths.Farvardin 1400) == PersianWeekdays.Monday)
+      (dayOfWeek
+        (IotaTime.Calendar.Persian.fromNthDay First Monday
+          PersianMonths.Farvardin 1400) == Monday)
   , MkRuntimeCase "Persian week one starts on Saturday"
-      (dayOfWeek {calendar = Persian}
+      (dayOfWeek
         (IotaTime.Calendar.Persian.fromWeekDate
-          1 PersianWeekdays.Saturday 1400) ==
-        PersianWeekdays.Saturday)
+          1 Saturday 1400) ==
+        Saturday)
   , MkRuntimeCase "Persian CalendarDateTime accepts mixed periods"
       (pymd (datePart mixedPersianResult) ==
         (1400, PersianMonths.Aban, 1) &&

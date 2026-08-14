@@ -1,6 +1,7 @@
 module Test.PatternOffset
 
 import IotaTime
+import IotaTime.Calendar
 import Test.Support
 
 parsesAs : Pattern Offset Offset -> String -> Offset -> Bool
@@ -16,8 +17,8 @@ rejects pattern source = case IotaTime.Pattern.parse pattern source of
 sameOffsetDateTime : OffsetDateTime Gregorian ->
                      OffsetDateTime Gregorian -> Bool
 sameOffsetDateTime left right =
-  calendarDays (datePart (toCalendarDateTime left)) ==
-    calendarDays (datePart (toCalendarDateTime right)) &&
+  toBridgeDays (datePart (toCalendarDateTime left)) ==
+    toBridgeDays (datePart (toCalendarDateTime right)) &&
   localTimeOfDay (toCalendarDateTime left) ==
     localTimeOfDay (toCalendarDateTime right) && offset left == offset right
 

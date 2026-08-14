@@ -2,6 +2,7 @@ module Test.PatternCalendar
 
 import Data.Vect
 import IotaTime
+import IotaTime.Calendar
 import Test.Support
 
 roundTrips : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
@@ -10,7 +11,8 @@ roundTrips {calendar} value expected =
   IotaTime.Pattern.format (pR {calendar}) value == expected &&
   case IotaTime.Pattern.parse (pR {calendar}) expected of
     Left _ => False
-    Right actual => toDays actual == toDays value
+    Right actual =>
+      toDaysFor {calendar} actual == toDaysFor {calendar} value
 
 rejects : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
           String -> Bool
@@ -28,8 +30,9 @@ rejectsMonthRefinement {calendar} year month =
 
 sameDateTime : {calendar : Type} -> {auto patterned : CalendarPattern calendar} ->
                CalendarDateTime calendar -> CalendarDateTime calendar -> Bool
-sameDateTime left right =
-  toDays (datePart left) == toDays (datePart right) &&
+sameDateTime {calendar} left right =
+  toDaysFor {calendar} (datePart left) ==
+    toDaysFor {calendar} (datePart right) &&
   localTimeOfDay left == localTimeOfDay right
 
 namedPattern : {calendar : Type} ->
@@ -46,7 +49,8 @@ namedRoundTrips {calendar} value expected =
   IotaTime.Pattern.format (namedPattern {calendar}) value == expected &&
   case IotaTime.Pattern.parse (namedPattern {calendar}) expected of
     Left _ => False
-    Right actual => toDays actual == toDays value
+    Right actual =>
+      toDaysFor {calendar} actual == toDaysFor {calendar} value
 
 customCopticMonthNames : Vect 13 String
 customCopticMonthNames =
@@ -128,7 +132,7 @@ patternCalendarCases =
         IotaTime.Pattern.format customCopticPattern expected == "1731-M13-06" &&
         case IotaTime.Pattern.parse customCopticPattern "1731-M13-06" of
           Left _ => False
-          Right actual => calendarDays actual == calendarDays expected)
+          Right actual => toBridgeDays actual == toBridgeDays expected)
   , MkRuntimeCase "Julian date-time patterns round-trip"
       (dateTimeRoundTrips {calendar = Julian}
         (on (localTime 23 59 58 0)

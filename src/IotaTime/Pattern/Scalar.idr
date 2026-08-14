@@ -15,7 +15,7 @@ pInstantNanoseconds : Pattern Integer Instant
 pInstantNanoseconds = MkPattern
   0
   (Right . fromNanosecondsSinceEpoch)
-  pSignedInteger.parsePart
+  (patternParsePart pSignedInteger)
   (show . toNanosecondsSinceEpoch)
 
 finishCalendarDays : {calendar : Type} -> {auto cal : Calendar calendar} ->
@@ -27,16 +27,16 @@ finishCalendarDays {calendar} @{cal} value =
     Right _ => Left (InvalidValue
       (calendarName {calendar} @{cal} ++ " day count is out of range"))
 
-||| A calendar date encoded as its absolute day count relative to the iotaTime
-||| epoch. The expected calendar type is supplied by the pattern itself.
+||| A calendar date encoded as its calendar-local day count. The expected
+||| calendar type is supplied by the pattern itself.
 public export
 pCalendarDays : {calendar : Type} -> {auto cal : Calendar calendar} ->
                 Pattern Integer (CalendarDate calendar @{cal})
 pCalendarDays {calendar} @{cal} = MkPattern
   0
   (finishCalendarDays {calendar} @{cal})
-  pSignedInteger.parsePart
-  (show . toDays {calendar} @{cal})
+  (patternParsePart pSignedInteger)
+  (show . toDaysFor {calendar} @{cal})
 
 isZoneTokenCharacter : Char -> Bool
 isZoneTokenCharacter value =

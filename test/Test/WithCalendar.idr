@@ -4,11 +4,11 @@ import IotaTime
 import Test.Support
 
 julianYmd : CalendarDate Julian -> (Year, JulianMonth, DayOfMonth)
-julianYmd date = case yearMonthDay {calendar = Julian} date of
+julianYmd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) => (valueYear, valueMonth, valueDay)
 
 hebrewYmd : CalendarDate HebrewCivil -> (Year, HebrewMonthName, DayOfMonth)
-hebrewYmd date = case yearMonthDay {calendar = HebrewCivil} date of
+hebrewYmd date = case yearMonthDay date of
   (valueYear ** (valueMonth, valueDay)) =>
     (valueYear, monthName valueMonth, valueDay)
 
@@ -52,8 +52,7 @@ withCalendarCases =
           case backToGregorian hebrewDate of
             Left _ => False
             Right gregorianDate =>
-              toDays {calendar = Gregorian} gregorianDate ==
-                toDays {calendar = HebrewCivil} hebrewDate)
+              toDays gregorianDate == toDays hebrewDate)
   , MkRuntimeCase "calendar conversion rejects a day before the target range"
       (case hebrewEpochInGregorian of
           Left (TargetCalendarOutOfRange "Gregorian" (-2103607)) => True

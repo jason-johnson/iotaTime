@@ -1,5 +1,7 @@
 module IotaTime.Period
 
+import IotaTime.Internal.ApplyPeriod
+
 %default total
 
 ||| A calendar-relative amount applicable to `target`.
@@ -104,9 +106,24 @@ public export
 interface HasTime target where
   0 timeCapability : ()
 
-||| Types to which periods can be applied.
+||| Library-owned types to which periods can be applied. The internal target
+||| capability seals this interface against client implementations.
 public export
-interface ApplyPeriod target where
+interface PeriodTarget target => ApplyPeriod target where
+  ||| Apply all components of a period using iotaTime's rules for the target.
+  |||
+  ||| For calendar dates, components apply from largest to smallest: years,
+  ||| months, weeks, then days. Year and month shifts clamp an invalid day to
+  ||| the target month's final day; every shift also clamps at the concrete
+  ||| calendar's supported boundaries. Weeks are seven-day shifts. Components
+  ||| combined with `<+>` are aggregated before this sequence, so
+  ||| `months 1 <+> months 1` applies one two-month shift rather than two
+  ||| separately clamped one-month shifts.
+  |||
+  ||| For `LocalTime`, clock components combine into one signed displacement
+  ||| and wrap within the 24-hour day. For `CalendarDateTime`, date components
+  ||| apply first as above, then clock components combine into one displacement
+  ||| whose signed day carry adjusts the resulting date.
   applyPeriod : Period target -> target -> target
 
 ||| Construct a period measured in calendar years.

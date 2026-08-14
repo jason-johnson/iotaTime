@@ -1,5 +1,7 @@
 module IotaTime.Tzdb.Windows
 
+import IotaTime.Internal.Gregorian
+import IotaTime.TimeZone.Core
 import IotaTime.Tzdb.Windows.Types
 import Data.String
 
@@ -243,7 +245,7 @@ windowsRecurringTimeZone valueId initial transitions rule = do
   recurrence <- case windowsZoneRecurrence rule of
     Left error => Left (InvalidWindowsRule error)
     Right value => Right value
-  case refineRecurringDateTimeZone valueId initial transitions recurrence of
+  case refineRecurringTimeZone valueId initial transitions recurrence of
     Left error => Left (InvalidWindowsTransitions error)
     Right value => Right value
 
@@ -278,9 +280,9 @@ windowsTimeZone valueId rule =
   case windowsZoneEra rule of
     Left error => Left (InvalidWindowsRule error)
     Right (standardInfo, Nothing) =>
-      Right (fixedDateTimeZone valueId (utcOffset standardInfo))
+      Right (fixedTimeZone valueId (utcOffset standardInfo))
     Right (standardInfo, Just recurrence) =>
-      case refineRecurringDateTimeZone valueId standardInfo [] recurrence of
+      case refineRecurringTimeZone valueId standardInfo [] recurrence of
         Left error => Left (InvalidWindowsTransitions error)
         Right value => Right value
 
@@ -293,20 +295,9 @@ dynamicYearsValid (first :: rest) = go first.effectiveYear rest
     go previous (next :: remaining) =
       previous < next.effectiveYear && go next.effectiveYear remaining
 
-gregorianDays : Integer -> Integer -> Integer -> Integer
-gregorianDays year month day =
-  let shiftedYear = if month <= 2 then year - 1 else year
-   in let era = shiftedYear `div` 400
-     in let yearOfEra = shiftedYear - era * 400
-       in let shiftedMonth = month + if month > 2 then -3 else 9
-         in let dayOfYear = (153 * shiftedMonth + 2) `div` 5 + day - 1
-           in let dayOfEra = yearOfEra * 365 + yearOfEra `div` 4 -
-                yearOfEra `div` 100 + dayOfYear
-             in era * 146097 + dayOfEra - 730485
-
 yearStart : Integer -> Instant
 yearStart year = fromNanosecondsSinceEpoch
-  (gregorianDays year 1 1 * 86400 * 1000000000)
+  (gregorianDaysFromCivil year 1 1 * 86400 * 1000000000)
 
 dynamicEraSpecs : Bool -> List WindowsDynamicRule -> Either WindowsZoneError
   (List (Maybe Instant, TransitionInfo, Maybe ZoneRecurrence))

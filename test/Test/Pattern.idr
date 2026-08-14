@@ -2,6 +2,7 @@ module Test.Pattern
 
 import Data.Vect
 import IotaTime
+import IotaTime.Calendar
 import Test.Support
 
 isLeft : Either left right -> Bool
@@ -32,9 +33,10 @@ isTrailingInputAt _ _ = False
 
 parsesAs : Pattern DateFields (CalendarDate Gregorian) -> String ->
            CalendarDate Gregorian -> Bool
-parsesAs pattern source expected = case IotaTime.Pattern.parse pattern source of
-  Left _ => False
-  Right actual => calendarDays actual == calendarDays expected
+parsesAs pattern source expected = case IotaTime.Pattern.parse pattern source of {
+    Left _ => False;
+    Right actual => toBridgeDays actual == toBridgeDays expected
+}
 
 unpadded : Pattern DateFields (CalendarDate Gregorian)
 unpadded = ((pyear {calendar = Gregorian} 1 <% char '-') <+>
@@ -158,9 +160,9 @@ patternCases =
         , MkRuntimeCase "seeded parsing supplies omitted date fields"
                         (case IotaTime.Pattern.parseWith
                                 (pmonthDay {calendar = Gregorian})
-                                (MkDateFields 2024 1 1) "March 03" of
-                            Right actual => calendarDays actual ==
-                                calendarDays (IotaTime.Calendar.Gregorian.calendarDate 3 March 2024)
+                            (dateFields 2024 1 1) "March 03" of
+                            Right actual => toBridgeDays actual ==
+                                toBridgeDays (IotaTime.Calendar.Gregorian.calendarDate 3 March 2024)
                             Left _ => False)
     , MkRuntimeCase "pdaySpace formats padding and accepts common forms"
             (IotaTime.Pattern.format (pdaySpace {calendar = Gregorian})

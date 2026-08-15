@@ -1,0 +1,8 @@
+package iotaTime-benchmark
+
+depends = iotaTime
+
+sourcedir = "."
+
+main = Main
+executable = iotaTime-benchmark

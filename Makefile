@@ -15,7 +15,7 @@ WINDOWS_LIBRARY := support/libiotatime_windows.$(SHARED_EXTENSION)
 UNIX_LIBRARY := support/libiotatime_unix.$(SHARED_EXTENSION)
 SUPPORT_LIBRARIES := $(WINDOWS_LIBRARY) $(UNIX_LIBRARY)
 
-.PHONY: support install-support clean-support
+.PHONY: support install-support clean-support benchmark benchmark-refc
 
 support: $(SUPPORT_LIBRARIES)
 
@@ -32,3 +32,11 @@ install-support: support
 clean-support:
 	rm -f support/libiotatime_windows.so support/libiotatime_windows.dll \
 		support/libiotatime_unix.so support/libiotatime_unix.dll
+
+benchmark:
+	cd benchmark && $(IDRIS2) --build iotaTime-benchmark.ipkg
+	./benchmark/build/exec/iotaTime-benchmark
+
+benchmark-refc:
+	cd benchmark && $(IDRIS2) --cg refc --build iotaTime-benchmark.ipkg
+	./benchmark/build/exec/iotaTime-benchmark
